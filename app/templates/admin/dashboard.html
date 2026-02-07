@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - {{ tournament.name }}{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block head %}
+<!-- SortableJS for drag & drop match reordering -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+    <div class="admin-header-left">
+        <span class="admin-header-icon">&#9917;</span>
+        <h1>{{ tournament.name }}</h1>
+    </div>
+    <nav class="admin-nav">
+        <a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
+        <a href="{{ url_for('admin.design', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#127912; Design</a>
+        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Live-Ansicht</a>
+        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+    </nav>
+</header>
+
+<div class="admin-container">
+    <!-- Phase Banner -->
+    <div class="phase-banner phase-{{ phase }}">
+        {% if phase == 'GROUP_STAGE' %}
+            <span class="phase-icon">&#9917;</span>
+            <span class="phase-label">Gruppenphase</span>
+            <div class="phase-actions">
+                <button class="btn btn-sm btn-accent" onclick="endGroupStage()">Gruppenphase beenden</button>
+            </div>
+        {% elif phase == 'FINAL_SETUP' %}
+            <span class="phase-icon">&#9881;</span>
+            <span class="phase-label">Gruppenphase beendet &ndash; Finalrunde einrichten</span>
+            <div class="phase-actions">
+                <a href="{{ url_for('admin.finals_setup', slug=tournament.slug) }}" class="btn btn-sm btn-accent">&#127942; Finalrunde einrichten</a>
+                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Zuruecksetzen</button>
+            </div>
+        {% elif phase == 'FINAL_ROUND' %}
+            <span class="phase-icon">&#127942;</span>
+            <span class="phase-label">Finalrunde</span>
+            <div class="phase-actions">
+                <button class="btn btn-sm btn-accent" onclick="finishTournament()">Turnier beenden</button>
+                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Finalrunde zuruecksetzen</button>
+            </div>
+        {% elif phase == 'FINISHED' %}
+            <span class="phase-icon">&#127942;</span>
+            <span class="phase-label">Turnier beendet</span>
+            <div class="phase-actions">
+                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Zuruecksetzen</button>
+            </div>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Announcement/Info Message -->
+    <section class="admin-panel announcement-panel">
+        <div class="panel-header">
+            <h2>&#128226; Info-Meldung</h2>
+            <span class="form-hint">Wird auf der Live-Ansicht angezeigt</span>
+        </div>
+        <div class="announcement-form">
+            <input type="text" id="announcement-input"
+                   value="{{ settings.announcement or '' }}"
+                   placeholder="z.B. Geldbeutel gefunden - bitte zur Turnierleitung"
+                   maxlength="200"
+                   class="announcement-input">
+            <button class="btn btn-sm btn-accent" onclick="saveAnnouncement()">Speichern</button>
+            <button class="btn btn-sm btn-outline" onclick="clearAnnouncement()">Loeschen</button>
+        </div>
+        {% if settings.announcement %}
+        <div class="announcement-preview">
+            <span class="form-hint">Aktuelle Meldung:</span>
+            <span class="announcement-text">{{ settings.announcement }}</span>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Final Matches Section -->
+    {% if phase in ('FINAL_ROUND', 'FINISHED') and final_matches %}
+    <section class="admin-panel" style="margin-bottom:1rem">
+        <div class="panel-header"><h2>&#127942; Finalrunde</h2></div>
+        <div class="items-list">
+            {% for match in final_matches %}
+            <div class="item-card match-status-{{ match.status }}">
+                <div class="item-main">
+                    <span class="item-badge badge-final">{{ match.final_label }}</span>
+                    <span class="item-name">{{ match.team1.name if match.team1 else 'TBD' }}</span>
+                    <span class="match-score-admin">{{ match.score_team1 }} : {{ match.score_team2 }}</span>
+                    <span class="item-name">{{ match.team2.name if match.team2 else 'TBD' }}</span>
+                    <span class="status-badge status-{{ match.status }}">
+                        {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
+                    </span>
+                </div>
+                <div class="item-actions">
+                    {% if match.team1 and match.team2 %}
+                    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-xs btn-accent">Steuerung</a>
+                    {% else %}
+                    <span class="empty-hint">Teams ausstehend</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <div class="admin-grid-3">
+
+        <!-- ── Groups ── -->
+        <section class="admin-panel">
+            <div class="panel-header"><h2>Gruppen</h2></div>
+            {% if phase == 'GROUP_STAGE' %}
+            <form method="POST" action="{{ url_for('admin.create_group', slug=tournament.slug) }}" class="admin-form-row">
+                <input type="text" name="name" placeholder="Gruppenname (z.B. Gruppe A)" required>
+                <button type="submit" class="btn btn-accent">Erstellen</button>
+            </form>
+            {% endif %}
+            <div class="items-list">
+                {% for group in groups %}
+                <div class="item-card">
+                    <div class="item-main">
+                        <span class="item-name">{{ group.name }}</span>
+                        <span class="item-badge">{{ group.teams | length }} Teams</span>
+                    </div>
+                    {% if phase == 'GROUP_STAGE' %}
+                    <div class="item-actions">
+                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('group-{{ group.id }}')">Bearbeiten</button>
+                        <form method="POST" action="{{ url_for('admin.delete_group', slug=tournament.slug, gid=group.id) }}" class="inline"
+                              onsubmit="return confirm('Gruppe loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.edit_group', slug=tournament.slug, gid=group.id) }}"
+                          class="edit-row hidden" id="group-{{ group.id }}">
+                        <input type="text" name="name" value="{{ group.name }}" required>
+                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('group-{{ group.id }}')">Abbrechen</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not groups %}
+                <p class="empty-hint">Noch keine Gruppen.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- ── Teams ── -->
+        <section class="admin-panel">
+            <div class="panel-header"><h2>Mannschaften</h2></div>
+            {% if phase == 'GROUP_STAGE' %}
+            <form method="POST" action="{{ url_for('admin.create_team', slug=tournament.slug) }}" class="admin-form-col">
+                <div class="admin-form-row">
+                    <input type="text" name="name" placeholder="Teamname" required>
+                    <select name="group_id">
+                        <option value="">Keine Gruppe</option>
+                        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="admin-form-row">
+                    <input type="text" name="logo_url" placeholder="Logo-URL (optional)">
+                    <input type="text" name="players" placeholder="Spieler (kommagetrennt)">
+                    <button type="submit" class="btn btn-accent">Hinzufuegen</button>
+                </div>
+            </form>
+            <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end">
+                <button class="btn btn-sm btn-outline" onclick="toggleCsvImport()">&#128196; CSV-Import</button>
+            </div>
+            <div id="csv-import-panel" class="hidden" style="margin-top:0.5rem">
+                <div class="ctrl-card" style="padding:0.8rem">
+                    <p class="form-hint" style="margin-bottom:0.5rem">Format: Mannschaftsname, Gruppe, Logolink (pro Zeile)</p>
+                    <textarea id="csv-input" rows="6" placeholder="FC Bayern, Gruppe A, https://example.com/logo.png&#10;BVB, Gruppe A, &#10;Schalke 04, Gruppe B, https://example.com/s04.png" style="width:100%;font-size:0.82rem;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;resize:vertical"></textarea>
+                    <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end;gap:0.5rem">
+                        <label class="form-hint" style="cursor:pointer">
+                            <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="loadCsvFile(this)">
+                            &#128193; Datei laden
+                        </label>
+                        <button class="btn btn-sm btn-accent" onclick="importCsv()">Importieren</button>
+                    </div>
+                    <div id="csv-status" class="form-hint" style="margin-top:0.4rem"></div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="items-list">
+                {% for team in teams %}
+                <div class="item-card">
+                    <div class="item-main">
+                        <span class="item-name">{{ team.name }}</span>
+                        {% if team.group %}
+                        <span class="item-badge badge-group">{{ team.group.name }}</span>
+                        {% else %}
+                        <span class="item-badge badge-none">Keine Gruppe</span>
+                        {% endif %}
+                    </div>
+                    {% if team.players %}<div class="item-meta">{{ team.players }}</div>{% endif %}
+                    {% if phase == 'GROUP_STAGE' %}
+                    <div class="item-actions">
+                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('team-{{ team.id }}')">Bearbeiten</button>
+                        <form method="POST" action="{{ url_for('admin.delete_team', slug=tournament.slug, tid=team.id) }}" class="inline"
+                              onsubmit="return confirm('Team loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.edit_team', slug=tournament.slug, tid=team.id) }}"
+                          class="edit-row hidden" id="team-{{ team.id }}">
+                        <input type="text" name="name" value="{{ team.name }}" required>
+                        <select name="group_id">
+                            <option value="">Keine Gruppe</option>
+                            {% for g in groups %}<option value="{{ g.id }}" {% if team.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+                        </select>
+                        <input type="text" name="logo_url" value="{{ team.logo_url }}" placeholder="Logo-URL">
+                        <input type="text" name="players" value="{{ team.players }}" placeholder="Spieler">
+                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('team-{{ team.id }}')">Abbrechen</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not teams %}<p class="empty-hint">Noch keine Teams.</p>{% endif %}
+            </div>
+        </section>
+
+        <!-- ── Matches (with drag & drop) ── -->
+        <section class="admin-panel">
+            <div class="panel-header">
+                <h2>Spiele <span class="drag-hint">Reihenfolge per Drag &amp; Drop</span></h2>
+            </div>
+            {% if phase == 'GROUP_STAGE' and groups|length >= 1 and teams|length >= 2 %}
+            <form method="POST" action="{{ url_for('admin.create_match', slug=tournament.slug) }}" class="admin-form-col" id="match-form">
+                <div class="admin-form-row">
+                    <select name="group_id" id="match-group" required>
+                        <option value="">Gruppe waehlen</option>
+                        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
+                    </select>
+                    <input type="number" name="timer_duration" value="{{ settings.default_timer_regular|default('600') }}" min="60" step="60" class="input-narrow">
+                    <span class="form-hint">Sek.</span>
+                </div>
+                <div class="admin-form-row">
+                    <select name="team1_id" id="match-team1" required>
+                        <option value="">Heim</option>
+                    </select>
+                    <span class="form-vs">vs</span>
+                    <select name="team2_id" id="match-team2" required>
+                        <option value="">Gast</option>
+                    </select>
+                    <button type="submit" class="btn btn-accent">Anlegen</button>
+                </div>
+            </form>
+            <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end">
+                <button class="btn btn-sm btn-outline" onclick="generateRoundRobin()">&#9861; Spiele generieren</button>
+            </div>
+            {% elif phase != 'GROUP_STAGE' %}
+            <p class="empty-hint">Gruppenphase beendet.</p>
+            {% else %}
+            <p class="empty-hint">Mind. 1 Gruppe und 2 Teams noetig.</p>
+            {% endif %}
+
+            <!-- Sortable match list -->
+            <div class="items-list" id="sortable-matches">
+                {% for match in matches %}
+                <div class="item-card match-status-{{ match.status }} sortable-item" data-id="{{ match.id }}">
+                    <div class="item-main">
+                        <span class="drag-handle" title="Ziehen zum Sortieren">&#9776;</span>
+                        <span class="item-name">{{ match.team1.name }}</span>
+                        <span class="match-score-admin">{{ match.score_team1 }} : {{ match.score_team2 }}</span>
+                        <span class="item-name">{{ match.team2.name }}</span>
+                        <span class="status-badge status-{{ match.status }}">
+                            {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
+                        </span>
+                        {% if match.group %}<span class="item-badge badge-group">{{ match.group.name }}</span>{% endif %}
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-xs btn-accent">Steuerung</a>
+                        {% if phase == 'GROUP_STAGE' %}
+                        <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" class="inline"
+                              onsubmit="return confirm('Spiel loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not matches %}<p class="empty-hint">Noch keine Spiele.</p>{% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+const SLUG = '{{ tournament.slug }}';
+
+function toggleEdit(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+
+// ── Phase management ──
+function phaseApi(url) {
+    return fetch(url, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
+    }).then(r => r.json());
+}
+
+function endGroupStage() {
+    if (!confirm('Gruppenphase beenden? Danach koennen keine Gruppenspiele mehr erstellt werden.')) return;
+    phaseApi(`/admin/t/${SLUG}/api/phase/end-group-stage`).then(d => {
+        if (d.error) { alert(d.error); return; }
+        location.reload();
+    });
+}
+
+function finishTournament() {
+    if (!confirm('Turnier als beendet markieren?')) return;
+    phaseApi(`/admin/t/${SLUG}/api/phase/finish-tournament`).then(d => {
+        if (d.error) { alert(d.error); return; }
+        location.reload();
+    });
+}
+
+function resetPhase() {
+    if (!confirm('Zuruecksetzen? Alle Finalspiele werden geloescht!')) return;
+    phaseApi(`/admin/t/${SLUG}/api/phase/reset`).then(d => {
+        if (d.error) { alert(d.error); return; }
+        location.reload();
+    });
+}
+
+function generateRoundRobin() {
+    if (!confirm('Alle fehlenden Gruppenspiele (Jeder gegen Jeden) generieren?')) return;
+    fetch(`/admin/t/${SLUG}/api/matches/generate-round-robin`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
+    }).then(r => r.json()).then(d => {
+        if (d.error) { alert(d.error); return; }
+        alert(d.created + ' Spiel(e) erstellt.');
+        location.reload();
+    });
+}
+
+function toggleCsvImport() {
+    document.getElementById('csv-import-panel').classList.toggle('hidden');
+}
+
+function loadCsvFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { document.getElementById('csv-input').value = e.target.result; };
+    reader.readAsText(file);
+}
+
+function importCsv() {
+    const csvText = document.getElementById('csv-input').value.trim();
+    if (!csvText) { alert('Keine CSV-Daten eingegeben.'); return; }
+    const status = document.getElementById('csv-status');
+    status.textContent = 'Importiere...';
+
+    fetch(`/admin/t/${SLUG}/api/teams/import-csv`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({csv: csvText}),
+    }).then(r => r.json()).then(d => {
+        if (d.error) { status.textContent = 'Fehler: ' + d.error; return; }
+        status.textContent = d.message;
+        if (d.created > 0) setTimeout(() => location.reload(), 1500);
+    }).catch(() => { status.textContent = 'Netzwerkfehler'; });
+}
+
+// ── Team data for group-based filtering ──
+const TEAMS_BY_GROUP = {
+    {% for g in groups %}
+    {{ g.id }}: [
+        {% for t in teams %}{% if t.group_id == g.id %}
+        { id: {{ t.id }}, name: "{{ t.name }}" },
+        {% endif %}{% endfor %}
+    ],
+    {% endfor %}
+};
+
+// Filter team dropdowns when group changes
+const groupSelect = document.getElementById('match-group');
+const team1Select = document.getElementById('match-team1');
+const team2Select = document.getElementById('match-team2');
+
+if (groupSelect) {
+    groupSelect.addEventListener('change', () => {
+        const gid = parseInt(groupSelect.value);
+        const teams = TEAMS_BY_GROUP[gid] || [];
+
+        team1Select.innerHTML = '<option value="">Heim</option>';
+        team2Select.innerHTML = '<option value="">Gast</option>';
+
+        teams.forEach(t => {
+            team1Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+            team2Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+    });
+}
+
+// Initialize SortableJS on the matches list
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('sortable-matches');
+    if (!el) return;
+
+    Sortable.create(el, {
+        handle: '.drag-handle',
+        animation: 200,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: () => {
+            const items = el.querySelectorAll('.sortable-item');
+            const order = Array.from(items).map(item => parseInt(item.dataset.id));
+
+            fetch(`/admin/t/${SLUG}/api/matches/reorder`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({order}),
+            }).then(r => {
+                if (!r.ok) console.error('Reorder failed');
+            });
+        },
+    });
+});
+
+// Announcement functions
+function saveAnnouncement() {
+    const text = document.getElementById('announcement-input').value.trim();
+    fetch(`/admin/t/${SLUG}/api/announcement`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({announcement: text}),
+    }).then(r => r.json()).then(d => {
+        if (d.ok) location.reload();
+        else alert('Fehler: ' + (d.error || 'Unbekannt'));
+    }).catch(() => alert('Netzwerkfehler'));
+}
+
+function clearAnnouncement() {
+    document.getElementById('announcement-input').value = '';
+    saveAnnouncement();
+}
+</script>
+{% endblock %}

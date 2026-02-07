@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Speisekarte{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+    <div class="admin-header-left">
+        <span class="admin-header-icon">&#127860;</span>
+        <h1>Speisekarte</h1>
+    </div>
+    <nav class="admin-nav">
+        <a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
+        <a href="{{ url_for('main.speisekarte') }}" class="btn btn-outline btn-sm">Oeffentliche Ansicht</a>
+        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+    </nav>
+</header>
+
+<div class="admin-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Add new item -->
+    <section class="admin-panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><h2>Neuen Eintrag hinzufuegen</h2></div>
+        <form method="POST" action="{{ url_for('admin.menu_add') }}" class="admin-form-row">
+            <select name="category">
+                <option value="speise">Speise</option>
+                <option value="getraenk">Getraenk</option>
+            </select>
+            <input type="text" name="name" placeholder="Name (z.B. Bratwurst)" required>
+            <input type="text" name="price" placeholder="Preis (z.B. 3,50 &euro;)">
+            <input type="text" name="description" placeholder="Beschreibung (optional)">
+            <button type="submit" class="btn btn-accent">Hinzufuegen</button>
+        </form>
+    </section>
+
+    <div class="admin-grid-2">
+        <!-- Speisen -->
+        <section class="admin-panel">
+            <div class="panel-header"><h2>&#127828; Speisen</h2></div>
+            <div class="items-list">
+                {% for item in speisen %}
+                <div class="item-card">
+                    <div class="item-main">
+                        <span class="item-name">{{ item.name }}</span>
+                        {% if item.price %}
+                        <span class="item-badge badge-price">{{ item.price }}</span>
+                        {% endif %}
+                        {% if item.description %}
+                        <span class="item-meta">{{ item.description }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('menu-{{ item.id }}')">Bearbeiten</button>
+                        <form method="POST" action="{{ url_for('admin.menu_delete', item_id=item.id) }}" class="inline"
+                              onsubmit="return confirm('Eintrag loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.menu_edit', item_id=item.id) }}"
+                          class="edit-row hidden" id="menu-{{ item.id }}">
+                        <input type="text" name="name" value="{{ item.name }}" required>
+                        <input type="text" name="price" value="{{ item.price }}" placeholder="Preis">
+                        <input type="text" name="description" value="{{ item.description }}" placeholder="Beschreibung">
+                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('menu-{{ item.id }}')">Abbrechen</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% if not speisen %}
+                <p class="empty-hint">Noch keine Speisen eingetragen.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Getraenke -->
+        <section class="admin-panel">
+            <div class="panel-header"><h2>&#127866; Getraenke</h2></div>
+            <div class="items-list">
+                {% for item in getraenke %}
+                <div class="item-card">
+                    <div class="item-main">
+                        <span class="item-name">{{ item.name }}</span>
+                        {% if item.price %}
+                        <span class="item-badge badge-price">{{ item.price }}</span>
+                        {% endif %}
+                        {% if item.description %}
+                        <span class="item-meta">{{ item.description }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('menu-{{ item.id }}')">Bearbeiten</button>
+                        <form method="POST" action="{{ url_for('admin.menu_delete', item_id=item.id) }}" class="inline"
+                              onsubmit="return confirm('Eintrag loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.menu_edit', item_id=item.id) }}"
+                          class="edit-row hidden" id="menu-{{ item.id }}">
+                        <input type="text" name="name" value="{{ item.name }}" required>
+                        <input type="text" name="price" value="{{ item.price }}" placeholder="Preis">
+                        <input type="text" name="description" value="{{ item.description }}" placeholder="Beschreibung">
+                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('menu-{{ item.id }}')">Abbrechen</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% if not getraenke %}
+                <p class="empty-hint">Noch keine Getraenke eingetragen.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+function toggleEdit(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+</script>
+{% endblock %}

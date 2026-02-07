@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Speisekarte{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.landing') }}" class="header-back">&larr;</a>
+        <div class="header-logo">&#127860;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Speisen & Getraenke</h1>
+        </div>
+    </div>
+</header>
+
+<div class="menu-container">
+    {% if not speisen and not getraenke %}
+    <div class="landing-empty">
+        <div class="no-live-icon">&#127860;</div>
+        <p>Noch keine Speisekarte verfuegbar</p>
+    </div>
+    {% else %}
+    <div class="menu-grid">
+        {% if speisen %}
+        <section class="menu-section">
+            <h2 class="menu-section-title">&#127828; Speisen</h2>
+            <div class="menu-items">
+                {% for item in speisen %}
+                <div class="menu-item">
+                    <div class="menu-item-info">
+                        <span class="menu-item-name">{{ item.name }}</span>
+                        {% if item.description %}
+                        <span class="menu-item-desc">{{ item.description }}</span>
+                        {% endif %}
+                    </div>
+                    {% if item.price %}
+                    <span class="menu-item-price">{{ item.price }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if getraenke %}
+        <section class="menu-section">
+            <h2 class="menu-section-title">&#127866; Getraenke</h2>
+            <div class="menu-items">
+                {% for item in getraenke %}
+                <div class="menu-item">
+                    <div class="menu-item-info">
+                        <span class="menu-item-name">{{ item.name }}</span>
+                        {% if item.description %}
+                        <span class="menu-item-desc">{{ item.description }}</span>
+                        {% endif %}
+                    </div>
+                    {% if item.price %}
+                    <span class="menu-item-price">{{ item.price }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

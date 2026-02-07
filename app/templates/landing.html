@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Turnierwochenende{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <div class="header-logo">&#9917;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Turnierwochenende</h1>
+            <p class="header-sub">Turniere auswaehlen</p>
+        </div>
+    </div>
+</header>
+
+<div class="landing-container">
+    {% if tournaments %}
+    <div class="tournament-grid">
+        {% for t in tournaments %}
+        <a href="{{ url_for('main.tournament_view', slug=t.slug) }}" class="tournament-card">
+            <div class="tournament-card-icon">&#9917;</div>
+            <h2 class="tournament-card-name">{{ t.name }}</h2>
+            {% if t.event_date %}
+            <p class="tournament-card-date">{{ t.event_date.strftime('%d.%m.%Y') }}</p>
+            {% endif %}
+            {% if t.description %}
+            <p class="tournament-card-desc">{{ t.description }}</p>
+            {% endif %}
+            <span class="tournament-card-link">Live-Ansicht &rarr;</span>
+        </a>
+        {% endfor %}
+        <a href="{{ url_for('main.speisekarte') }}" class="tournament-card card-menu">
+            <div class="tournament-card-icon">&#127860;</div>
+            <h2 class="tournament-card-name">Speisen & Getraenke</h2>
+            <p class="tournament-card-desc">Unser Angebot an Essen und Getraenken</p>
+            <span class="tournament-card-link">Speisekarte &rarr;</span>
+        </a>
+    </div>
+    {% else %}
+    <div class="landing-empty">
+        <div class="no-live-icon">&#9917;</div>
+        <p>Noch keine Turniere erstellt</p>
+        <p class="no-live-sub">Turniere werden in der Adminoberflaeche angelegt.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

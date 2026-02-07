@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Turniere{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+    <div class="admin-header-left">
+        <span class="admin-header-icon">&#9917;</span>
+        <h1>Turnierverwaltung</h1>
+    </div>
+    <nav class="admin-nav">
+        <a href="{{ url_for('admin.menu_admin') }}" class="btn btn-outline btn-sm">&#127860; Speisekarte</a>
+        <a href="{{ url_for('main.landing') }}" class="btn btn-outline btn-sm">Live-Ansicht</a>
+        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+    </nav>
+</header>
+
+<div class="admin-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <section class="admin-panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><h2>Neues Turnier erstellen</h2></div>
+        <form method="POST" action="{{ url_for('admin.create_tournament') }}" class="admin-form-row">
+            <input type="text" name="name" placeholder="Turniername (z.B. U13)" required>
+            <input type="date" name="event_date" title="Datum des Turniers">
+            <input type="text" name="description" placeholder="Beschreibung (optional)">
+            <button type="submit" class="btn btn-accent">Erstellen</button>
+        </form>
+    </section>
+
+    <section class="admin-panel">
+        <div class="panel-header"><h2>Turniere</h2></div>
+        <div class="items-list">
+            {% for t in tournaments %}
+            <div class="item-card">
+                <div class="item-main">
+                    <span class="item-name">{{ t.name }}</span>
+                    {% if t.event_date %}
+                    <span class="item-badge badge-date">{{ t.event_date.strftime('%d.%m.%Y') }}</span>
+                    {% endif %}
+                    {% if t.description %}
+                    <span class="item-badge">{{ t.description }}</span>
+                    {% endif %}
+                    <span class="item-badge badge-group">/t/{{ t.slug }}/</span>
+                </div>
+                <div class="item-actions">
+                    <a href="{{ url_for('admin.dashboard', slug=t.slug) }}" class="btn btn-xs btn-accent">Dashboard</a>
+                    <button class="btn btn-xs btn-outline" onclick="toggleEdit('tournament-{{ t.id }}')">Bearbeiten</button>
+                    <form method="POST" action="{{ url_for('admin.delete_tournament', tid=t.id) }}" class="inline"
+                          onsubmit="return confirm('Turnier und alle Daten loeschen?')">
+                        <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
+                    </form>
+                </div>
+                <form method="POST" action="{{ url_for('admin.edit_tournament', tid=t.id) }}"
+                      class="edit-row hidden" id="tournament-{{ t.id }}">
+                    <input type="text" name="name" value="{{ t.name }}" required>
+                    <input type="date" name="event_date" value="{{ t.event_date.isoformat() if t.event_date else '' }}">
+                    <input type="text" name="description" value="{{ t.description }}" placeholder="Beschreibung">
+                    <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
+                    <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('tournament-{{ t.id }}')">Abbrechen</button>
+                </form>
+            </div>
+            {% endfor %}
+            {% if not tournaments %}
+            <p class="empty-hint">Noch keine Turniere erstellt.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<script>
+function toggleEdit(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+</script>
+{% endblock %}

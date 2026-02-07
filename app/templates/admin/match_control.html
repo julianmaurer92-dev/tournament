@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Spielsteuerung - {{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+    <div class="admin-header-left">
+        <span class="admin-header-icon">&#9917;</span>
+        <h1>Spielsteuerung</h1>
+    </div>
+    <nav class="admin-nav">
+        <a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Dashboard</a>
+        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+    </nav>
+</header>
+
+<div class="match-nav">
+    {% if prev_match_id %}
+    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=prev_match_id) }}" class="match-nav-btn" title="Vorheriges Spiel">&#9664; Vorheriges Spiel</a>
+    {% else %}
+    <span class="match-nav-btn disabled">&#9664; Vorheriges Spiel</span>
+    {% endif %}
+    <span class="match-nav-current">{{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}</span>
+    {% if next_match_id %}
+    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=next_match_id) }}" class="match-nav-btn" title="Naechstes Spiel">Naechstes Spiel &#9654;</a>
+    {% else %}
+    <span class="match-nav-btn disabled">Naechstes Spiel &#9654;</span>
+    {% endif %}
+</div>
+
+<div class="admin-container">
+    <div class="control-layout">
+
+        {% if match.is_final and match.final_label %}
+        <div class="ctrl-card" style="padding:0.8rem 1.8rem">
+            <span class="badge-final">{{ match.final_label }}</span>
+            {% if match.next_match_id %}
+            <span class="form-hint" style="margin-left:0.5rem">Gewinner geht weiter</span>
+            {% endif %}
+            {% if match.is_loser_match %}
+            <span class="form-hint" style="margin-left:0.5rem">Spiel um Platz 3</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if match.is_final and match.next_match_id %}
+        <div class="draw-warning">
+            &#9888; Bei Finalspielen mit Weiterschaltung ist kein Unentschieden erlaubt.
+        </div>
+        {% endif %}
+
+        <div class="ctrl-card">
+            <h3 class="ctrl-label">Ergebnis</h3>
+            <div class="score-control">
+                <div class="team-score-col">
+                    {% if match.team1 and match.team1.logo_url %}
+                    <img class="team-logo team-logo-lg" src="{{ match.team1.logo_url }}" alt="" onerror="this.style.display='none'">
+                    {% endif %}
+                    <span class="team-label">{{ match.team1.name if match.team1 else 'TBD' }}</span>
+                    <div class="score-row">
+                        <button class="btn btn-round btn-danger" onclick="changeScore(1,-1)">&minus;</button>
+                        <span id="score1" class="score-big">{{ match.score_team1 }}</span>
+                        <button class="btn btn-round btn-accent" onclick="changeScore(1,1)">+</button>
+                    </div>
+                </div>
+                <div class="score-divider">:</div>
+                <div class="team-score-col">
+                    {% if match.team2 and match.team2.logo_url %}
+                    <img class="team-logo team-logo-lg" src="{{ match.team2.logo_url }}" alt="" onerror="this.style.display='none'">
+                    {% endif %}
+                    <span class="team-label">{{ match.team2.name if match.team2 else 'TBD' }}</span>
+                    <div class="score-row">
+                        <button class="btn btn-round btn-danger" onclick="changeScore(2,-1)">&minus;</button>
+                        <span id="score2" class="score-big">{{ match.score_team2 }}</span>
+                        <button class="btn btn-round btn-accent" onclick="changeScore(2,1)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ctrl-card">
+            <h3 class="ctrl-label">Timer</h3>
+            <div id="extra-time-badge" class="extra-time-badge" style="display:{% if match.is_extra_time %}block{% else %}none{% endif %}">&#9201; Verlaengerung</div>
+            <div id="timer-display" class="timer-huge">{{ '%02d' | format(match.timer_remaining // 60) }}:{{ '%02d' | format(match.timer_remaining % 60) }}</div>
+            <div class="ctrl-buttons">
+                <button id="btn-start" class="btn btn-lg btn-accent" onclick="timerAction('start')">&#9654; Start</button>
+                <button id="btn-pause" class="btn btn-lg btn-outline" onclick="timerAction('pause')">&#9646;&#9646; Pause</button>
+                <button id="btn-reset" class="btn btn-lg btn-outline" onclick="timerAction('reset')">&#8634; Reset</button>
+            </div>
+            <div class="timer-set-row">
+                <label>Dauer (Min):</label>
+                <input type="number" id="timer-minutes" value="{{ match.timer_duration // 60 }}" min="1" max="90" class="input-narrow">
+                <button class="btn btn-xs btn-outline" onclick="setDuration()">Setzen</button>
+                <button class="btn btn-xs btn-accent" onclick="setExtraTime()" title="Verlaengerung starten">&#9201; Verlaengerung ({{ extra_time // 60 }} Min)</button>
+            </div>
+        </div>
+
+        <div class="ctrl-card">
+            <h3 class="ctrl-label">Status</h3>
+            <div class="status-current">
+                <span id="match-status" class="status-badge-lg status-{{ match.status }}">
+                    {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
+                </span>
+            </div>
+            <div class="ctrl-buttons">
+                <button class="btn btn-sm btn-outline" onclick="setStatus('planned')">Geplant</button>
+                <button class="btn btn-sm btn-accent" onclick="setStatus('live')">Live setzen</button>
+                <button class="btn btn-sm btn-danger" onclick="setStatus('finished')">Beenden</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const MID = {{ match.id }};
+const SLUG = '{{ tournament.slug }}';
+const TID = {{ tournament.id }};
+let s1 = {{ match.score_team1 }}, s2 = {{ match.score_team2 }};
+let timerRunning = {{ 'true' if match.timer_running else 'false' }};
+let timerRemaining = {{ match.timer_remaining }};
+let tick = null;
+const socket = io();
+
+// Join tournament room for live updates
+socket.on('connect', () => {
+    socket.emit('join_tournament', {tournament_id: TID});
+});
+
+const api = (url, data) => fetch(url, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data),
+}).then(r => r.json());
+
+function changeScore(team, d) {
+    if (team === 1) { s1 = Math.max(0, s1+d); document.getElementById('score1').textContent = s1; api(`/admin/t/${SLUG}/api/matches/${MID}/score`, {score_team1:s1}); }
+    else { s2 = Math.max(0, s2+d); document.getElementById('score2').textContent = s2; api(`/admin/t/${SLUG}/api/matches/${MID}/score`, {score_team2:s2}); }
+}
+
+function timerAction(action) {
+    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action}).then(d => {
+        if (d.error) { alert(d.error); return; }
+        timerRemaining = d.timer_remaining; timerRunning = d.timer_running;
+        updTimer(); updBtns(); updStatus(d.status);
+        document.getElementById('extra-time-badge').style.display = d.is_extra_time ? 'block' : 'none';
+    });
+}
+
+function setDuration() {
+    const m = parseInt(document.getElementById('timer-minutes').value) || 10;
+    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration: m*60}).then(d => {
+        timerRemaining = d.timer_remaining; timerRunning = d.timer_running; updTimer();
+    });
+}
+
+function setExtraTime() {
+    const extraSec = {{ extra_time }};
+    if (!confirm('Verlaengerung (' + (extraSec/60) + ' Min) setzen?')) return;
+    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration: extraSec, is_extra_time: true}).then(d => {
+        timerRemaining = d.timer_remaining; timerRunning = d.timer_running; updTimer(); updBtns();
+        document.getElementById('extra-time-badge').style.display = d.is_extra_time ? 'block' : 'none';
+    });
+}
+
+function setStatus(status) {
+    api(`/admin/t/${SLUG}/api/matches/${MID}/status`, {status}).then(d => {
+        if (d.error) { alert(d.error); return; }
+        updStatus(d.status);
+        if (d.status === 'finished') { timerRunning = false; updBtns(); }
+    });
+}
+
+function updTimer() {
+    const m = Math.floor(timerRemaining/60), s = timerRemaining%60;
+    document.getElementById('timer-display').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updBtns() {
+    document.getElementById('btn-start').disabled = timerRunning;
+    document.getElementById('btn-pause').disabled = !timerRunning;
+}
+function updStatus(st) {
+    const el = document.getElementById('match-status');
+    el.textContent = st==='planned'?'Geplant':st==='live'?'Live':'Beendet';
+    el.className = 'status-badge-lg status-'+st;
+}
+
+// Local tick
+(function startTick() {
+    if (tick) clearInterval(tick);
+    tick = setInterval(() => {
+        if (timerRunning && timerRemaining > 0) { timerRemaining--; updTimer(); if (timerRemaining<=0) { timerRunning=false; updBtns(); } }
+    }, 1000);
+})();
+
+// Sync from server – check live match AND final matches
+socket.on('state_update', st => {
+    let found = null;
+    if (st.live_match && st.live_match.id === MID) {
+        found = st.live_match;
+    }
+    if (!found && st.final_matches) {
+        found = st.final_matches.find(m => m.id === MID);
+    }
+    if (found) {
+        const m = found;
+        s1=m.score_team1; s2=m.score_team2;
+        document.getElementById('score1').textContent=s1;
+        document.getElementById('score2').textContent=s2;
+        timerRemaining=m.timer_remaining; timerRunning=m.timer_running;
+        updTimer(); updBtns(); updStatus(m.status);
+    }
+});
+
+updBtns();
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site_settings.tournament_name }} - Live{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+{% endblock %}
+
+{% block body_class %}public{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.landing') }}" class="header-back" title="Zurueck zur Uebersicht">&larr;</a>
+        <div class="header-logo">&#9917;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">{{ site_settings.tournament_name }}</h1>
+            <p class="header-sub">Live-Ergebnisse &amp; Tabelle</p>
+        </div>
+        <a href="{{ url_for('main.speisekarte') }}" class="header-menu-link" title="Speisekarte">&#127860; Speisekarte</a>
+    </div>
+</header>
+
+<div class="layout">
+    <!-- Left sidebar -->
+    <aside class="sidebar sidebar-left">
+        <section class="panel">
+            <h2 class="panel-title">VERGANGENE SPIELE</h2>
+            <div id="past-matches" class="match-list">
+                <p class="empty-state">Noch keine Spiele beendet</p>
+            </div>
+        </section>
+        <section class="panel">
+            <h2 class="panel-title">KOMMENDE SPIELE</h2>
+            <div id="upcoming-matches" class="match-list">
+                <p class="empty-state">Keine Spiele geplant</p>
+            </div>
+        </section>
+    </aside>
+
+    <!-- Center: live match + bracket + winner -->
+    <main class="center">
+        <div id="winner-display"></div>
+        <div id="next-match-prep"></div>
+        <div id="live-match" class="live-match-container">
+            <div class="no-live-match">
+                <div class="no-live-icon">&#9917;</div>
+                <p>Kein Spiel aktiv</p>
+                <p class="no-live-sub">Warte auf den Anpfiff...</p>
+            </div>
+        </div>
+        <div id="bracket-container"></div>
+    </main>
+
+    <!-- Right sidebar: all group standings stacked -->
+    <aside class="sidebar sidebar-right">
+        <div id="standings">
+            <p class="empty-state">Keine Teams registriert</p>
+        </div>
+    </aside>
+</div>
+
+<script>
+    const TOURNAMENT_ID = {{ tournament.id }};
+    const TOURNAMENT_SLUG = '{{ tournament.slug }}';
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
