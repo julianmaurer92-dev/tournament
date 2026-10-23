@@ -5,7 +5,7 @@ import math
 import random
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from itertools import combinations
 from flask import (
@@ -65,6 +65,10 @@ def euros_to_words(amount):
 
 # Simple hex color validation
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+# JSON-Backup: aktuelle Exportversion und die, die wir lesen koennen
+EXPORT_VERSION = "2"
+SUPPORTED_IMPORT_VERSIONS = ("1", "2")
 
 # German round labels
 ROUND_LABELS = {1: "Finale", 2: "Halbfinale", 3: "Viertelfinale", 4: "Achtelfinale"}
@@ -2327,11 +2331,23 @@ def _export_tournament(t):
     group_id_to_name = {g.id: g.name for g in groups}
     team_id_to_name = {team.id: team.name for team in teams}
 
+    def _payment(team):
+        p = team.payment
+        if not p:
+            return None
+        return {
+            "paid": bool(p.paid),
+            "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+            "amount": p.amount,
+            "receipt_number": p.receipt_number,
+        }
+
     return {
         "name": t.name,
         "slug": t.slug,
         "description": t.description or "",
         "event_date": t.event_date.isoformat() if t.event_date else None,
+        "event_time": t.event_time,
         "is_active": t.is_active,
         "display_order": t.display_order,
         "settings": get_all_settings(t.id),
@@ -2345,6 +2361,7 @@ def _export_tournament(t):
                 "logo_url": team.logo_url or "",
                 "players": team.players or "",
                 "group_name": group_id_to_name.get(team.group_id) if team.group_id else None,
+                "payment": _payment(team),
             }
             for team in teams
         ],
@@ -2359,9 +2376,11 @@ def _export_tournament(t):
                 "status": m.status,
                 "scheduled_time": m.scheduled_time.isoformat() if m.scheduled_time else None,
                 "match_order": m.match_order,
+                "field": m.field or 1,
                 "timer_duration": m.timer_duration,
                 "timer_remaining": m.timer_remaining,
                 "is_extra_time": m.is_extra_time,
+                "is_penalty": bool(m.is_penalty),
                 "is_final": m.is_final,
                 "final_round": m.final_round,
                 "final_position": m.final_position,
@@ -2394,13 +2413,15 @@ def export_tournaments():
     ).order_by(Tournament.display_order, Tournament.name).all() if ids else []
 
     data = {
-        "version": "1",
-        "exported_at": datetime.utcnow().isoformat(),
+        # Version 2 ergaenzt: event_time, match.field, match.is_penalty,
+        # Startgebuehren je Team. Version-1-Backups bleiben importierbar.
+        "version": EXPORT_VERSION,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
         "tournaments": [_export_tournament(t) for t in tournaments],
     }
     if include_menu:
         data["menu_items"] = [item.to_dict() for item in MenuItem.query.order_by(MenuItem.display_order).all()]
-    filename = f"turnier-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
+    filename = f"turnier-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.json"
     response = current_app.response_class(
         json.dumps(data, ensure_ascii=False, indent=2),
         mimetype="application/json",
@@ -2431,6 +2452,8 @@ def _import_tournament(data):
         slug=slug,
         description=data.get("description", ""),
         event_date=event_date,
+        # event_time fehlt in Backups vor Version 2 -> dann None
+        event_time=data.get("event_time") or None,
         is_active=data.get("is_active", True),
         display_order=data.get("display_order", 0),
     )
@@ -2470,6 +2493,23 @@ def _import_tournament(data):
         db.session.flush()
         team_name_to_id[team_data["name"]] = team.id
 
+        # Startgebuehr (fehlt in Backups vor Version 2)
+        p_data = team_data.get("payment")
+        if p_data:
+            paid_at = None
+            if p_data.get("paid_at"):
+                try:
+                    paid_at = _dt.fromisoformat(p_data["paid_at"])
+                except ValueError:
+                    paid_at = None
+            db.session.add(TeamPayment(
+                team_id=team.id,
+                paid=bool(p_data.get("paid", False)),
+                paid_at=paid_at,
+                amount=p_data.get("amount"),
+                receipt_number=p_data.get("receipt_number"),
+            ))
+
     # Matches – first pass (no next_match/loser refs yet)
     created_matches = []
     for m_data in data.get("matches", []):
@@ -2487,10 +2527,13 @@ def _import_tournament(data):
             status=m_data.get("status", "planned"),
             scheduled_time=scheduled_time,
             match_order=m_data.get("match_order", 0),
+            # field/is_penalty fehlen in Backups vor Version 2
+            field=m_data.get("field", 1) or 1,
             timer_duration=m_data.get("timer_duration", 600),
             timer_remaining=m_data.get("timer_remaining", 600),
             timer_running=False,
             is_extra_time=m_data.get("is_extra_time", False),
+            is_penalty=m_data.get("is_penalty", False),
             is_final=m_data.get("is_final", False),
             final_round=m_data.get("final_round"),
             final_position=m_data.get("final_position"),
@@ -2530,7 +2573,7 @@ def import_tournaments():
         flash("Ungueltige JSON-Datei.", "error")
         return redirect(url_for("admin.export_import_page"))
 
-    if data.get("version") != "1" or "tournaments" not in data:
+    if data.get("version") not in SUPPORTED_IMPORT_VERSIONS or "tournaments" not in data:
         flash("Ungueltiges Exportformat (falsche Version oder fehlende Daten).", "error")
         return redirect(url_for("admin.export_import_page"))
 

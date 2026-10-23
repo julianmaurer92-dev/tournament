@@ -141,7 +141,7 @@ function readImportFile(input) {
         try { data = JSON.parse(e.target.result); }
         catch { errEl.textContent = 'Datei ist kein gueltiges JSON.'; errEl.style.display = 'block'; return; }
 
-        if (data.version !== '1' || (!Array.isArray(data.tournaments) && !data.menu_items)) {
+        if (!['1', '2'].includes(String(data.version)) || (!Array.isArray(data.tournaments) && !data.menu_items)) {
             errEl.textContent = 'Ungueltiges Exportformat.';
             errEl.style.display = 'block';
             return;
