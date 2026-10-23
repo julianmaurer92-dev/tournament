@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Anmeldung eingegangen – {{ tournament.name }}{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block head %}
+<style>
+    .anm-wrap { max-width: 640px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .anm-card {
+        background: var(--color-secondary, #1a2332);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px; padding: 1.75rem; text-align: center;
+    }
+    .anm-haken { font-size: 3rem; line-height: 1; margin-bottom: .75rem; }
+    .anm-link {
+        display: block; word-break: break-all; margin: 1rem 0 0;
+        padding: .75rem; background: rgba(0,0,0,.3); border-radius: 8px;
+        font-size: .9rem; color: var(--color-primary, #22c55e);
+    }
+    .anm-btn {
+        display: inline-block; margin-top: 1.25rem; padding: .75rem 1.25rem;
+        background: var(--color-primary, #22c55e); color: #06240f;
+        border-radius: 10px; font-weight: 700; text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="anm-wrap">
+    <div class="anm-card">
+        <div class="anm-haken">&#9989;</div>
+        <h1 style="font-size:1.3rem;margin:0 0 .5rem">Anmeldung ist angekommen</h1>
+
+        {% if anmeldung %}
+        <p style="opacity:.85;margin:0">
+            Danke, <strong>{{ anmeldung.club_name }}</strong>! Der Veranstalter
+            prüft die Anmeldung für <strong>{{ tournament.name }}</strong> und
+            meldet sich bei
+            <strong>{{ anmeldung.contact_email }}</strong>.
+        </p>
+
+        {% if anmeldung.status == 'warteliste' %}
+        <p style="margin:1rem 0 0;color:#fbbf24">
+            Das Turnier ist aktuell ausgebucht – die Anmeldung steht auf der
+            Warteliste.
+        </p>
+        {% endif %}
+
+        <p style="margin:1.25rem 0 0;opacity:.85">
+            Mit diesem Link kannst du den Status jederzeit nachsehen.
+            Am besten jetzt speichern:
+        </p>
+        <a class="anm-link"
+           href="{{ url_for('anmeldung.anmeldestatus_seite', slug=tournament.slug, token=anmeldung.token, _external=True) }}">
+            {{ url_for('anmeldung.anmeldestatus_seite', slug=tournament.slug, token=anmeldung.token, _external=True) }}
+        </a>
+        <a class="anm-btn"
+           href="{{ url_for('anmeldung.anmeldestatus_seite', slug=tournament.slug, token=anmeldung.token) }}">
+            Status ansehen
+        </a>
+        {% else %}
+        <p style="opacity:.85;margin:0">
+            Danke! Der Veranstalter meldet sich.
+        </p>
+        {% endif %}
+
+        <div style="margin-top:1.5rem">
+            <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}"
+               style="opacity:.7;font-size:.9rem">&larr; Zurück zum Turnier</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

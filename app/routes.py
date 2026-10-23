@@ -6,12 +6,26 @@ from app.models import (
 main_bp = Blueprint("main", __name__)
 
 
+def _tournaments_mit_offener_anmeldung(tournaments):
+    """Turniere, fuer die Vereine sich gerade anmelden koennen."""
+    from app.anmeldung import anmeldestatus
+    offene = []
+    for t in tournaments:
+        offen, _grund, infos = anmeldestatus(t.id)
+        if offen:
+            offene.append({"tournament": t, "infos": infos})
+    return offene
+
+
 @main_bp.route("/")
 def landing():
     tournaments = Tournament.query.filter_by(is_active=True).order_by(
         Tournament.display_order, Tournament.name
     ).all()
-    return render_template("landing.html", tournaments=tournaments)
+    return render_template(
+        "landing.html", tournaments=tournaments,
+        anmeldungen_offen=_tournaments_mit_offener_anmeldung(tournaments),
+    )
 
 
 @main_bp.route("/t/<slug>/")

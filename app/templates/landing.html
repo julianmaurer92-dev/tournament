@@ -30,6 +30,19 @@
             <span class="tournament-card-link">Live-Ansicht &rarr;</span>
         </a>
         {% endfor %}
+        {% for eintrag in anmeldungen_offen %}
+        <a href="{{ url_for('anmeldung.anmeldeformular', slug=eintrag.tournament.slug) }}"
+           class="tournament-card card-anmeldung">
+            <div class="tournament-card-icon">&#128221;</div>
+            <h2 class="tournament-card-name">Anmeldung: {{ eintrag.tournament.name }}</h2>
+            <p class="tournament-card-desc">
+                Mannschaft anmelden
+                {%- if eintrag.infos.deadline %} &middot; bis {{ eintrag.infos.deadline.strftime('%d.%m.%Y') }}{% endif %}
+                {%- if eintrag.infos.frei is not none %} &middot; {{ eintrag.infos.frei }} Plätze frei{% endif %}
+            </p>
+            <span class="tournament-card-link">Zum Formular &rarr;</span>
+        </a>
+        {% endfor %}
         <a href="{{ url_for('main.speisekarte') }}" class="tournament-card card-menu">
             <div class="tournament-card-icon">&#127860;</div>
             <h2 class="tournament-card-name">Speisen & Getraenke</h2>

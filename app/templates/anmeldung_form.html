@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Anmeldung – {{ tournament.name }}{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block head %}
+<style>
+    .anm-wrap { max-width: 720px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+    .anm-card {
+        background: var(--color-secondary, #1a2332);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px; padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .anm-card h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+    .anm-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-bottom: 1rem; }
+    .anm-meta div { font-size: .9rem; opacity: .85; }
+    .anm-meta strong { display: block; font-size: 1.05rem; opacity: 1; }
+    .anm-field { margin-bottom: 1.1rem; }
+    .anm-field label { display: block; font-weight: 600; margin-bottom: .35rem; font-size: .95rem; }
+    .anm-field .pflicht { color: var(--color-primary, #22c55e); }
+    .anm-field input, .anm-field textarea {
+        width: 100%; padding: .7rem .8rem; font: inherit; color: inherit;
+        background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.15);
+        border-radius: 8px; box-sizing: border-box;
+    }
+    .anm-field input:focus, .anm-field textarea:focus {
+        outline: none; border-color: var(--color-primary, #22c55e);
+    }
+    .anm-field .hinweis { font-size: .82rem; opacity: .65; margin-top: .3rem; }
+    .anm-field.hat-fehler input, .anm-field.hat-fehler textarea { border-color: #ef4444; }
+    .anm-fehler { color: #fca5a5; font-size: .85rem; margin-top: .3rem; }
+    .anm-submit {
+        width: 100%; padding: .9rem; font: inherit; font-weight: 700;
+        background: var(--color-primary, #22c55e); color: #06240f;
+        border: 0; border-radius: 10px; cursor: pointer;
+    }
+    .anm-submit:hover { filter: brightness(1.08); }
+    .anm-zu { border-left: 4px solid #f59e0b; }
+    .anm-info { white-space: pre-wrap; }
+    /* Honeypot: fuer Menschen unsichtbar, fuer Bots verlockend */
+    .anm-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
+        <div class="header-logo">&#128221;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Mannschaft anmelden</h1>
+            <p>{{ tournament.name }}</p>
+        </div>
+    </div>
+</header>
+
+<div class="anm-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="anm-card" style="border-left:4px solid {% if category == 'error' %}#ef4444{% else %}#22c55e{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="anm-card">
+        <div class="anm-meta">
+            {% if tournament.event_date %}
+            <div>Turniertag<strong>{{ tournament.event_date.strftime('%d.%m.%Y') }}{% if tournament.event_time %}, {{ tournament.event_time }} Uhr{% endif %}</strong></div>
+            {% endif %}
+            {% if infos.deadline %}
+            <div>Anmeldeschluss<strong>{{ infos.deadline.strftime('%d.%m.%Y') }}</strong></div>
+            {% endif %}
+            {% if infos.fee %}
+            <div>Startgebühr<strong>{{ infos.fee }} €</strong></div>
+            {% endif %}
+            {% if infos.max_teams is not none %}
+            <div>Plätze<strong>{{ infos.frei }} von {{ infos.max_teams }} frei</strong></div>
+            {% endif %}
+        </div>
+        {% if tournament.description %}
+        <p style="opacity:.85;margin:0">{{ tournament.description }}</p>
+        {% endif %}
+        {% if infos.info %}
+        <p class="anm-info" style="margin:.75rem 0 0">{{ infos.info }}</p>
+        {% endif %}
+    </div>
+
+    {% if grund %}
+    <div class="anm-card anm-zu">
+        <h2>Hinweis</h2>
+        <p style="margin:0">{{ grund }}</p>
+    </div>
+    {% endif %}
+
+    {% if offen or site_settings.registration_open == '1' %}
+    <form method="post" class="anm-card" novalidate>
+        <h2>{% if offen %}Anmeldung{% else %}Anmeldung für die Warteliste{% endif %}</h2>
+
+        <div class="anm-hp" aria-hidden="true">
+            <label for="website">Website (bitte leer lassen)</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="anm-field {% if fehler.club_name %}hat-fehler{% endif %}">
+            <label for="club_name">Verein <span class="pflicht">*</span></label>
+            <input type="text" id="club_name" name="club_name" required
+                   value="{{ daten.club_name or '' }}" autocomplete="organization">
+            {% if fehler.club_name %}<div class="anm-fehler">{{ fehler.club_name }}</div>{% endif %}
+        </div>
+
+        <div class="anm-field {% if fehler.team_name %}hat-fehler{% endif %}">
+            <label for="team_name">Teamname im Spielplan</label>
+            <input type="text" id="team_name" name="team_name"
+                   value="{{ daten.team_name or '' }}"
+                   placeholder="z. B. SV Winkel II">
+            <div class="hinweis">Leer lassen, wenn der Vereinsname passt.</div>
+        </div>
+
+        <div class="anm-field {% if fehler.contact_name %}hat-fehler{% endif %}">
+            <label for="contact_name">Ansprechpartner <span class="pflicht">*</span></label>
+            <input type="text" id="contact_name" name="contact_name" required
+                   value="{{ daten.contact_name or '' }}" autocomplete="name">
+            {% if fehler.contact_name %}<div class="anm-fehler">{{ fehler.contact_name }}</div>{% endif %}
+        </div>
+
+        <div class="anm-field {% if fehler.contact_email %}hat-fehler{% endif %}">
+            <label for="contact_email">E-Mail <span class="pflicht">*</span></label>
+            <input type="email" id="contact_email" name="contact_email" required
+                   value="{{ daten.contact_email or '' }}" autocomplete="email">
+            <div class="hinweis">Hierüber bekommst du den Link zu deiner Anmeldung.</div>
+            {% if fehler.contact_email %}<div class="anm-fehler">{{ fehler.contact_email }}</div>{% endif %}
+        </div>
+
+        <div class="anm-field {% if fehler.contact_phone %}hat-fehler{% endif %}">
+            <label for="contact_phone">Telefon</label>
+            <input type="tel" id="contact_phone" name="contact_phone"
+                   value="{{ daten.contact_phone or '' }}" autocomplete="tel">
+            <div class="hinweis">Für kurzfristige Rückfragen am Turniertag.</div>
+        </div>
+
+        <div class="anm-field {% if fehler.player_count %}hat-fehler{% endif %}">
+            <label for="player_count">Anzahl Spieler</label>
+            <input type="number" id="player_count" name="player_count" min="1" max="99"
+                   value="{{ daten.player_count or '' }}">
+            {% if fehler.player_count %}<div class="anm-fehler">{{ fehler.player_count }}</div>{% endif %}
+        </div>
+
+        <div class="anm-field {% if fehler.notes %}hat-fehler{% endif %}">
+            <label for="notes">Anmerkungen</label>
+            <textarea id="notes" name="notes" rows="4"
+                      placeholder="z. B. Ankunftszeit, Allergien beim Essen, Wunsch nach einer Kabine">{{ daten.notes or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="anm-submit">
+            {% if offen %}Mannschaft anmelden{% else %}Auf die Warteliste setzen{% endif %}
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

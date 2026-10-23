@@ -1811,3 +1811,8 @@ body {
     --live-red:       #ef4444;
     --live-red-glow:  rgba(239,68,68,0.2);
 }
+
+/* Anmeldekarte auf der Startseite (Nachtschicht 2026-10-24) */
+.card-anmeldung .tournament-card-icon { color: #3b82f6; }
+.card-anmeldung { border-color: rgba(59, 130, 246, 0.3); }
+.card-anmeldung:hover { border-color: #3b82f6; }

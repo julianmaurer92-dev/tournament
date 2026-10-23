@@ -1,0 +1,220 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Anmeldungen – {{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+
+{# ── Kopfzeile mit Zahlen ───────────────────────────────── #}
+<div class="row g-2 mb-3">
+    {% set kacheln = [
+        ('offen', 'Zu entscheiden', 'blue'),
+        ('bestaetigt', 'Bestätigt', 'green'),
+        ('warteliste', 'Warteliste', 'yellow'),
+        ('abgelehnt', 'Abgelehnt', 'gray')
+    ] %}
+    {% for key, titel, farbe in kacheln %}
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('anmeldung_admin.liste', slug=tournament.slug, status=key) }}"
+           class="card card-sm text-decoration-none {% if status_filter == key %}border-primary{% endif %}">
+            <div class="card-body text-center py-3">
+                <div class="h1 mb-0">{{ zahlen[key] }}</div>
+                <div class="text-muted small">{{ titel }}</div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+{# ── Einstellungen ──────────────────────────────────────── #}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">Anmeldung konfigurieren</h3>
+        {% if anmeldung_offen %}
+        <span class="badge badge-green-lt ms-2">geöffnet</span>
+        {% else %}
+        <span class="badge badge-gray-lt ms-2">geschlossen</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('anmeldung_admin.einstellungen_speichern', slug=tournament.slug) }}">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Anmeldung</label>
+                    <select class="form-select" name="registration_open">
+                        <option value="1" {% if einstellungen.registration_open == '1' %}selected{% endif %}>geöffnet</option>
+                        <option value="0" {% if einstellungen.registration_open != '1' %}selected{% endif %}>geschlossen</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Anmeldeschluss</label>
+                    <input type="date" class="form-control" name="registration_deadline"
+                           value="{{ einstellungen.registration_deadline or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Max. Mannschaften</label>
+                    <input type="number" min="0" class="form-control" name="registration_max_teams"
+                           placeholder="unbegrenzt"
+                           value="{{ einstellungen.registration_max_teams or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Startgebühr (€)</label>
+                    <input type="text" class="form-control" name="registration_fee"
+                           placeholder="z. B. 25,00"
+                           value="{{ einstellungen.registration_fee or '' }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label small text-muted">Infotext über dem Formular</label>
+                    <textarea class="form-control" name="registration_info" rows="2"
+                              placeholder="z. B. Hinweise zur Anreise, Kabinen, Zahlungsmodalitäten">{{ einstellungen.registration_info or '' }}</textarea>
+                </div>
+                <div class="col-12 d-flex align-items-center gap-2 flex-wrap mt-2">
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                    <a href="{{ url_for('anmeldung.anmeldeformular', slug=tournament.slug) }}"
+                       target="_blank" class="btn btn-outline">Formular ansehen &#8599;</a>
+                    <a href="{{ url_for('anmeldung_admin.export_csv', slug=tournament.slug) }}"
+                       class="btn btn-outline">CSV herunterladen</a>
+                    <span class="text-muted small ms-auto">
+                        Link für Vereine:
+                        <code>{{ url_for('anmeldung.anmeldeformular', slug=tournament.slug, _external=True) }}</code>
+                    </span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Liste ──────────────────────────────────────────────── #}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            {% if status_filter %}Anmeldungen: {{ status_filter }}{% else %}Alle Anmeldungen{% endif %}
+        </h3>
+        <span class="ms-2 text-muted small">{{ anmeldungen | length }} angezeigt</span>
+        {% if status_filter %}
+        <a href="{{ url_for('anmeldung_admin.liste', slug=tournament.slug) }}"
+           class="btn btn-sm ms-auto">Filter aufheben</a>
+        {% endif %}
+    </div>
+
+    {% if not anmeldungen %}
+    <div class="card-body text-center text-muted py-5">
+        {% if status_filter %}
+        Keine Anmeldungen mit diesem Status.
+        {% else %}
+        Noch keine Anmeldungen. Teile den Link oben mit den Vereinen.
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>Verein / Team</th>
+                    <th>Kontakt</th>
+                    <th>Eingegangen</th>
+                    <th>Status</th>
+                    <th class="w-1">Aktion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in anmeldungen %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold">{{ a.club_name }}</div>
+                        {% if a.team_name and a.team_name != a.club_name %}
+                        <div class="text-muted small">spielt als: {{ a.team_name }}</div>
+                        {% endif %}
+                        {% if a.player_count %}
+                        <div class="text-muted small">{{ a.player_count }} Spieler</div>
+                        {% endif %}
+                        {% if a.notes %}
+                        <div class="text-muted small mt-1" style="max-width:28rem">
+                            &#128172; {{ a.notes }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ a.contact_name }}</div>
+                        <div class="small"><a href="mailto:{{ a.contact_email }}">{{ a.contact_email }}</a></div>
+                        {% if a.contact_phone %}
+                        <div class="small"><a href="tel:{{ a.contact_phone }}">{{ a.contact_phone }}</a></div>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">
+                        {{ a.created_at.strftime('%d.%m.%Y') if a.created_at else '' }}<br>
+                        {{ a.created_at.strftime('%H:%M') if a.created_at else '' }}
+                    </td>
+                    <td>
+                        {% if a.status == 'bestaetigt' %}
+                        <span class="badge badge-green-lt">bestätigt</span>
+                        {% elif a.status == 'warteliste' %}
+                        <span class="badge badge-yellow-lt">Warteliste</span>
+                        {% elif a.status == 'abgelehnt' %}
+                        <span class="badge badge-gray-lt">abgelehnt</span>
+                        {% else %}
+                        <span class="badge badge-blue-lt">offen</span>
+                        {% endif %}
+                        {% if a.decision_note %}
+                        <div class="text-muted small mt-1">{{ a.decision_note }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.status == 'bestaetigt' %}
+                        <div class="btn-list flex-nowrap">
+                            {% if a.team %}
+                            <span class="text-muted small">Team: {{ a.team.name }}</span>
+                            {% endif %}
+                            <form method="POST" style="display:inline"
+                                  action="{{ url_for('anmeldung_admin.zuruecksetzen', slug=tournament.slug, aid=a.id) }}">
+                                <button class="btn btn-sm" type="submit">Zurückholen</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <form method="POST" class="d-flex gap-1 flex-wrap align-items-center"
+                              action="{{ url_for('anmeldung_admin.bestaetigen', slug=tournament.slug, aid=a.id) }}">
+                            <input type="text" class="form-control form-control-sm" name="team_name"
+                                   style="width:11rem" value="{{ a.anzeige_teamname }}"
+                                   aria-label="Teamname">
+                            <select class="form-select form-select-sm" name="group_id" style="width:9rem">
+                                <option value="">ohne Gruppe</option>
+                                {% for gr in gruppen %}
+                                <option value="{{ gr.id }}">{{ gr.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-primary" type="submit">Bestätigen</button>
+                        </form>
+                        <div class="btn-list mt-1 flex-nowrap">
+                            {% if a.status != 'warteliste' %}
+                            <form method="POST" style="display:inline"
+                                  action="{{ url_for('anmeldung_admin.warteliste', slug=tournament.slug, aid=a.id) }}">
+                                <button class="btn btn-sm" type="submit">Warteliste</button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" style="display:inline"
+                                  action="{{ url_for('anmeldung_admin.ablehnen', slug=tournament.slug, aid=a.id) }}"
+                                  onsubmit="return confirm('Anmeldung von {{ a.club_name }} ablehnen?')">
+                                <button class="btn btn-sm btn-danger" type="submit">Ablehnen</button>
+                            </form>
+                            {% if current_user.role == 'superadmin' %}
+                            <form method="POST" style="display:inline"
+                                  action="{{ url_for('anmeldung_admin.loeschen', slug=tournament.slug, aid=a.id) }}"
+                                  onsubmit="return confirm('Anmeldung endgültig löschen?')">
+                                <button class="btn btn-sm btn-outline" type="submit">Löschen</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

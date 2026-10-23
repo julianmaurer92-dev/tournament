@@ -124,3 +124,10 @@ class Anmeldebremse:
 
 
 anmeldebremse = Anmeldebremse()
+
+# Bremse fuer das oeffentliche Vereins-Anmeldeformular (je IP).
+# Grosszuegiger bemessen: Ein Verein meldet vielleicht drei Mannschaften an,
+# und mehrere Vereine koennen hinter derselben IP sitzen (Vereinsheim-WLAN).
+formularbremse = Anmeldebremse(
+    max_versuche=12, sperre_sekunden=600, fenster_sekunden=3600,
+)

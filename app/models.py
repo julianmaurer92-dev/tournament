@@ -1,4 +1,5 @@
 import re as _re
+import secrets
 import time
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -134,6 +135,12 @@ SETTINGS_DEFAULTS = {
     "num_fields": "1",
     "org_logo_url": "",
     "tournament_rules": "",
+    # Vereinsanmeldung (seit Nachtschicht 2026-10-24)
+    "registration_open": "0",        # "1" = oeffentliches Formular aktiv
+    "registration_deadline": "",     # ISO-Datum, "" = keine Frist
+    "registration_max_teams": "",    # Zahl als Text, "" = unbegrenzt
+    "registration_fee": "",          # z. B. "25,00"
+    "registration_info": "",         # Freitext ueber dem Formular
 }
 
 
@@ -253,6 +260,120 @@ class TeamPayment(db.Model):
     receipt_number = db.Column(db.String(50), nullable=True)
 
     team = db.relationship("Team", backref=db.backref("payment", uselist=False))
+
+
+# ──────────────────────────────────────
+# Vereinsanmeldung
+# ──────────────────────────────────────
+
+ANMELDUNG_OFFEN = "offen"
+ANMELDUNG_BESTAETIGT = "bestaetigt"
+ANMELDUNG_ABGELEHNT = "abgelehnt"
+ANMELDUNG_WARTELISTE = "warteliste"
+
+ANMELDUNG_STATUS = (
+    ANMELDUNG_OFFEN, ANMELDUNG_BESTAETIGT,
+    ANMELDUNG_ABGELEHNT, ANMELDUNG_WARTELISTE,
+)
+
+ANMELDUNG_STATUS_LABEL = {
+    ANMELDUNG_OFFEN: "offen",
+    ANMELDUNG_BESTAETIGT: "bestätigt",
+    ANMELDUNG_ABGELEHNT: "abgelehnt",
+    ANMELDUNG_WARTELISTE: "Warteliste",
+}
+
+
+def neues_token():
+    """Unraetselbares Token fuer die Statusseite einer Anmeldung."""
+    return secrets.token_urlsafe(16)
+
+
+class Registration(db.Model):
+    """Anmeldung eines Vereins fuer ein Turnier.
+
+    Bewusst getrennt von Team: Eine Anmeldung ist ein Antrag mit
+    Kontaktdaten und Historie. Erst beim Bestaetigen entsteht daraus ein
+    Team, das im Spielplan auftaucht. So bleiben abgelehnte Anmeldungen und
+    die Warteliste nachvollziehbar, ohne den Spielplan zu verschmutzen.
+    """
+    __tablename__ = "registration"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournament.id"),
+                              nullable=False, index=True)
+
+    club_name = db.Column(db.String(150), nullable=False)
+    team_name = db.Column(db.String(150), default="")
+    contact_name = db.Column(db.String(150), nullable=False)
+    contact_email = db.Column(db.String(254), nullable=False)
+    contact_phone = db.Column(db.String(60), default="")
+    player_count = db.Column(db.Integer, nullable=True)
+    notes = db.Column(db.Text, default="")
+
+    status = db.Column(db.String(20), default=ANMELDUNG_OFFEN, nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False,
+                      default=neues_token)
+
+    created_at = db.Column(db.DateTime,
+                           default=lambda: datetime.now(timezone.utc))
+    decided_at = db.Column(db.DateTime, nullable=True)
+    decided_by = db.Column(db.Integer, db.ForeignKey("admin.id"), nullable=True)
+    decision_note = db.Column(db.Text, default="")
+
+    # Gesetzt, sobald aus der Anmeldung ein Team geworden ist
+    team_id = db.Column(db.Integer, db.ForeignKey("team.id"), nullable=True)
+
+    tournament = db.relationship("Tournament", backref=db.backref(
+        "registrations", lazy="dynamic", cascade="all, delete-orphan"))
+    team = db.relationship("Team", foreign_keys=[team_id])
+    entscheider = db.relationship("Admin", foreign_keys=[decided_by])
+
+    @property
+    def anzeige_teamname(self):
+        """Teamname fuer den Spielplan – faellt auf den Vereinsnamen zurueck."""
+        return (self.team_name or "").strip() or self.club_name
+
+    @property
+    def status_label(self):
+        return ANMELDUNG_STATUS_LABEL.get(self.status, self.status)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tournament_id": self.tournament_id,
+            "club_name": self.club_name,
+            "team_name": self.team_name or "",
+            "anzeige_teamname": self.anzeige_teamname,
+            "contact_name": self.contact_name,
+            "contact_email": self.contact_email,
+            "contact_phone": self.contact_phone or "",
+            "player_count": self.player_count,
+            "notes": self.notes or "",
+            "status": self.status,
+            "status_label": self.status_label,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "decided_at": self.decided_at.isoformat() if self.decided_at else None,
+            "decision_note": self.decision_note or "",
+            "team_id": self.team_id,
+        }
+
+
+def anmeldungen_zaehlen(tournament_id):
+    """Anzahl Anmeldungen je Status fuer ein Turnier."""
+    ergebnis = {status: 0 for status in ANMELDUNG_STATUS}
+    rows = (
+        db.session.query(Registration.status, db.func.count(Registration.id))
+        .filter(Registration.tournament_id == tournament_id)
+        .group_by(Registration.status)
+        .all()
+    )
+    for status, anzahl in rows:
+        ergebnis[status] = anzahl
+    ergebnis["gesamt"] = sum(
+        anzahl for status, anzahl in ergebnis.items() if status in ANMELDUNG_STATUS
+    )
+    return ergebnis
 
 
 # ──────────────────────────────────────

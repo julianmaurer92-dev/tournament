@@ -232,6 +232,13 @@
     <div class="adm-card">
         <div class="adm-card-hd">&#128188; Organisation</div>
         <div class="adm-card-bd">
+            <a href="{{ url_for('anmeldung_admin.liste', slug=tournament.slug) }}" class="link-card">
+                <span class="link-card-icon">&#128221;</span>
+                <div>
+                    <div>Vereinsanmeldungen</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Anmeldeformular, Freigabe, Warteliste</div>
+                </div>
+            </a>
             <a href="{{ url_for('admin.organisation', slug=tournament.slug) }}" class="link-card">
                 <span class="link-card-icon">&#128184;</span>
                 <div>

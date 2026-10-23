@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Status der Anmeldung – {{ tournament.name }}{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block head %}
+<style>
+    .anm-wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    .anm-card {
+        background: var(--color-secondary, #1a2332);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px; padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .anm-status {
+        display: inline-block; padding: .4rem .9rem; border-radius: 999px;
+        font-weight: 700; font-size: .9rem;
+    }
+    .st-offen       { background: rgba(59,130,246,.2);  color: #93c5fd; }
+    .st-bestaetigt  { background: rgba(34,197,94,.2);   color: #86efac; }
+    .st-abgelehnt   { background: rgba(239,68,68,.2);   color: #fca5a5; }
+    .st-warteliste  { background: rgba(245,158,11,.2);  color: #fcd34d; }
+    .anm-zeile { display: flex; justify-content: space-between; gap: 1rem;
+                 padding: .5rem 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .anm-zeile:last-child { border-bottom: 0; }
+    .anm-zeile span:first-child { opacity: .65; }
+    .anm-zeile span:last-child { text-align: right; font-weight: 600; }
+    .anm-weg {
+        background: none; border: 1px solid rgba(239,68,68,.5); color: #fca5a5;
+        padding: .6rem 1rem; border-radius: 8px; font: inherit; cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
+        <div class="header-logo">&#128221;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Deine Anmeldung</h1>
+            <p>{{ tournament.name }}</p>
+        </div>
+    </div>
+</header>
+
+<div class="anm-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="anm-card" style="border-left:4px solid {% if category == 'error' %}#ef4444{% else %}#22c55e{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="anm-card">
+        <div style="margin-bottom:1rem">
+            <span class="anm-status st-{{ anmeldung.status }}">{{ anmeldung.status_label }}</span>
+        </div>
+
+        {% if anmeldung.status == 'bestaetigt' %}
+        <p style="margin:0 0 1rem">
+            Die Mannschaft ist dabei und steht als
+            <strong>{{ anmeldung.team.name if anmeldung.team else anmeldung.anzeige_teamname }}</strong>
+            im Spielplan.
+        </p>
+        {% elif anmeldung.status == 'warteliste' %}
+        <p style="margin:0 0 1rem">
+            Die Anmeldung liegt auf der Warteliste. Wird ein Platz frei,
+            meldet sich der Veranstalter.
+        </p>
+        {% elif anmeldung.status == 'abgelehnt' %}
+        <p style="margin:0 0 1rem">
+            Diese Anmeldung ist nicht (mehr) aktiv.
+            {% if anmeldung.decision_note %}<br><em>{{ anmeldung.decision_note }}</em>{% endif %}
+        </p>
+        {% else %}
+        <p style="margin:0 0 1rem">
+            Die Anmeldung ist eingegangen und wird vom Veranstalter geprüft.
+        </p>
+        {% endif %}
+
+        <div class="anm-zeile"><span>Verein</span><span>{{ anmeldung.club_name }}</span></div>
+        <div class="anm-zeile"><span>Teamname</span><span>{{ anmeldung.anzeige_teamname }}</span></div>
+        <div class="anm-zeile"><span>Ansprechpartner</span><span>{{ anmeldung.contact_name }}</span></div>
+        <div class="anm-zeile"><span>E-Mail</span><span>{{ anmeldung.contact_email }}</span></div>
+        {% if anmeldung.contact_phone %}
+        <div class="anm-zeile"><span>Telefon</span><span>{{ anmeldung.contact_phone }}</span></div>
+        {% endif %}
+        {% if anmeldung.player_count %}
+        <div class="anm-zeile"><span>Spieler</span><span>{{ anmeldung.player_count }}</span></div>
+        {% endif %}
+        {% if anmeldung.notes %}
+        <div class="anm-zeile"><span>Anmerkungen</span><span>{{ anmeldung.notes }}</span></div>
+        {% endif %}
+        {% if anmeldung.created_at %}
+        <div class="anm-zeile"><span>Eingegangen</span><span>{{ anmeldung.created_at.strftime('%d.%m.%Y, %H:%M') }}</span></div>
+        {% endif %}
+    </div>
+
+    {% if anmeldung.status in ('offen', 'warteliste') %}
+    <div class="anm-card">
+        <p style="margin:0 0 .75rem;opacity:.8;font-size:.9rem">
+            Doch keine Mannschaft am Start? Dann bitte hier zurückziehen,
+            damit der Platz an einen anderen Verein gehen kann.
+        </p>
+        <form method="post"
+              action="{{ url_for('anmeldung.anmeldung_zurueckziehen', slug=tournament.slug, token=anmeldung.token) }}"
+              onsubmit="return confirm('Anmeldung wirklich zurückziehen?')">
+            <button type="submit" class="anm-weg">Anmeldung zurückziehen</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

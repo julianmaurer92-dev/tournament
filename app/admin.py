@@ -6,7 +6,6 @@ import random
 import csv
 import io
 from datetime import datetime, timezone
-from functools import wraps
 from itertools import combinations
 from flask import (
     Blueprint, render_template, request, redirect,
@@ -21,6 +20,7 @@ from app.models import (
     calculate_overall_rankings, get_seeded_teams_cross_group,
     calculate_standings,
 )
+from app.auth import editor_required, superadmin_required, tournament_required
 from app.security import anmeldebremse
 from app.socket_events import broadcast_state
 
@@ -75,48 +75,8 @@ SUPPORTED_IMPORT_VERSIONS = ("1", "2")
 ROUND_LABELS = {1: "Finale", 2: "Halbfinale", 3: "Viertelfinale", 4: "Achtelfinale"}
 
 
-# ──────────────────────────────────────
-# Role-based access decorators
-# ──────────────────────────────────────
-
-def superadmin_required(f):
-    """Only superadmins may access this route."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != "superadmin":
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated
-
-
-def editor_required(f):
-    """Editors and superadmins may access this route (not viewers)."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role == "viewer":
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated
-
-
-# ──────────────────────────────────────
-# Tournament context decorator
-# ──────────────────────────────────────
-
-def tournament_required(f):
-    """Load tournament from URL slug into g.tournament and check access."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        slug = kwargs.pop("slug")
-        tournament = Tournament.query.filter_by(slug=slug).first()
-        if not tournament:
-            abort(404)
-        if not current_user.has_tournament_access(tournament.id):
-            abort(403)
-        g.tournament = tournament
-        g.tid = tournament.id
-        return f(*args, **kwargs)
-    return decorated
+# Zugriffs-Decorators liegen in app/auth.py (siehe Import oben) – sie werden
+# auch von app/anmeldung.py gebraucht.
 
 
 # ──────────────────────────────────────
