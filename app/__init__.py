@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from flask import Flask, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -9,6 +10,13 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 socketio = SocketIO()
 oauth = OAuth()
+
+
+def _als_bool(wert, default=False):
+    """Umgebungsvariable als Wahrheitswert lesen ("1", "true", "ja", ...)."""
+    if wert is None or wert == "":
+        return default
+    return str(wert).strip().lower() in ("1", "true", "yes", "ja", "on")
 
 
 def _normalize_db_uri(uri):
@@ -50,6 +58,26 @@ def create_app(config_overrides=None):
     }
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin123")
 
+    # Dev-/Test-Modus: lockert nur die HTTPS-Erwartung, nichts anderes
+    umgebung = os.environ.get("CUPPLAN_ENV", "").lower()
+    app.config["CUPPLAN_ENV"] = umgebung
+    app.config["CUPPLAN_DEV_MODE"] = umgebung in ("dev", "test", "development")
+
+    # Sitzungs-Cookie absichern.
+    # SameSite=Lax ist hier die wirksamste Einzelmassnahme: Browser senden das
+    # Cookie dann nicht bei POST-Anfragen von fremden Seiten mit. Damit sind
+    # die Admin-Formulare gegen Cross-Site-Request-Forgery geschuetzt, obwohl
+    # die App (noch) keine CSRF-Token verwendet – siehe ARCHITEKTUR.md.
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = _als_bool(
+        os.environ.get("COOKIE_SECURE"), default=not app.config["CUPPLAN_DEV_MODE"]
+    )
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+    app.config["REMEMBER_COOKIE_HTTPONLY"] = True
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
+    app.config["REMEMBER_COOKIE_SECURE"] = app.config["SESSION_COOKIE_SECURE"]
+
     if config_overrides:
         app.config.update(config_overrides)
 
@@ -65,6 +93,9 @@ def create_app(config_overrides=None):
         for e in os.environ.get("ADMIN_EMAILS", "").split(",")
         if e.strip()
     ]
+
+    from app.security import pruefe_konfiguration
+    app.config["SICHERHEITSWARNUNGEN"] = pruefe_konfiguration(app)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -101,6 +132,14 @@ def create_app(config_overrides=None):
             "site_settings": dict(SETTINGS_DEFAULTS),
             "current_tournament": None,
         }
+
+    @app.context_processor
+    def inject_sicherheitswarnungen():
+        """Warnungen nur fuer angemeldete Superadmins einblenden."""
+        from flask_login import current_user
+        if current_user.is_authenticated and current_user.role == "superadmin":
+            return {"sicherheitswarnungen": app.config["SICHERHEITSWARNUNGEN"]}
+        return {"sicherheitswarnungen": []}
 
     from app.routes import main_bp
     from app.admin import admin_bp

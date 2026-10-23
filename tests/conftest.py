@@ -8,6 +8,7 @@ import os
 import sys
 
 import pytest
+from flask import g
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,7 +30,7 @@ def _application(tmp_path_factory):
     app-Fixture ueber drop_all/create_all.
     """
     db_file = tmp_path_factory.mktemp("db") / "test.sqlite"
-    return create_app({
+    application = create_app({
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_file}",
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
@@ -39,16 +40,40 @@ def _application(tmp_path_factory):
         "PASSWORD_HASH_METHOD": "pbkdf2:sha256:10",
     })
 
+    @application.before_request
+    def _login_cache_leeren():
+        """Flask-Login-Cache pro Anfrage verwerfen.
+
+        Die app-Fixture haelt waehrend des Tests einen App-Kontext offen,
+        damit Tests direkt auf die Modelle zugreifen koennen. Flask legt
+        dann fuer Anfragen KEINEN neuen App-Kontext an – `g` wird also
+        zwischen allen Anfragen eines Tests geteilt, inklusive des von
+        Flask-Login dort abgelegten `_login_user`. Ohne dieses Leeren
+        wuerde ein Test, der erst als Superadmin und dann als Viewer
+        anfragt, beide Male den Superadmin sehen.
+        """
+        g.pop("_login_user", None)
+
+    return application
+
 
 @pytest.fixture()
 def app(_application):
-    """Frische, leere Datenbank pro Test – inklusive Standard-Superadmin."""
+    """Frische, leere Datenbank pro Test – inklusive Standard-Superadmin.
+
+    Die App selbst wird wiederverwendet (teuer), ihre Konfiguration aber vor
+    jedem Test zurueckgesetzt. Sonst wirkt ein Test, der z. B. ADMIN_PASSWORD
+    umstellt, in allen folgenden Tests weiter.
+    """
+    config_sicherung = dict(_application.config)
     with _application.app_context():
         _db.drop_all()
         _db.create_all()
         _ensure_admin(_application)
         yield _application
         _db.session.remove()
+    _application.config.clear()
+    _application.config.update(config_sicherung)
 
 
 @pytest.fixture()
@@ -68,7 +93,10 @@ def admin_client(app):
     resp = c.post("/admin/login", data={
         "username": "admin", "password": ADMIN_PW,
     }, follow_redirects=False)
-    assert resp.status_code in (302, 200), "Login fehlgeschlagen"
+    assert resp.status_code == 302, (
+        "Login als Superadmin fehlgeschlagen – vermutlich hat ein anderer "
+        "Test ADMIN_PASSWORD veraendert."
+    )
     return c
 
 

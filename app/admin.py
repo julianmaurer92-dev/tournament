@@ -21,6 +21,7 @@ from app.models import (
     calculate_overall_rankings, get_seeded_teams_cross_group,
     calculate_standings,
 )
+from app.security import anmeldebremse
 from app.socket_events import broadcast_state
 
 admin_bp = Blueprint("admin", __name__, template_folder="templates")
@@ -122,6 +123,13 @@ def tournament_required(f):
 # Auth (global, no tournament context)
 # ──────────────────────────────────────
 
+def _bremsschluessel(username):
+    """Schluessel fuer die Anmeldebremse: Benutzername + Absender-IP."""
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+    ip = ip.split(",")[0].strip()
+    return f"{username.lower()}|{ip}"
+
+
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
@@ -129,11 +137,31 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
+        schluessel = _bremsschluessel(username)
+
+        rest = anmeldebremse.restsperre(schluessel)
+        if rest:
+            minuten = max(1, rest // 60)
+            flash(
+                f"Zu viele Fehlversuche. Bitte in {minuten} Minute(n) "
+                "erneut versuchen.", "error",
+            )
+            return render_template("admin/login.html"), 429
+
         user = Admin.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            anmeldebremse.erfolg(schluessel)
             login_user(user)
             return redirect(url_for("admin.tournament_list"))
-        flash("Ungueltige Anmeldedaten.", "error")
+
+        gesperrt = anmeldebremse.fehlversuch(schluessel)
+        if gesperrt:
+            flash(
+                f"Zu viele Fehlversuche. Anmeldung fuer "
+                f"{gesperrt // 60} Minuten gesperrt.", "error",
+            )
+        else:
+            flash("Ungueltige Anmeldedaten.", "error")
     return render_template("admin/login.html")
 
 

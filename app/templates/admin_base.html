@@ -269,6 +269,26 @@
         <div class="page-wrapper">
             <div class="page-body">
                 <div class="container-xl" style="padding-top:1.5rem;padding-bottom:3rem">
+                    {% if sicherheitswarnungen %}
+                    <div class="alert alert-warning alert-dismissible mb-3" role="alert">
+                        <div class="d-flex">
+                            <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">&#9888;</div>
+                            <div>
+                                <h4 class="alert-title">Sicherheitshinweis zur Konfiguration</h4>
+                                <ul class="mb-0" style="padding-left:1.1rem">
+                                    {% for warnung in sicherheitswarnungen %}
+                                    <li>{{ warnung }}</li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="text-muted mt-2" style="font-size:.85rem">
+                                    Dieser Hinweis erscheint nur für Superadmins und verschwindet,
+                                    sobald die Werte in der <code>.env</code> gesetzt sind.
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                    </div>
+                    {% endif %}
                     {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                     <div class="mb-3">
