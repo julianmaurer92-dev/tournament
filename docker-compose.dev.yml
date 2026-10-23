@@ -1,0 +1,85 @@
+# Entwicklungs-Stack fuer CupPlan.
+#
+# WICHTIG: teilt sich bewusst NICHTS mit der Produktion (cupplan.de laeuft auf
+# einem externen VPS, 85.215.206.46). Eigener Compose-Projektname, eigene
+# Container-Namen, eigene Volumes, eigene Ports.
+#
+#   Start:   docker compose -p cupplan-dev -f docker-compose.dev.yml up -d --build
+#   Logs:    docker compose -p cupplan-dev -f docker-compose.dev.yml logs -f web
+#   Tests:   docker compose -p cupplan-dev -f docker-compose.dev.yml run --rm test
+#   Stop:    docker compose -p cupplan-dev -f docker-compose.dev.yml down
+#
+# Web:  http://localhost:8090
+# DB:   localhost:55432 (postgres, nur fuer Debugging nach aussen geoeffnet)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cupplan-dev-db
+    environment:
+      POSTGRES_DB: cupplan_dev
+      POSTGRES_USER: cupplan_dev
+      POSTGRES_PASSWORD: devpass
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c effective_cache_size=128MB
+      -c max_connections=20
+    volumes:
+      - dev-pg-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cupplan_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cupplan-dev-web
+    ports:
+      - "8090:5000"
+    environment:
+      - SECRET_KEY=dev-only-not-a-secret
+      - ADMIN_PASSWORD=admin123
+      - DATABASE_URL=postgresql://cupplan_dev:devpass@db:5432/cupplan_dev
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - ADMIN_EMAILS=
+      - CUPPLAN_ENV=dev
+    volumes:
+      # Live-Reload: Quellcode direkt aus dem Dev-Klon
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+      - ./scripts:/app/scripts
+      - ./tests:/app/tests
+      - ./migrations:/app/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Einmal-Container fuer die Testsuite (laeuft gegen SQLite, braucht kein Postgres)
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - SECRET_KEY=test
+      - CUPPLAN_ENV=test
+    volumes:
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+      - ./scripts:/app/scripts
+      - ./tests:/app/tests
+      - ./migrations:/app/migrations
+      - ./pytest.ini:/app/pytest.ini
+    command: ["pytest", "-q"]
+    profiles: ["tools"]
+
+volumes:
+  dev-pg-data:

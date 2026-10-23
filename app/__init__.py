@@ -11,7 +11,12 @@ socketio = SocketIO()
 oauth = OAuth()
 
 
-def create_app():
+def create_app(config_overrides=None):
+    """Create the Flask app.
+
+    config_overrides: optional dict, applied after the environment config.
+    Used by the test suite (e.g. a SQLite URI) – never set in production.
+    """
     app = Flask(__name__)
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -27,6 +32,13 @@ def create_app():
         "pool_pre_ping": True,
     }
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin123")
+
+    if config_overrides:
+        app.config.update(config_overrides)
+
+    # SQLite (Tests) kennt die Pool-Optionen von psycopg2 nicht
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
 
     # Google OAuth
     app.config["GOOGLE_CLIENT_ID"] = os.environ.get("GOOGLE_CLIENT_ID", "")
@@ -88,7 +100,15 @@ def create_app():
 
 
 def _migrate_db():
-    """Add missing columns to existing tables (safe to run on every start)."""
+    """Add missing columns to existing tables (safe to run on every start).
+
+    Nur additive Aenderungen mit Defaults – bestehende Daten bleiben erhalten.
+    Die Anweisungen sind Postgres-spezifisch; unter SQLite (Tests) legt
+    db.create_all() bereits das vollstaendige Schema an, deshalb uebersprungen.
+    """
+    if db.engine.dialect.name != "postgresql":
+        return
+
     migrations = [
         "ALTER TABLE match ADD COLUMN IF NOT EXISTS field INTEGER DEFAULT 1",
         "ALTER TABLE match ADD COLUMN IF NOT EXISTS is_penalty BOOLEAN DEFAULT FALSE",

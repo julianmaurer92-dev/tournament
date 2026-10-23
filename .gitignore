@@ -41,3 +41,17 @@ logs/
 credentials.json
 *.pem
 *.key
+
+# Entwicklung / Tests (Nachtschicht 2026-10-24)
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+test-results/
+playwright-report/
+*.sqlite
+# Kopien echter Daten niemals einchecken
+dumps/
+*.dump
+export-*.json

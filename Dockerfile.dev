@@ -1,0 +1,31 @@
+# Entwicklungs-Image: identische Basis wie Produktion, zusaetzlich Testwerkzeuge.
+# Wird ausschliesslich vom Compose-Projekt "cupplan-dev" verwendet.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY . .
+
+EXPOSE 5000
+
+ENV FLASK_ENV=development \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Gleicher Worker wie Produktion (WebSockets!), nur mit --reload:
+# Code-Aenderungen im Bind-Mount wirken sofort.
+CMD ["gunicorn", \
+     "--worker-class", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", \
+     "--workers", "1", \
+     "--bind", "0.0.0.0:5000", \
+     "--timeout", "120", \
+     "--reload", \
+     "--log-level", "info", \
+     "run:app"]

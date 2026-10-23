@@ -35,7 +35,19 @@ class Admin(UserMixin, db.Model):
     )
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # PASSWORD_HASH_METHOD erlaubt es, die Kosten zu steuern. Produktion
+        # nutzt den Werkzeug-Standard (scrypt); die Testsuite setzt ein
+        # billiges Verfahren, sonst kostet jeder Testlauf Minuten.
+        method = None
+        try:
+            from flask import current_app
+            method = current_app.config.get("PASSWORD_HASH_METHOD")
+        except RuntimeError:          # ausserhalb eines App-Kontexts
+            method = None
+        if method:
+            self.password_hash = generate_password_hash(password, method=method)
+        else:
+            self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         if not self.password_hash:
