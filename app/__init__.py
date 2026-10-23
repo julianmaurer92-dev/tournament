@@ -146,6 +146,7 @@ def create_app(config_overrides=None):
     from app.anmeldung import anmeldung_admin_bp, anmeldung_bp
     from app.ereignisse import ereignisse_admin_bp, ereignisse_bp
     from app.siegerehrung import siegerehrung_admin_bp, siegerehrung_bp
+    from app.schiedsrichter_routes import schiedsrichter_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
@@ -155,6 +156,7 @@ def create_app(config_overrides=None):
     app.register_blueprint(ereignisse_admin_bp, url_prefix="/admin")
     app.register_blueprint(siegerehrung_bp)
     app.register_blueprint(siegerehrung_admin_bp, url_prefix="/admin")
+    app.register_blueprint(schiedsrichter_bp, url_prefix="/admin")
 
     with app.app_context():
         db.create_all()
@@ -178,6 +180,11 @@ def _migrate_db():
         "ALTER TABLE match ADD COLUMN IF NOT EXISTS field INTEGER DEFAULT 1",
         "ALTER TABLE match ADD COLUMN IF NOT EXISTS is_penalty BOOLEAN DEFAULT FALSE",
         "ALTER TABLE tournament ADD COLUMN IF NOT EXISTS event_time VARCHAR(5)",
+        # Nachtschicht 2026-10-24: Schiedsrichter je Spiel. Bewusst ohne
+        # Fremdschluessel-Constraint – die Zuordnung wird von der ORM
+        # gepflegt, und ein ALTER mit Constraint auf eine Tabelle mit
+        # Altdaten ist riskanter als der Nutzen.
+        "ALTER TABLE match ADD COLUMN IF NOT EXISTS referee_id INTEGER",
         # Widen tournament_settings.value from VARCHAR(500) to TEXT
         "ALTER TABLE tournament_settings ALTER COLUMN value TYPE TEXT",
         # team_payment table is created by db.create_all(); no ALTER needed

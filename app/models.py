@@ -413,7 +413,12 @@ class Match(db.Model):
     scheduled_time = db.Column(db.DateTime, nullable=True)
     match_order = db.Column(db.Integer, default=0)
 
-    field = db.Column(db.Integer, default=1)  # 1 or 2 – which pitch the match is played on
+    field = db.Column(db.Integer, default=1)  # auf welchem Spielfeld (1..n)
+
+    # Schiedsrichter (seit Nachtschicht 2026-10-24). Nullable, damit
+    # bestehende Spiele unveraendert bleiben.
+    referee_id = db.Column(db.Integer, db.ForeignKey("referee.id"),
+                           nullable=True)
 
     # Timer (seconds)
     timer_duration = db.Column(db.Integer, default=600)
@@ -439,6 +444,10 @@ class Match(db.Model):
     team1 = db.relationship("Team", foreign_keys=[team1_id], lazy="joined")
     team2 = db.relationship("Team", foreign_keys=[team2_id], lazy="joined")
     group = db.relationship("Group", lazy="joined")
+    # Rueckverweis, damit das Loeschen eines Schiedsrichters die Zuteilung
+    # loest statt einen Fremdschluessel ins Leere zeigen zu lassen
+    referee = db.relationship("Referee", foreign_keys=[referee_id],
+                              backref=db.backref("matches", lazy="dynamic"))
 
     def to_dict(self):
         remaining = self.timer_remaining
@@ -460,6 +469,8 @@ class Match(db.Model):
             ),
             "match_order": self.match_order,
             "field": self.field or 1,
+            "referee_id": self.referee_id,
+            "referee_name": self.referee.name if self.referee else None,
             "timer_duration": self.timer_duration,
             "timer_remaining": remaining,
             "timer_running": self.timer_running,
@@ -472,6 +483,52 @@ class Match(db.Model):
             "next_match_id": self.next_match_id,
             "next_match_slot": self.next_match_slot,
             "is_loser_match": self.is_loser_match,
+        }
+
+
+# ──────────────────────────────────────
+# Schiedsrichter
+# ──────────────────────────────────────
+
+class Referee(db.Model):
+    """Schiedsrichter eines Turniers.
+
+    team_id ist optional und meint "gehoert zu dieser Mannschaft" – oft
+    pfeift ein Elternteil oder Betreuer. Die Zuteilung nutzt das, um
+    niemanden auf ein Spiel der eigenen Mannschaft zu setzen.
+    """
+    __tablename__ = "referee"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournament.id"),
+                              nullable=False, index=True)
+    name = db.Column(db.String(150), nullable=False)
+    phone = db.Column(db.String(60), default="")
+    note = db.Column(db.String(300), default="")
+    team_id = db.Column(db.Integer, db.ForeignKey("team.id"), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime,
+                           default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "name",
+                            name="uq_referee_tournament_name"),
+    )
+
+    tournament = db.relationship("Tournament", backref=db.backref(
+        "referees", lazy="dynamic", cascade="all, delete-orphan"))
+    team = db.relationship("Team", backref=db.backref(
+        "referees", lazy="dynamic"))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "phone": self.phone or "",
+            "note": self.note or "",
+            "team_id": self.team_id,
+            "team_name": self.team.name if self.team else None,
+            "is_active": bool(self.is_active),
         }
 
 

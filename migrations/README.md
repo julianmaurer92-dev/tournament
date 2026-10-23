@@ -13,3 +13,8 @@ Regeln:
 
 - (Bestand) `match.field`, `match.is_penalty`, `tournament.event_time`,
   `tournament_settings.value` -> TEXT
+- 2026-10-24 (Nachtschicht): `match.referee_id INTEGER` (Schiedsrichter je
+  Spiel). Neue Tabellen `registration`, `match_event`, `referee` entstehen
+  durch `db.create_all()`. Neue Einstellungsschluessel
+  (`registration_*`, `urkunde_*`) brauchen keine Migration – `get_setting()`
+  faellt auf `SETTINGS_DEFAULTS` zurueck.

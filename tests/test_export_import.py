@@ -411,3 +411,50 @@ def test_import_ohne_registrations_schluessel(app, admin_client):
     assert "erfolgreich importiert".encode() in resp.data
     t = Tournament.query.filter_by(name="Alt ohne Anmeldungen").first()
     assert t.registrations.count() == 0
+
+
+def test_export_und_import_mit_schiedsrichtern(app, admin_client):
+    from app.models import Referee
+    t = make_tournament("Schiri Backup Cup")
+    gr = make_group(t)
+    a = make_team(t, "Alpha", gr)
+    b = make_team(t, "Bravo", gr)
+    m = make_match(t, a, b, gr, 1)
+    schiri = Referee(tournament_id=t.id, name="Hans Meier", phone="0171 9",
+                     note="nur vormittags", team_id=a.id, is_active=True)
+    db.session.add(schiri)
+    db.session.commit()
+    m.referee_id = schiri.id
+    db.session.commit()
+
+    payload = _export(admin_client, [t.id])
+    t_data = payload["tournaments"][0]
+    assert t_data["referees"][0]["name"] == "Hans Meier"
+    assert t_data["referees"][0]["team_name"] == "Alpha"
+    assert t_data["matches"][0]["referee_name"] == "Hans Meier"
+
+    resp = _import(admin_client, payload, ["Schiri Backup Cup"])
+    assert "erfolgreich importiert".encode() in resp.data
+
+    neu = [k for k in Tournament.query.filter_by(name="Schiri Backup Cup").all()
+           if k.id != t.id][0]
+    neuer_schiri = neu.referees.one()
+    assert neuer_schiri.name == "Hans Meier"
+    assert neuer_schiri.phone == "0171 9"
+    neues_alpha = Team.query.filter_by(tournament_id=neu.id, name="Alpha").one()
+    assert neuer_schiri.team_id == neues_alpha.id
+    assert neu.matches.one().referee_id == neuer_schiri.id
+
+
+def test_import_ohne_schiedsrichter_schluessel(app, admin_client):
+    """Version-1-Backups kennen keine Schiedsrichter."""
+    payload = {
+        "version": "1", "tournaments": [{
+            "name": "Alt ohne Schiris", "slug": "alt-ohne-schiris",
+            "settings": {}, "groups": [], "teams": [], "matches": [],
+        }],
+    }
+    resp = _import(admin_client, payload, ["Alt ohne Schiris"])
+    assert "erfolgreich importiert".encode() in resp.data
+    t = Tournament.query.filter_by(name="Alt ohne Schiris").first()
+    assert t.referees.count() == 0

@@ -236,6 +236,13 @@
     <div class="adm-card">
         <div class="adm-card-hd">&#128188; Organisation</div>
         <div class="adm-card-bd">
+            <a href="{{ url_for('schiedsrichter.uebersicht', slug=tournament.slug) }}" class="link-card">
+                <span class="link-card-icon">&#128682;</span>
+                <div>
+                    <div>Schiedsrichter</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Einteilung, Konfliktprüfung, Einsatzplan</div>
+                </div>
+            </a>
             <a href="{{ url_for('siegerehrung_admin.uebersicht', slug=tournament.slug) }}" class="link-card">
                 <span class="link-card-icon">&#127942;</span>
                 <div>

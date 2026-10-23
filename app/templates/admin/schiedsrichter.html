@@ -1,0 +1,267 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Schiedsrichter – {{ tournament.name }}{% endblock %}
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('schiedsrichter.einsatzplan', slug=tournament.slug) }}" target="_blank" class="btn btn-primary btn-sm">&#128438; Einsatzplan</a>
+<a href="{{ url_for('schiedsrichter.einsatzplan_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+{% endblock %}
+
+{% block page_content %}
+
+{% if konflikte %}
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-title">{{ konflikte | length }} Problem(e) in der Einteilung</h4>
+    <ul class="mb-0" style="padding-left:1.1rem">
+        {% for k in konflikte %}<li>{{ k }}</li>{% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        {% if current_user.can_edit() %}
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">Schiedsrichter hinzufügen</h3></div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('schiedsrichter.anlegen', slug=tournament.slug) }}">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" name="name"
+                                   placeholder="Name" required>
+                        </div>
+                        <div class="col-6">
+                            <input type="tel" class="form-control form-control-sm" name="phone"
+                                   placeholder="Telefon (optional)">
+                        </div>
+                        <div class="col-6">
+                            <select class="form-select form-select-sm" name="team_id">
+                                <option value="">neutral (keine Mannschaft)</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">gehört zu {{ team.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" name="note"
+                                   placeholder="Notiz, z. B. „nur vormittags“">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-sm btn-primary">&#43; Hinzufügen</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="form-hint mt-2" style="font-size:0.78rem">
+                    Wer zu einer Mannschaft gehört, wird bei der automatischen
+                    Einteilung nicht auf deren Spiele gesetzt – und auch nicht,
+                    während diese Mannschaft spielt.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Schiedsrichter</h3>
+                <span class="ms-2 text-muted small">{{ schiedsrichter | length }}</span>
+            </div>
+            {% if not schiedsrichter %}
+            <div class="card-body text-muted text-center py-4">
+                Noch keine Schiedsrichter angelegt.
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr><th>Name</th><th>Mannschaft</th><th class="w-1">Spiele</th>
+                            {% if current_user.can_edit() %}<th class="w-1"></th>{% endif %}</tr>
+                    </thead>
+                    <tbody>
+                        {% for s in schiedsrichter %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ s.name }}
+                                    {% if not s.is_active %}
+                                    <span class="badge badge-gray-lt ms-1">inaktiv</span>
+                                    {% endif %}
+                                </div>
+                                {% if s.phone %}<div class="small"><a href="tel:{{ s.phone }}">{{ s.phone }}</a></div>{% endif %}
+                                {% if s.note %}<div class="text-muted small">{{ s.note }}</div>{% endif %}
+                            </td>
+                            <td class="text-muted small">{{ s.team.name if s.team else 'neutral' }}</td>
+                            <td><span class="badge badge-blue-lt">{{ einsaetze.get(s.id, 0) }}</span></td>
+                            {% if current_user.can_edit() %}
+                            <td>
+                                <button class="btn btn-sm" onclick="document.getElementById('edit-{{ s.id }}').classList.toggle('d-none')">
+                                    Bearbeiten
+                                </button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% if current_user.can_edit() %}
+                        <tr id="edit-{{ s.id }}" class="d-none">
+                            <td colspan="4" style="background:rgba(34,197,94,0.04)">
+                                <form method="POST" action="{{ url_for('schiedsrichter.bearbeiten', slug=tournament.slug, sid=s.id) }}"
+                                      class="row g-2 align-items-center">
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control form-control-sm" name="name" value="{{ s.name }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="tel" class="form-control form-control-sm" name="phone" value="{{ s.phone or '' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select class="form-select form-select-sm" name="team_id">
+                                            <option value="">neutral</option>
+                                            {% for team in teams %}
+                                            <option value="{{ team.id }}" {% if s.team_id == team.id %}selected{% endif %}>{{ team.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-check mb-0" style="font-size:0.8rem">
+                                            <input class="form-check-input" type="checkbox" name="is_active" value="1"
+                                                   {% if s.is_active %}checked{% endif %}>
+                                            <span class="form-check-label">aktiv</span>
+                                        </label>
+                                    </div>
+                                    <div class="col-md-2 d-flex gap-1">
+                                        <button type="submit" class="btn btn-sm btn-primary">OK</button>
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="text" class="form-control form-control-sm" name="note"
+                                               value="{{ s.note or '' }}" placeholder="Notiz">
+                                    </div>
+                                </form>
+                                {% if current_user.role == 'superadmin' %}
+                                <form method="POST" action="{{ url_for('schiedsrichter.loeschen', slug=tournament.slug, sid=s.id) }}"
+                                      class="mt-2" onsubmit="return confirm('{{ s.name }} löschen? Zugeteilte Spiele bleiben ohne Schiedsrichter.')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Einteilung</h3>
+                {% if ohne_schiedsrichter %}
+                <span class="badge badge-yellow-lt ms-2">{{ ohne_schiedsrichter }} ohne Schiedsrichter</span>
+                {% else %}
+                <span class="badge badge-green-lt ms-2">vollständig</span>
+                {% endif %}
+                {% if current_user.can_edit() and schiedsrichter %}
+                <div class="ms-auto btn-list">
+                    <button class="btn btn-sm btn-primary" onclick="verteilen(true)">Lücken füllen</button>
+                    <button class="btn btn-sm btn-outline" onclick="verteilen(false)">Alles neu verteilen</button>
+                </div>
+                {% endif %}
+            </div>
+            <div id="verteil-status" class="card-body py-2 text-muted small d-none"></div>
+            {% if not spiele %}
+            <div class="card-body text-muted text-center py-4">
+                Noch keine Spiele im Spielplan.
+            </div>
+            {% else %}
+            <div class="table-responsive" style="max-height:600px;overflow-y:auto">
+                <table class="table table-vcenter card-table">
+                    <thead style="position:sticky;top:0;background:var(--bg-secondary,#111827)">
+                        <tr><th class="w-1">#</th><th>Anstoß</th><th>Begegnung</th><th>Schiedsrichter</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for m in spiele %}
+                        <tr>
+                            <td class="text-muted">{{ m.match_order }}</td>
+                            <td class="text-muted small" style="white-space:nowrap">
+                                {% if m.scheduled_time %}{{ m.scheduled_time.strftime('%H:%M') }}{% else %}–{% endif %}
+                                <div>Feld {{ m.field or 1 }}</div>
+                            </td>
+                            <td>
+                                {{ m.team1.name if m.team1 else '?' }}
+                                <span class="text-muted">–</span>
+                                {{ m.team2.name if m.team2 else '?' }}
+                                {% if m.final_label %}
+                                <div class="text-muted small">{{ m.final_label }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.can_edit() %}
+                                <select class="form-select form-select-sm"
+                                        onchange="zuteilen({{ m.id }}, this.value)">
+                                    <option value="">– niemand –</option>
+                                    {% for s in schiedsrichter %}
+                                    <option value="{{ s.id }}" {% if m.referee_id == s.id %}selected{% endif %}>
+                                        {{ s.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% else %}
+                                {{ m.referee.name if m.referee else '–' }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+const SLUG = {{ tournament.slug | tojson }};
+
+function zeigeStatus(text, fehler) {
+    const el = document.getElementById('verteil-status');
+    el.classList.remove('d-none');
+    el.textContent = text;
+    el.style.color = fehler ? '#f87171' : '';
+}
+
+function zuteilen(matchId, schiriId) {
+    fetch(`/admin/t/${SLUG}/api/matches/${matchId}/schiedsrichter`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({schiedsrichter_id: schiriId})
+    }).then(r => r.json()).then(d => {
+        if (d.error) { zeigeStatus('Fehler: ' + d.error, true); return; }
+        pruefeKonflikte();
+    }).catch(() => zeigeStatus('Netzwerkfehler', true));
+}
+
+function verteilen(nurLeere) {
+    if (!nurLeere && !confirm('Die komplette Einteilung wird verworfen und neu berechnet. Fortfahren?')) return;
+    zeigeStatus('Wird verteilt …');
+    fetch(`/admin/t/${SLUG}/api/schiedsrichter/verteilen`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nur_leere: nurLeere ? '1' : '0'})
+    }).then(r => r.json()).then(d => {
+        if (d.error) { zeigeStatus('Fehler: ' + d.error, true); return; }
+        let text = `${d.zugeteilt} Spiel(e) eingeteilt`;
+        if (d.offen) text += `, ${d.offen} konnte(n) nicht besetzt werden`;
+        if (d.konflikte && d.konflikte.length) text += `, ${d.konflikte.length} Konflikt(e)`;
+        zeigeStatus(text + '.');
+        setTimeout(() => location.reload(), 1200);
+    }).catch(() => zeigeStatus('Netzwerkfehler', true));
+}
+
+function pruefeKonflikte() {
+    fetch(`/admin/t/${SLUG}/api/schiedsrichter/konflikte`)
+        .then(r => r.json()).then(d => {
+            if (d.anzahl) zeigeStatus(`${d.anzahl} Konflikt(e): ` + d.konflikte.join(' '), true);
+            else zeigeStatus('Gespeichert. Keine Konflikte.');
+        });
+}
+</script>
+{% endblock %}

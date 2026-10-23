@@ -15,7 +15,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db, oauth
 from app.models import (
     ANMELDUNG_OFFEN, ANMELDUNG_STATUS, EREIGNIS_ARTEN,
-    Admin, Tournament, Group, Team, Match, MatchEvent, MenuItem, Registration,
+    Admin, Tournament, Group, Team, Match, MatchEvent, MenuItem,
+    Referee, Registration,
     neues_token,
     TournamentSettings, UserTournamentAccess, TeamPayment, slugify,
     get_all_settings, get_setting, set_setting, ensure_default_settings,
@@ -675,12 +676,19 @@ def schedule_print():
         for grp in groups
     }
     hide_results = request.args.get("empty") == "1"
+    # Spalten nur zeigen, wenn es die Daten auch gibt – sonst steht im
+    # gedruckten Plan eine leere Spalte "Anstoss" oder "Schiedsrichter".
+    alle = matches + final_matches
+    zeige_anstoss = any(m.scheduled_time for m in alle)
+    zeige_schiedsrichter = any(m.referee_id for m in alle)
     return render_template(
         "admin/schedule_print.html",
         tournament=t, phase=phase, settings=settings,
         groups=groups, matches=matches, final_matches=final_matches,
         standings_by_group=standings_by_group,
         hide_results=hide_results,
+        zeige_anstoss=zeige_anstoss,
+        zeige_schiedsrichter=zeige_schiedsrichter,
     )
 
 
@@ -2460,6 +2468,10 @@ def _export_tournament(t):
     group_id_to_name = {g.id: g.name for g in groups}
     team_id_to_name = {team.id: team.name for team in teams}
 
+    schiedsrichter = Referee.query.filter_by(tournament_id=t.id).order_by(
+        Referee.name).all()
+    referee_id_to_name = {r.id: r.name for r in schiedsrichter}
+
     def _payment(team):
         p = team.payment
         if not p:
@@ -2519,6 +2531,7 @@ def _export_tournament(t):
                 "loser_next_match_index": match_id_to_index.get(m.loser_next_match_id) if m.loser_next_match_id else None,
                 "loser_next_match_slot": m.loser_next_match_slot,
                 "is_loser_match": m.is_loser_match,
+                "referee_name": referee_id_to_name.get(m.referee_id) if m.referee_id else None,
                 # Tore und Karten gehoeren zum Spiel (seit Exportversion 2)
                 "events": [
                     {
@@ -2532,6 +2545,17 @@ def _export_tournament(t):
                 ],
             }
             for i, m in enumerate(matches)
+        ],
+        # Schiedsrichter (seit Exportversion 2)
+        "referees": [
+            {
+                "name": r.name,
+                "phone": r.phone or "",
+                "note": r.note or "",
+                "team_name": team_id_to_name.get(r.team_id) if r.team_id else None,
+                "is_active": bool(r.is_active),
+            }
+            for r in schiedsrichter
         ],
         # Vereinsanmeldungen inkl. Entscheidungshistorie (seit Exportversion 2)
         "registrations": [
@@ -2680,6 +2704,25 @@ def _import_tournament(data):
                 receipt_number=p_data.get("receipt_number"),
             ))
 
+    # Schiedsrichter (fehlen in Backups vor Version 2) – vor den Spielen,
+    # damit die Zuordnung je Spiel aufgeloest werden kann
+    referee_name_to_id = {}
+    for r_data in data.get("referees", []):
+        name = (r_data.get("name") or "").strip()[:150]
+        if not name or name in referee_name_to_id:
+            continue
+        referee = Referee(
+            tournament_id=t.id,
+            name=name,
+            phone=(r_data.get("phone") or "")[:60],
+            note=(r_data.get("note") or "")[:300],
+            team_id=team_name_to_id.get(r_data.get("team_name")),
+            is_active=bool(r_data.get("is_active", True)),
+        )
+        db.session.add(referee)
+        db.session.flush()
+        referee_name_to_id[name] = referee.id
+
     # Matches – first pass (no next_match/loser refs yet)
     created_matches = []
     for m_data in data.get("matches", []):
@@ -2704,6 +2747,7 @@ def _import_tournament(data):
             timer_running=False,
             is_extra_time=m_data.get("is_extra_time", False),
             is_penalty=m_data.get("is_penalty", False),
+            referee_id=referee_name_to_id.get(m_data.get("referee_name")),
             is_final=m_data.get("is_final", False),
             final_round=m_data.get("final_round"),
             final_position=m_data.get("final_position"),

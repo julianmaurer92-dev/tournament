@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Schiedsrichter-Einsatzplan – {{ tournament.name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e8eaed; color: #111; }
+
+        .toolbar {
+            background: #1a1a2e; color: #fff; padding: .75rem 1.25rem;
+            display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .toolbar-title { font-size: 1rem; font-weight: 700; margin-right: auto; }
+        .toolbar-title span { color: #4ade80; }
+        .btn {
+            border: none; border-radius: 7px; padding: .45rem 1rem;
+            font-size: .85rem; font-weight: 700; cursor: pointer;
+            background: #4ade80; color: #06240f; text-decoration: none;
+        }
+        .btn-ghost { background: rgba(255,255,255,.14); color: #fff; }
+
+        .blatt {
+            background: #fff; max-width: 210mm; margin: 1.5rem auto;
+            padding: 15mm; box-shadow: 0 2px 12px rgba(0,0,0,.18);
+        }
+        h1 { font-size: 16pt; margin-bottom: 2mm; }
+        .unter { color: #555; font-size: 10pt; margin-bottom: 8mm; }
+
+        .sr-block { margin-bottom: 9mm; page-break-inside: avoid; break-inside: avoid; }
+        .sr-kopf {
+            display: flex; align-items: baseline; gap: .6rem;
+            border-bottom: 2px solid #111; padding-bottom: 1.5mm; margin-bottom: 2mm;
+        }
+        .sr-name { font-size: 13pt; font-weight: 800; }
+        .sr-meta { font-size: 9.5pt; color: #555; margin-left: auto; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+        th {
+            text-align: left; font-size: 8.5pt; text-transform: uppercase;
+            letter-spacing: .05em; color: #555; padding: 0 2mm 1mm;
+        }
+        td { padding: 1.6mm 2mm; border-top: 1px solid #ddd; }
+        td.zeit { white-space: nowrap; font-weight: 700; width: 20mm; }
+        td.feld { width: 16mm; color: #555; }
+        td.nr   { width: 12mm; color: #777; }
+        .leer { color: #777; font-size: 10pt; font-style: italic; padding: 2mm; }
+        .warnung {
+            background: #fff7ed; border-left: 4px solid #f59e0b;
+            padding: 3mm 4mm; margin-bottom: 6mm; font-size: 10pt;
+        }
+
+        @page { size: A4 portrait; margin: 12mm; }
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .blatt { box-shadow: none; margin: 0; padding: 0; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="toolbar-title">&#128438; Schiedsrichter-Einsatzplan <span>{{ tournament.name }}</span></div>
+    <a class="btn btn-ghost" href="{{ url_for('schiedsrichter.uebersicht', slug=tournament.slug) }}">Zurück</a>
+    <button class="btn" onclick="window.print()">Drucken</button>
+</div>
+
+<div class="blatt">
+    <h1>Schiedsrichter-Einsatzplan</h1>
+    <div class="unter">
+        {{ tournament.name }}
+        {% if tournament.event_date %} · {{ tournament.event_date.strftime('%d.%m.%Y') }}{% endif %}
+    </div>
+
+    {% if ohne %}
+    <div class="warnung">
+        <strong>{{ ohne | length }} Spiel(e) ohne Schiedsrichter:</strong>
+        {% for m in ohne %}#{{ m.match_order }}{% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not plan %}
+    <div class="leer">Es sind keine Schiedsrichter angelegt.</div>
+    {% endif %}
+
+    {% for eintrag in plan %}
+    <div class="sr-block">
+        <div class="sr-kopf">
+            <div class="sr-name">{{ eintrag.schiedsrichter.name }}</div>
+            {% if eintrag.schiedsrichter.phone %}
+            <div style="font-size:10pt;color:#555">{{ eintrag.schiedsrichter.phone }}</div>
+            {% endif %}
+            <div class="sr-meta">
+                {{ eintrag.spiele | length }} Spiel(e)
+                {% if eintrag.schiedsrichter.team %} · gehört zu {{ eintrag.schiedsrichter.team.name }}{% endif %}
+            </div>
+        </div>
+
+        {% if not eintrag.spiele %}
+        <div class="leer">Keine Spiele eingeteilt.</div>
+        {% else %}
+        <table>
+            <thead>
+                <tr><th>Zeit</th><th>Feld</th><th>Nr.</th><th>Begegnung</th></tr>
+            </thead>
+            <tbody>
+                {% for m in eintrag.spiele %}
+                <tr>
+                    <td class="zeit">
+                        {% if m.scheduled_time %}{{ m.scheduled_time.strftime('%H:%M') }}{% else %}–{% endif %}
+                    </td>
+                    <td class="feld">Feld {{ m.field or 1 }}</td>
+                    <td class="nr">{{ m.match_order }}</td>
+                    <td>
+                        {{ m.team1.name if m.team1 else '?' }}
+                        – {{ m.team2.name if m.team2 else '?' }}
+                        {% if m.final_label %} <span style="color:#555">({{ m.final_label }})</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if eintrag.schiedsrichter.note %}
+        <div style="font-size:9.5pt;color:#555;margin-top:1.5mm">
+            Notiz: {{ eintrag.schiedsrichter.note }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

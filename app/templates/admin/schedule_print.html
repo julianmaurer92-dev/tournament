@@ -448,9 +448,11 @@ body {
             <thead>
                 <tr>
                     <th class="center">#</th>
+                    {% if zeige_anstoss %}<th class="center">Anstoß</th>{% endif %}
                     <th>Begegnung</th>
                     <th>Gruppe</th>
                     {% if settings.num_fields|int > 1 %}<th class="center">Feld</th>{% endif %}
+                    {% if zeige_schiedsrichter %}<th>Schiedsrichter</th>{% endif %}
                     <th class="center">Ergebnis</th>
                     {% if not hide_results %}<th class="center">Status</th>{% endif %}
                 </tr>
@@ -459,6 +461,11 @@ body {
                 {% for match in matches %}
                 <tr class="{% if not hide_results %}{% if match.status == 'live' %}row-live{% elif match.status == 'finished' %}row-finished{% endif %}{% endif %}">
                     <td class="num-cell">{{ loop.index }}</td>
+                    {% if zeige_anstoss %}
+                    <td class="center" style="white-space:nowrap;font-weight:700">
+                        {% if match.scheduled_time %}{{ match.scheduled_time.strftime('%H:%M') }}{% else %}–{% endif %}
+                    </td>
+                    {% endif %}
                     <td class="team-cell">
                         {{ match.team1.name }}
                         <span class="vs-sep">vs</span>
@@ -473,6 +480,9 @@ body {
                     <td class="center">
                         <span class="field-badge-{{ match.field or 1 }}">F{{ match.field or 1 }}</span>
                     </td>
+                    {% endif %}
+                    {% if zeige_schiedsrichter %}
+                    <td style="font-size:9.5pt">{{ match.referee.name if match.referee else '–' }}</td>
                     {% endif %}
                     <td class="center">
                         {% if hide_results %}
