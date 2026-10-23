@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Endplatzierung – {{ tournament.name }}{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block head %}
+<style>
+    .pl-wrap { max-width: 760px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+    .pl-card {
+        background: var(--color-secondary, #1a2332);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .pl-zeile {
+        display: flex; align-items: center; gap: .9rem;
+        padding: .7rem .25rem;
+        border-top: 1px solid rgba(255,255,255,.07);
+    }
+    .pl-zeile:first-of-type { border-top: 0; }
+    .pl-platz {
+        min-width: 2.6rem; text-align: right;
+        font-weight: 800; font-size: 1.1rem;
+        font-variant-numeric: tabular-nums; opacity: .8;
+    }
+    .pl-medaille { font-size: 1.4rem; width: 1.8rem; text-align: center; }
+    .pl-name { font-weight: 700; flex: 1; }
+    .pl-quelle { font-size: .78rem; opacity: .55; text-align: right; }
+    .pl-top .pl-name { font-size: 1.15rem; }
+    .pl-top { background: rgba(255,255,255,.04); border-radius: 10px; }
+    .pl-leer { text-align: center; opacity: .6; padding: 1.5rem 0; }
+    .pl-hinweis { font-size: .82rem; opacity: .6; margin: .8rem 0 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
+        <div class="header-logo">&#127942;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Endplatzierung</h1>
+            <p>{{ tournament.name }}</p>
+        </div>
+    </div>
+</header>
+
+<div class="pl-wrap">
+    {% if verborgen %}
+    <div class="pl-card pl-leer">
+        Die Ergebnisse dieses Turniers sind noch nicht öffentlich.
+    </div>
+    {% elif not platzierung %}
+    <div class="pl-card pl-leer">
+        <div style="font-size:2rem">&#127942;</div>
+        <p>Noch keine Platzierung vorhanden.</p>
+    </div>
+    {% else %}
+    <div class="pl-card">
+        {% for e in platzierung %}
+        <div class="pl-zeile {% if e.platz <= 3 %}pl-top{% endif %}">
+            <div class="pl-platz">{{ e.platz }}.</div>
+            <div class="pl-medaille">{{ medaille(e.platz) }}</div>
+            <div class="pl-name">{{ e.team_name or '–' }}</div>
+            <div class="pl-quelle">
+                {{ e.quelle }}{% if e.geteilt %}<br>geteilter Platz{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% if phase != 'FINISHED' %}
+        <p class="pl-hinweis">
+            Das Turnier läuft noch – die Reihenfolge kann sich bis zum
+            letzten Spiel ändern.
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

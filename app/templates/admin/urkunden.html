@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Urkunden – {{ tournament.name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #e8eaed;
+            color: #111;
+        }
+
+        /* ══ Bedienleiste (wird nicht gedruckt) ══ */
+        .toolbar {
+            background: #1a1a2e; color: #fff;
+            padding: .75rem 1.25rem;
+            display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,.35);
+        }
+        .toolbar-title { font-size: 1rem; font-weight: 700; margin-right: auto; }
+        .toolbar-title span { color: #4ade80; }
+        .btn {
+            border: none; border-radius: 7px; padding: .45rem 1rem;
+            font-size: .85rem; font-weight: 700; cursor: pointer;
+            background: #4ade80; color: #06240f; text-decoration: none;
+        }
+        .btn-ghost { background: rgba(255,255,255,.14); color: #fff; }
+        .hinweis { padding: 1rem 1.25rem; color: #555; font-size: .88rem; }
+
+        /* ══ Urkunde ══ */
+        .blaetter { padding: 1.5rem; display: flex; flex-direction: column;
+                    align-items: center; gap: 1.5rem; }
+        .urkunde {
+            width: 297mm; height: 210mm;      /* A4 quer */
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,.18);
+            padding: 18mm;
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .rahmen {
+            position: absolute; inset: 10mm;
+            border: 3px double #1f2937;
+            pointer-events: none;
+        }
+        .u-kopf { font-size: 13pt; letter-spacing: .32em;
+                  text-transform: uppercase; color: #4b5563; margin-top: 6mm; }
+        .u-titel { font-size: 42pt; font-weight: 900; letter-spacing: .06em;
+                   margin: 4mm 0 2mm; }
+        .u-turnier { font-size: 18pt; font-weight: 700; color: #374151; }
+        .u-datum { font-size: 12pt; color: #6b7280; margin-top: 2mm; }
+        .u-mitte { margin: auto 0; }
+        .u-platz-zeile { font-size: 16pt; color: #4b5563;
+                         letter-spacing: .1em; text-transform: uppercase; }
+        .u-platz { font-size: 64pt; font-weight: 900; line-height: 1.05;
+                   margin: 2mm 0; }
+        .u-medaille { font-size: 40pt; line-height: 1; }
+        .u-team { font-size: 30pt; font-weight: 800; margin-top: 4mm;
+                  border-bottom: 2px solid #111; padding: 0 8mm 2mm;
+                  display: inline-block; }
+        .u-text { font-size: 13pt; color: #374151; margin-top: 7mm;
+                  max-width: 180mm; line-height: 1.5; white-space: pre-wrap; }
+        .u-fuss {
+            width: 100%; margin-top: auto;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            font-size: 11pt; color: #4b5563;
+        }
+        .u-fuss div { min-width: 60mm; }
+        .u-linie { border-top: 1px solid #9ca3af; padding-top: 2mm;
+                   margin-top: 12mm; }
+        .u-geteilt { font-size: 10pt; color: #6b7280; margin-top: 2mm; }
+
+        /* ══ Druck ══ */
+        @page { size: A4 landscape; margin: 0; }
+        @media print {
+            body { background: #fff; }
+            .toolbar, .hinweis { display: none !important; }
+            .blaetter { padding: 0; gap: 0; }
+            .urkunde {
+                box-shadow: none;
+                page-break-after: always;
+                break-after: page;
+            }
+            .urkunde:last-child { page-break-after: auto; break-after: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="toolbar-title">&#128220; Urkunden <span>{{ tournament.name }}</span></div>
+    <span style="font-size:.82rem;opacity:.75">{{ platzierung | length }} Blatt</span>
+    <a class="btn btn-ghost" href="{{ url_for('siegerehrung_admin.uebersicht', slug=tournament.slug) }}">Zurück</a>
+    <button class="btn" onclick="window.print()">Drucken</button>
+</div>
+
+{% if not platzierung %}
+<div class="hinweis">
+    Keine Urkunden zu drucken. Prüfe die Auswahl oder lege erst Mannschaften an.
+</div>
+{% else %}
+<div class="hinweis">
+    A4 quer, eine Urkunde pro Seite. Im Druckdialog „Hintergrundgrafiken“
+    aktivieren, damit der Rahmen mitkommt.
+</div>
+{% endif %}
+
+<div class="blaetter">
+    {% for e in platzierung %}
+    <div class="urkunde">
+        <div class="rahmen"></div>
+
+        <div class="u-kopf">
+            {% if einstellungen.urkunde_veranstalter %}
+                {{ einstellungen.urkunde_veranstalter }}
+            {% else %}
+                Urkunde
+            {% endif %}
+        </div>
+        <div class="u-titel">URKUNDE</div>
+        <div class="u-turnier">{{ tournament.name }}</div>
+        {% if tournament.event_date %}
+        <div class="u-datum">{{ tournament.event_date.strftime('%d. %B %Y') }}</div>
+        {% endif %}
+
+        <div class="u-mitte">
+            <div class="u-medaille">{{ medaille(e.platz) }}</div>
+            <div class="u-platz-zeile">erreicht den</div>
+            <div class="u-platz">{{ e.platz }}. Platz</div>
+            <div><span class="u-team">{{ e.team_name or '' }}</span></div>
+            {% if e.geteilt %}
+            <div class="u-geteilt">geteilter Platz</div>
+            {% endif %}
+            {% if einstellungen.urkunde_text %}
+            <div class="u-text">{{ einstellungen.urkunde_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="u-fuss">
+            <div class="u-linie">
+                {% if einstellungen.urkunde_ort %}{{ einstellungen.urkunde_ort }}, {% endif %}
+                {% if tournament.event_date %}
+                    {{ tournament.event_date.strftime('%d.%m.%Y') }}
+                {% else %}
+                    {{ heute.strftime('%d.%m.%Y') }}
+                {% endif %}
+            </div>
+            <div class="u-linie" style="text-align:right">
+                {{ einstellungen.urkunde_unterschrift or 'Die Turnierleitung' }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

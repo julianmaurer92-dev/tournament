@@ -141,6 +141,12 @@ SETTINGS_DEFAULTS = {
     "registration_max_teams": "",    # Zahl als Text, "" = unbegrenzt
     "registration_fee": "",          # z. B. "25,00"
     "registration_info": "",         # Freitext ueber dem Formular
+    # Siegerehrung / Urkunden (seit Nachtschicht 2026-10-24)
+    "urkunde_veranstalter": "",      # Vereinsname unter der Urkunde
+    "urkunde_ort": "",               # Ort fuer die Datumszeile
+    "urkunde_text": "",              # Freitext unter der Platzierung
+    "urkunde_unterschrift": "Die Turnierleitung",
+    "urkunde_alle_teams": "1",       # "1" = Urkunde fuer jedes Team
 }
 
 

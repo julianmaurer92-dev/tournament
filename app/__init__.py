@@ -145,6 +145,7 @@ def create_app(config_overrides=None):
     from app.admin import admin_bp
     from app.anmeldung import anmeldung_admin_bp, anmeldung_bp
     from app.ereignisse import ereignisse_admin_bp, ereignisse_bp
+    from app.siegerehrung import siegerehrung_admin_bp, siegerehrung_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
@@ -152,6 +153,8 @@ def create_app(config_overrides=None):
     app.register_blueprint(anmeldung_admin_bp, url_prefix="/admin")
     app.register_blueprint(ereignisse_bp)
     app.register_blueprint(ereignisse_admin_bp, url_prefix="/admin")
+    app.register_blueprint(siegerehrung_bp)
+    app.register_blueprint(siegerehrung_admin_bp, url_prefix="/admin")
 
     with app.app_context():
         db.create_all()

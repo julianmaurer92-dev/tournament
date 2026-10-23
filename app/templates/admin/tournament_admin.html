@@ -236,6 +236,13 @@
     <div class="adm-card">
         <div class="adm-card-hd">&#128188; Organisation</div>
         <div class="adm-card-bd">
+            <a href="{{ url_for('siegerehrung_admin.uebersicht', slug=tournament.slug) }}" class="link-card">
+                <span class="link-card-icon">&#127942;</span>
+                <div>
+                    <div>Siegerehrung &amp; Urkunden</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Endplatzierung, Ablauf, Urkunden drucken</div>
+                </div>
+            </a>
             <a href="{{ url_for('ereignisse_admin.statistik_admin', slug=tournament.slug) }}" class="link-card">
                 <span class="link-card-icon">&#128202;</span>
                 <div>
