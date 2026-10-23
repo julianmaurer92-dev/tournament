@@ -8,6 +8,11 @@ python-engineio==4.11.2
 gevent==24.11.1
 gevent-websocket==0.10.1
 Werkzeug==3.1.3
+# WICHTIG: SQLAlchemy 2.1 schaltet den Standardtreiber fuer "postgresql://"
+# auf psycopg (v3) um. Da hier psycopg2-binary installiert ist, startet die
+# App dann nicht mehr ("No module named 'psycopg'"). Flask-SQLAlchemy 3.1.1
+# unterstuetzt 2.1 ohnehin nicht offiziell.
+SQLAlchemy>=2.0.36,<2.1
 psycopg2-binary==2.9.10
 Authlib==1.3.2
 requests==2.32.3

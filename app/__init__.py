@@ -11,6 +11,23 @@ socketio = SocketIO()
 oauth = OAuth()
 
 
+def _normalize_db_uri(uri):
+    """Treiber in der Datenbank-URL festnageln.
+
+    SQLAlchemy 2.1 hat den Standardtreiber fuer "postgresql://" von psycopg2
+    auf psycopg (v3) umgestellt. Da im Image psycopg2-binary liegt, wuerde die
+    App beim naechsten Image-Build nicht mehr starten. Deshalb schreiben wir
+    den Treiber explizit in die URL – unabhaengig von der SQLAlchemy-Version.
+    Ausserdem wird die alte Heroku-Form "postgres://" mituebersetzt.
+    """
+    if not uri:
+        return uri
+    for prefix in ("postgresql://", "postgres://"):
+        if uri.startswith(prefix):
+            return "postgresql+psycopg2://" + uri[len(prefix):]
+    return uri
+
+
 def create_app(config_overrides=None):
     """Create the Flask app.
 
@@ -20,9 +37,9 @@ def create_app(config_overrides=None):
     app = Flask(__name__)
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_db_uri(os.environ.get(
         "DATABASE_URL", "postgresql://cupplan:cupplan_secret@localhost:5432/cupplan"
-    )
+    ))
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_size": 3,       # 1 worker needs very few persistent connections
