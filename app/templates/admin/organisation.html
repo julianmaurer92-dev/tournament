@@ -1,0 +1,461 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Organisation – {{ tournament.name }}{% endblock %}
+
+{% block head %}
+<style>
+.org-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+@media (max-width: 900px) { .org-layout { grid-template-columns: 1fr; } }
+
+/* ── Pay row ── */
+.pay-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border, #1e293b);
+    transition: background 0.1s;
+}
+.pay-row:last-child { border-bottom: none; }
+.pay-row:hover { background: rgba(255,255,255,0.02); }
+
+/* ── Checkbox (custom) ── */
+.pay-check {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--border, #374151);
+    background: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+}
+.pay-check:checked {
+    background: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #22c55e);
+}
+.pay-check:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px; top: 0px;
+    width: 5px; height: 9px;
+    border: 2px solid #fff;
+    border-top: none; border-left: none;
+    transform: rotate(40deg);
+}
+
+/* ── Toggle switch ── */
+.pay-toggle {
+    width: 40px; height: 22px;
+    border-radius: 11px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    background: var(--border, #374151);
+}
+.pay-toggle.paid { background: #16a34a; }
+.pay-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.pay-toggle.paid::after { transform: translateX(18px); }
+
+.pay-info { flex: 1; min-width: 0; }
+.pay-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pay-meta { font-size: 0.72rem; color: var(--text-muted, #6b7280); }
+
+.pay-status {
+    font-size: 0.72rem; font-weight: 700;
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.pay-status.paid   { background: rgba(34,197,94,0.12); color: #4ade80; }
+.pay-status.unpaid { background: rgba(255,255,255,0.05); color: var(--text-muted, #6b7280); }
+
+.pay-print-btn {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem; font-weight: 600;
+    background: none;
+    border: 1px solid var(--border, #374151);
+    border-radius: 5px;
+    color: var(--text-muted, #6b7280);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.pay-print-btn:hover { color: var(--text, #f1f5f9); border-color: var(--text-muted); }
+.pay-print-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+/* ── Summary cards ── */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.summary-card {
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    text-align: center;
+}
+.summary-num { font-size: 1.5rem; font-weight: 900; line-height: 1; margin-bottom: 0.2rem; }
+.summary-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted, #6b7280); }
+.summary-card.green .summary-num { color: #4ade80; }
+.summary-card.yellow .summary-num { color: #fbbf24; }
+.summary-card.blue .summary-num { color: #60a5fa; }
+
+/* ── Selection bar ── */
+.selection-bar {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: rgba(34,197,94,0.08);
+    border-bottom: 1px solid rgba(34,197,94,0.2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4ade80;
+}
+.selection-bar.visible { display: flex; }
+</style>
+{% endblock %}
+
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="btn btn-outline btn-sm" target="_blank">&#128438; Spielplan</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+<div style="margin-bottom:1rem">
+    <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:0.15rem">&#128188; Organisation – {{ tournament.name }}</h2>
+    <p class="text-muted" style="font-size:0.8rem">Startgebühren verwalten &amp; Quittungen drucken</p>
+</div>
+
+<!-- Übersicht -->
+<div class="summary-grid">
+    <div class="summary-card green">
+        <div class="summary-num" id="sum-paid">{{ paid_count }}</div>
+        <div class="summary-label">Bezahlt</div>
+    </div>
+    <div class="summary-card yellow">
+        <div class="summary-num" id="sum-unpaid">{{ teams|length - paid_count }}</div>
+        <div class="summary-label">Ausstehend</div>
+    </div>
+    <div class="summary-card blue">
+        <div class="summary-num">
+            {% if total_received %}{{ "%.2f"|format(total_received)|replace(".", ",") }} €{% else %}—{% endif %}
+        </div>
+        <div class="summary-label">Eingenommen</div>
+    </div>
+</div>
+
+<div class="org-layout">
+
+<!-- ── Sidebar: Einstellungen ── -->
+<aside>
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">&#9881; Einstellungen</h3></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Turnierbezeichnung auf Quittung</label>
+                    <input type="text" class="form-control form-control-sm"
+                           value="{{ settings.tournament_name or tournament.name }}"
+                           disabled style="opacity:0.6"
+                           title="Wird aus den Turniereinstellungen übernommen">
+                    <div class="form-hint">Aus den Turniereinstellungen</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Startgebühr pro Mannschaft (€)</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control" id="entry_fee"
+                               value="{{ entry_fee or '' }}" placeholder="0,00" min="0" step="0.01">
+                        <span class="input-group-text">€</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Logo-URL <span class="text-muted" style="font-size:0.75rem">(für Quittung)</span></label>
+                    <input type="url" class="form-control form-control-sm" id="org_logo_url"
+                           value="{{ settings.org_logo_url or '' }}"
+                           placeholder="https://beispiel.de/logo.png"
+                           oninput="previewLogo(this.value)">
+                    <div class="mt-2" id="logo-preview" style="{{ '' if settings.org_logo_url else 'display:none' }}">
+                        <img id="logo-img"
+                             src="{{ settings.org_logo_url or '' }}"
+                             alt="Logo-Vorschau"
+                             style="max-height:56px;border-radius:6px;border:1px solid var(--border)"
+                             onerror="this.parentElement.style.display='none'">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 d-flex align-items-center gap-2">
+                <button class="btn btn-primary btn-sm" onclick="saveSettings()">&#10003; Speichern</button>
+                <span id="save-status" class="text-muted" style="font-size:0.78rem"></span>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ── Haupt: Teamliste ── -->
+<main>
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;gap:0.5rem">
+            <h3 class="card-title">&#128101; Mannschaften</h3>
+            <span class="badge badge-gray-lt">{{ teams|length }} Teams</span>
+            {% if entry_fee %}
+            <span class="text-muted" style="font-size:0.75rem">à {{ "%.2f"|format(entry_fee)|replace(".", ",") }} €</span>
+            {% endif %}
+            <div class="ms-auto d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline" onclick="printSelected()" id="btn-print-selected" style="display:none">
+                    &#128438; Ausgewählte drucken (<span id="sel-count">0</span>)
+                </button>
+                <a href="{{ url_for('admin.receipt_all', slug=tournament.slug) }}"
+                   target="_blank" class="btn btn-sm btn-outline">&#128438; Alle drucken</a>
+                {% if current_user.can_edit() %}
+                <button class="btn btn-sm btn-outline" onclick="markAllPaid()">&#10003; Alle bezahlt</button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not teams %}
+        <div class="card-body text-center text-muted py-5">Noch keine Teams registriert.</div>
+        {% else %}
+
+        <!-- Selection bar -->
+        <div class="selection-bar" id="selection-bar">
+            <span id="sel-label">0 ausgewählt</span>
+            <button class="btn btn-xs btn-outline" onclick="selectAll()">Alle auswählen</button>
+            <button class="btn btn-xs btn-outline" onclick="selectNone()">Auswahl aufheben</button>
+            <button class="btn btn-sm btn-primary ms-auto" onclick="printSelected()">
+                &#128438; Ausgewählte drucken
+            </button>
+        </div>
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.4rem 1rem;border-bottom:1px solid var(--border,#1e293b);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">
+            <input type="checkbox" class="pay-check" id="check-all" onchange="toggleAll(this)" title="Alle auswählen">
+            <span style="flex:1">Mannschaft</span>
+            <span style="width:80px;text-align:center">Status</span>
+            <span style="width:100px;text-align:center">Aktionen</span>
+        </div>
+
+        <div id="pay-list">
+            {% for team in teams %}
+            {% set payment = payments.get(team.id) %}
+            {% set is_paid = payment and payment.paid %}
+            {% set receipt_num = payment.receipt_number if payment and payment.receipt_number else '' %}
+            {% set paid_at = payment.paid_at.strftime('%d.%m.%Y') if payment and payment.paid_at else '' %}
+            <div class="pay-row" data-paid="{{ 'paid' if is_paid else 'unpaid' }}" data-id="{{ team.id }}">
+
+                <input type="checkbox" class="pay-check team-check" data-id="{{ team.id }}"
+                       onchange="onCheckChange()">
+
+                {% if current_user.can_edit() %}
+                <button class="pay-toggle {{ 'paid' if is_paid else '' }}"
+                        id="toggle-{{ team.id }}"
+                        onclick="togglePaid({{ team.id }}, this)"
+                        title="{{ 'Bezahlt – klicken zum Aufheben' if is_paid else 'Als bezahlt markieren' }}">
+                </button>
+                {% endif %}
+
+                <div class="pay-info">
+                    <div class="pay-name">{{ team.name }}</div>
+                    <div class="pay-meta" id="meta-{{ team.id }}">
+                        {% if team.group %}{{ team.group.name }}{% if is_paid %} · {% endif %}{% endif %}
+                        {% if is_paid %}Nr. {{ receipt_num }} · {{ paid_at }}{% endif %}
+                    </div>
+                </div>
+
+                <span class="pay-status {{ 'paid' if is_paid else 'unpaid' }}" id="status-{{ team.id }}">
+                    {{ '✓ Bezahlt' if is_paid else 'Offen' }}
+                </span>
+
+                <a href="{{ url_for('admin.receipt_single', slug=tournament.slug, tid=team.id) }}"
+                   target="_blank"
+                   class="pay-print-btn {{ '' if is_paid else 'disabled' }}"
+                   id="print-btn-{{ team.id }}"
+                   title="Quittung drucken">&#128438; Quittung</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</main>
+
+</div><!-- /org-layout -->
+
+<script>
+const SLUG = '{{ tournament.slug }}';
+
+// ── Logo-Vorschau ──
+function previewLogo(url) {
+    const preview = document.getElementById('logo-preview');
+    const img = document.getElementById('logo-img');
+    if (url) {
+        img.src = url;
+        preview.style.display = '';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// ── Einstellungen speichern ──
+async function saveSettings() {
+    const data = {
+        entry_fee: document.getElementById('entry_fee').value,
+        org_logo_url: document.getElementById('org_logo_url').value,
+    };
+    const res = await fetch(`/admin/t/${SLUG}/api/org/settings`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    const d = await res.json();
+    const status = document.getElementById('save-status');
+    status.textContent = d.ok ? '✓ Gespeichert' : 'Fehler';
+    if (d.ok) setTimeout(() => { status.textContent = ''; }, 2500);
+}
+
+// ── Toggle bezahlt ──
+async function togglePaid(tid, toggleEl) {
+    const res = await fetch(`/admin/t/${SLUG}/api/teams/${tid}/toggle-paid`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({}),
+    });
+    const d = await res.json();
+    if (d.error) { alert(d.error); return; }
+
+    const row = toggleEl.closest('.pay-row');
+    const statusEl = document.getElementById('status-' + tid);
+    const printBtn = document.getElementById('print-btn-' + tid);
+    const metaEl = document.getElementById('meta-' + tid);
+
+    toggleEl.classList.toggle('paid', d.paid);
+    toggleEl.title = d.paid ? 'Bezahlt – klicken zum Aufheben' : 'Als bezahlt markieren';
+    row.dataset.paid = d.paid ? 'paid' : 'unpaid';
+
+    statusEl.textContent = d.paid ? '✓ Bezahlt' : 'Offen';
+    statusEl.className = 'pay-status ' + (d.paid ? 'paid' : 'unpaid');
+
+    // Update meta line (keep group name if present)
+    const groupPart = metaEl.dataset.group || '';
+    metaEl.textContent = d.paid
+        ? (groupPart ? groupPart + ' · ' : '') + `Nr. ${d.receipt_number} · ${d.paid_at}`
+        : groupPart;
+
+    if (d.paid) {
+        printBtn.href = `/admin/t/${SLUG}/organisation/receipt/${tid}`;
+        printBtn.classList.remove('disabled');
+    } else {
+        printBtn.removeAttribute('href');
+        printBtn.classList.add('disabled');
+    }
+
+    updateSummary();
+}
+
+async function markAllPaid() {
+    if (!confirm('Alle Teams als bezahlt markieren?')) return;
+    const rows = document.querySelectorAll('.pay-row[data-paid="unpaid"]');
+    for (const row of rows) {
+        const tid = parseInt(row.dataset.id);
+        const toggleEl = document.getElementById('toggle-' + tid);
+        if (toggleEl) await togglePaid(tid, toggleEl);
+    }
+}
+
+// ── Summary update ──
+function updateSummary() {
+    const total = document.querySelectorAll('.pay-row').length;
+    const paid = document.querySelectorAll('.pay-row[data-paid="paid"]').length;
+    document.getElementById('sum-paid').textContent = paid;
+    document.getElementById('sum-unpaid').textContent = total - paid;
+}
+
+// ── Checkbox Auswahl ──
+function onCheckChange() {
+    const checked = document.querySelectorAll('.team-check:checked');
+    const count = checked.length;
+    const bar = document.getElementById('selection-bar');
+    const btnPrint = document.getElementById('btn-print-selected');
+    const selLabel = document.getElementById('sel-label');
+    const selCount = document.getElementById('sel-count');
+
+    bar.classList.toggle('visible', count > 0);
+    btnPrint.style.display = count > 0 ? '' : 'none';
+    selLabel.textContent = count + ' ausgewählt';
+    if (selCount) selCount.textContent = count;
+
+    // Update "check all" state
+    const total = document.querySelectorAll('.team-check').length;
+    const checkAll = document.getElementById('check-all');
+    if (checkAll) {
+        checkAll.indeterminate = count > 0 && count < total;
+        checkAll.checked = count === total;
+    }
+}
+
+function toggleAll(masterCheck) {
+    document.querySelectorAll('.team-check').forEach(cb => {
+        cb.checked = masterCheck.checked;
+    });
+    onCheckChange();
+}
+
+function selectAll() {
+    document.querySelectorAll('.team-check').forEach(cb => cb.checked = true);
+    document.getElementById('check-all').checked = true;
+    onCheckChange();
+}
+
+function selectNone() {
+    document.querySelectorAll('.team-check').forEach(cb => cb.checked = false);
+    document.getElementById('check-all').checked = false;
+    onCheckChange();
+}
+
+function printSelected() {
+    const ids = Array.from(document.querySelectorAll('.team-check:checked'))
+        .map(cb => cb.dataset.id).join(',');
+    if (!ids) { alert('Keine Mannschaften ausgewählt.'); return; }
+    window.open(`/admin/t/${SLUG}/organisation/receipts/all?ids=${ids}`, '_blank');
+}
+
+// Init: store group name in meta element as data attr
+document.querySelectorAll('.pay-row').forEach(row => {
+    const tid = row.dataset.id;
+    const metaEl = document.getElementById('meta-' + tid);
+    if (metaEl) {
+        // Extract group portion (everything before ' · Nr.')
+        const text = metaEl.textContent.trim();
+        const nrIdx = text.indexOf(' · Nr.');
+        metaEl.dataset.group = nrIdx > -1 ? text.substring(0, nrIdx).trim() : text.split(' · ')[0].trim();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Benutzerverwaltung{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">Neuen Benutzer erstellen</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.create_user') }}">
+            <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="username" placeholder="Benutzername" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="password" class="form-control" name="password" placeholder="Passwort" required>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="role" id="new-user-role" onchange="toggleAccess('new', this.value)">
+                        <option value="editor">Editor</option>
+                        <option value="viewer">Viewer (nur lesen)</option>
+                        <option value="superadmin">Superadmin</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">&#43; Erstellen</button>
+                </div>
+            </div>
+            <div id="new-tournament-access">
+                <label class="form-label text-muted small mb-1">Turnier-Zugang zuweisen:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for t in tournaments %}
+                    <label class="form-check form-check-inline mb-0"
+                           style="background:var(--input-bg,#0f1a2e);border:1px solid var(--border,#1e293b);
+                                  border-radius:6px;padding:4px 10px;cursor:pointer">
+                        <input class="form-check-input" type="checkbox" name="tournament_ids" value="{{ t.id }}">
+                        <span class="form-check-label small" style="color:var(--text,#f1f5f9)">
+                            {{ t.name }}
+                            {% if t.event_date %}
+                            <span class="badge badge-blue-lt ms-1" style="font-size:0.65rem">{{ t.event_date.strftime('%d.%m.%Y') }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                    {% if not tournaments %}
+                    <span class="text-muted small">Keine Turniere vorhanden.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Benutzer</h3>
+        <span class="ms-2 text-muted small">{{ users | length }} gesamt</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter table-hover card-table">
+            <thead>
+                <tr>
+                    <th>Benutzer</th>
+                    <th>Rolle</th>
+                    <th>Turnier-Zugang</th>
+                    <th class="w-1">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="avatar avatar-sm"
+                                  style="background:{{ '#22c55e' if user.role == 'superadmin' else '#3b82f6' if user.role == 'editor' else '#6b7280' }};
+                                         color:#fff;font-size:0.8rem;font-weight:700">
+                                {{ user.username[0].upper() }}
+                            </span>
+                            <div>
+                                <div class="fw-semibold">
+                                    {{ user.username }}
+                                    {% if user.id == current_user.id %}
+                                    <span class="badge badge-green-lt ms-1" style="font-size:0.65rem">Du</span>
+                                    {% endif %}
+                                </div>
+                                {% if user.email %}
+                                <div class="text-muted small">{{ user.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if user.role == 'superadmin' %}
+                        <span class="badge badge-green-lt">superadmin</span>
+                        {% elif user.role == 'editor' %}
+                        <span class="badge badge-blue-lt">editor</span>
+                        {% else %}
+                        <span class="badge badge-gray-lt">viewer</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.role == 'superadmin' %}
+                        <span class="text-muted small">Alle Turniere</span>
+                        {% else %}
+                        {% set access_list = user.tournament_access.all() %}
+                        {% if access_list %}
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for a in access_list %}
+                            {% set t = tournaments | selectattr('id', 'equalto', a.tournament_id) | first %}
+                            {% if t %}
+                            <span class="badge badge-blue-lt">{{ t.name }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">Kein Zugang</span>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-list">
+                            <a href="{{ url_for('admin.edit_user', uid=user.id) }}" class="btn btn-sm">Bearbeiten</a>
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('admin.delete_user', uid=user.id) }}"
+                                  style="display:inline" onsubmit="return confirm('Benutzer {{ user.username }} loeschen?')">
+                                <button type="submit" class="btn btn-sm btn-danger">Loeschen</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function toggleAccess(prefix, role) {
+    const panel = document.getElementById(prefix + '-tournament-access');
+    if (!panel) return;
+    panel.style.display = (role === 'superadmin') ? 'none' : 'block';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const sel = document.getElementById('new-user-role');
+    if (sel) toggleAccess('new', sel.value);
+});
+</script>
+{% endblock %}

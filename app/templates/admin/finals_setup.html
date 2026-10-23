@@ -1,89 +1,87 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
 {% block title %}Finalrunde einrichten - {{ tournament.name }}{% endblock %}
-{% block body_class %}admin-page{% endblock %}
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 {% endblock %}
 
-{% block content %}
-<header class="admin-header">
-    <div class="admin-header-left">
-        <span class="admin-header-icon">&#127942;</span>
-        <h1>Finalrunde einrichten</h1>
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Dashboard</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="finals-setup-grid">
+
+    <!-- Left: Mode Selection -->
+    <div class="finals-modes">
+        <h3 class="ctrl-label">Modus waehlen</h3>
+
+        <div class="mode-card ctrl-card" data-mode="classic_ko" onclick="selectMode('classic_ko')">
+            <h3>Klassische KO-Runde</h3>
+            <p>Ab Achtel-, Viertel- oder Halbfinale. Gruppen&uuml;bergreifende Setzliste.</p>
+        </div>
+
+        <div class="mode-card ctrl-card" data-mode="rank_vs_rank" onclick="selectMode('rank_vs_rank')">
+            <h3>Platzierungsspiele</h3>
+            <p>1. Gruppe A vs 1. Gruppe B, 2. Gruppe A vs 2. Gruppe B &hellip; Alle Pl&auml;tze werden ausgespielt.</p>
+        </div>
+
+        <div class="mode-card ctrl-card" data-mode="semi_final" onclick="selectMode('semi_final')">
+            <h3>Halbfinale + Finale</h3>
+            <p>4 Teams: Platz 1 vs 4, Platz 2 vs 3. Optional Spiel um Platz 3.</p>
+        </div>
+
+        <div class="mode-card ctrl-card" data-mode="direct_final" onclick="selectMode('direct_final')">
+            <h3>Direktes Finale</h3>
+            <p>Gesamtrang 1 vs Gesamtrang 2. Ein einziges Endspiel.</p>
+        </div>
+
+        <div class="mode-card ctrl-card" data-mode="free_ko" onclick="selectMode('free_ko')">
+            <h3>Freie KO-Runde</h3>
+            <p>Beliebige Teamanzahl (Zweierpotenz). Automatische Setzliste.</p>
+        </div>
+
+        <div class="mode-card ctrl-card" data-mode="custom" onclick="selectMode('custom')">
+            <h3>Eigene Paarungen</h3>
+            <p>Runden und Paarungen manuell festlegen. Gewinner/Verlierer-Verkn&uuml;pfung.</p>
+        </div>
     </div>
-    <nav class="admin-nav">
-        <a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Dashboard</a>
-        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-    </nav>
-</header>
 
-<div class="admin-container">
-    <div class="finals-setup-grid">
-
-        <!-- Left: Mode Selection -->
-        <div class="finals-modes">
-            <h3 class="ctrl-label">Modus waehlen</h3>
-
-            <div class="mode-card ctrl-card" data-mode="classic_ko" onclick="selectMode('classic_ko')">
-                <h3>Klassische KO-Runde</h3>
-                <p>Ab Achtel-, Viertel- oder Halbfinale. Gruppen&uuml;bergreifende Setzliste.</p>
-            </div>
-
-            <div class="mode-card ctrl-card" data-mode="semi_final" onclick="selectMode('semi_final')">
-                <h3>Halbfinale + Finale</h3>
-                <p>4 Teams: Platz 1 vs 4, Platz 2 vs 3. Optional Spiel um Platz 3.</p>
-            </div>
-
-            <div class="mode-card ctrl-card" data-mode="direct_final" onclick="selectMode('direct_final')">
-                <h3>Direktes Finale</h3>
-                <p>Gesamtrang 1 vs Gesamtrang 2. Ein einziges Endspiel.</p>
-            </div>
-
-            <div class="mode-card ctrl-card" data-mode="free_ko" onclick="selectMode('free_ko')">
-                <h3>Freie KO-Runde</h3>
-                <p>Beliebige Teamanzahl (Zweierpotenz). Automatische Setzliste.</p>
-            </div>
-
-            <div class="mode-card ctrl-card" data-mode="custom" onclick="selectMode('custom')">
-                <h3>Eigene Paarungen</h3>
-                <p>Runden und Paarungen manuell festlegen. Gewinner/Verlierer-Verkn&uuml;pfung.</p>
+    <!-- Right: Configuration + Rankings -->
+    <div class="finals-config">
+        <div id="config-panel">
+            <div class="ctrl-card">
+                <p class="empty-hint">Bitte einen Modus auswaehlen...</p>
             </div>
         </div>
 
-        <!-- Right: Configuration + Rankings -->
-        <div class="finals-config">
-            <div id="config-panel">
-                <div class="ctrl-card">
-                    <p class="empty-hint">Bitte einen Modus auswaehlen...</p>
-                </div>
-            </div>
-
-            <!-- Overall Rankings Preview -->
-            <div class="ctrl-card" style="margin-top:1rem">
-                <h3 class="ctrl-label">Gesamtrangliste</h3>
-                {% if rankings %}
-                <table class="standings-table">
-                    <thead>
-                        <tr><th>#</th><th>Team</th><th>Gruppe</th><th>P</th><th>TD</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for r in rankings %}
-                        <tr>
-                            <td class="rank-cell">{{ r.overall_rank }}</td>
-                            <td class="team-cell">{{ r.team.name }}</td>
-                            <td>{{ r.group_name }}</td>
-                            <td class="pts-cell">{{ r.points }}</td>
-                            <td>{{ '+' if r.goal_diff > 0 else '' }}{{ r.goal_diff }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="empty-hint">Keine Teams verfuegbar.</p>
-                {% endif %}
-            </div>
+        <!-- Overall Rankings Preview -->
+        <div class="ctrl-card" style="margin-top:1rem">
+            <h3 class="ctrl-label">Gesamtrangliste</h3>
+            {% if rankings %}
+            <table class="standings-table">
+                <thead>
+                    <tr><th>#</th><th>Team</th><th>Gruppe</th><th>P</th><th>TD</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in rankings %}
+                    <tr>
+                        <td class="rank-cell">{{ r.overall_rank }}</td>
+                        <td class="team-cell">{{ r.team.name }}</td>
+                        <td>{{ r.group_name }}</td>
+                        <td class="pts-cell">{{ r.points }}</td>
+                        <td>{{ '+' if r.goal_diff > 0 else '' }}{{ r.goal_diff }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-hint">Keine Teams verfuegbar.</p>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -92,6 +90,12 @@
 const SLUG = '{{ tournament.slug }}';
 const ALL_TEAMS = {{ teams_json|safe }};
 let selectedMode = null;
+const PRESET_MODE = '{{ preset_mode }}';
+
+// Vorausgewählten Modus automatisch laden
+if (PRESET_MODE) {
+    document.addEventListener('DOMContentLoaded', () => selectMode(PRESET_MODE));
+}
 
 // ── Custom mode state ──
 let customRounds = [];
@@ -106,6 +110,24 @@ function selectMode(mode) {
 function renderConfigPanel(mode) {
     const panel = document.getElementById('config-panel');
     switch(mode) {
+        case 'rank_vs_rank': {
+            const maxRanks = {{ rankings | length if rankings else 0 }};
+            let opts = '';
+            for (let i = 1; i <= maxRanks; i++) {
+                opts += `<option value="${i}" ${i === maxRanks ? 'selected' : ''}>${i} Platz${i > 1 ? 'ierungen' : ''}</option>`;
+            }
+            panel.innerHTML = `
+                <div class="ctrl-card">
+                    <h3 class="ctrl-label">Platzierungsspiele</h3>
+                    <p class="empty-hint" style="margin-bottom:0.75rem">Gleicher Rang aus verschiedenen Gruppen spielt gegeneinander.<br>1.A vs 1.B &middot; 2.A vs 2.B &middot; &hellip;</p>
+                    <label class="form-label text-muted" style="font-size:0.78rem;font-weight:600">Anzahl Pl&auml;tze ausspielen</label>
+                    <select id="cfg-num-ranks" class="design-input">${opts}</select>
+                    <button class="btn btn-accent btn-lg" style="margin-top:1rem;width:100%" onclick="startFinals()">
+                        Platzierungsspiele starten
+                    </button>
+                </div>`;
+            break;
+        }
         case 'classic_ko':
             panel.innerHTML = `
                 <div class="ctrl-card">
@@ -282,7 +304,6 @@ function initCustomSortable() {
 }
 
 function syncCustomFromDOM() {
-    // Read current state from DOM inputs after drag
     customRounds.forEach((round, ri) => {
         const container = document.getElementById('cm-list-' + ri);
         if (!container) { round.matches = []; return; }
@@ -304,7 +325,6 @@ function syncCustomFromDOM() {
 }
 
 function saveCustomInputs() {
-    // Save all current input values into customRounds before re-render
     customRounds.forEach((round, ri) => {
         const container = document.getElementById('cm-list-' + ri);
         if (!container) return;
@@ -320,7 +340,6 @@ function saveCustomInputs() {
             m.team2_type = t2Raw ? t2Raw.split(':')[0] : '';
             m.team2_value = t2Raw ? t2Raw.substring(t2Raw.indexOf(':') + 1) : '';
         });
-        // Also save round name
         const nameInput = document.querySelector(`.cr-name[data-ri="${ri}"]`);
         if (nameInput) round.name = nameInput.value;
     });
@@ -328,11 +347,7 @@ function saveCustomInputs() {
 
 function addCustomRound() {
     saveCustomInputs();
-    customRounds.push({
-        name: 'Runde ' + (customRounds.length + 1),
-        is_loser_round: false,
-        matches: [],
-    });
+    customRounds.push({ name: 'Runde ' + (customRounds.length + 1), is_loser_round: false, matches: [] });
     renderCustomPanel();
 }
 
@@ -380,6 +395,9 @@ function startFinals() {
             break;
         case 'semi_final':
             config = { platz3: document.getElementById('cfg-platz3').checked };
+            break;
+        case 'rank_vs_rank':
+            config = { num_ranks: parseInt(document.getElementById('cfg-num-ranks').value) };
             break;
         case 'direct_final':
             config = {};

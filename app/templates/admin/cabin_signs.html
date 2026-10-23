@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Kabinenschilder – {{ tournament.name }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ══ SCREEN ══ */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #e8eaed;
+            color: #111;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        }
+        .toolbar-title {
+            font-size: 1rem; font-weight: 700; margin-right: auto;
+            color: #fff;
+        }
+        .toolbar-title span { color: #4ade80; }
+
+        .btn {
+            border: none; border-radius: 7px;
+            padding: 0.45rem 1rem;
+            font-size: 0.85rem; font-weight: 700; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            text-decoration: none;
+        }
+        .btn-green  { background: #16a34a; color: #fff; }
+        .btn-green:hover { background: #15803d; }
+        .btn-dark   { background: #f8fafc; color: #111; }
+        .btn-dark:hover { background: #e2e8f0; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #ddd; }
+        .btn-outline:hover { border-color: #fff; color: #fff; }
+        .btn-add    { background: #166534; color: #4ade80; border: 1px solid #16a34a; }
+        .btn-add:hover { background: #14532d; }
+
+        .hint {
+            font-size: 0.76rem; color: rgba(255,255,255,0.45);
+            padding: 0.3rem 0.65rem;
+            background: rgba(255,255,255,0.07);
+            border-radius: 5px;
+        }
+
+        /* Cards area (screen) */
+        .cards-area {
+            padding: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        /* Screen preview card – scaled landscape A4 */
+        .cabin-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+            width: 540px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid #d0d0d0;
+        }
+
+        /* ── HEADER: dark banner with cabin name + tournament info + logo ── */
+        .cabin-head {
+            background: #0f172a;
+            color: #fff;
+            padding: 0.9rem 1.1rem;
+            display: flex;
+            align-items: stretch;
+            gap: 0.9rem;
+            min-height: 100px;
+        }
+
+        /* Left: cabin label + name */
+        .cabin-head-name {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .cabin-lbl {
+            font-size: 0.52rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.28em;
+            opacity: 0.38; margin-bottom: 0.2rem;
+        }
+        .cabin-title {
+            font-size: 2.1rem; font-weight: 900; letter-spacing: 0.02em;
+            line-height: 1.05;
+            outline: none;
+            border-bottom: 2px solid transparent;
+            cursor: text;
+            word-break: break-word;
+            color: #fff;
+        }
+        .cabin-title:focus { border-bottom-color: rgba(255,255,255,0.35); }
+        .cabin-count {
+            font-size: 0.68rem; opacity: 0.4;
+            margin-top: 0.3rem; letter-spacing: 0.04em;
+        }
+
+        /* Center divider */
+        .cabin-head-divider {
+            width: 1px;
+            background: rgba(255,255,255,0.12);
+            flex-shrink: 0;
+            margin: 0.15rem 0;
+        }
+
+        /* Right: tournament info + logo */
+        .cabin-head-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 0.4rem;
+            flex-shrink: 0;
+            min-width: 0;
+        }
+        .cabin-logo {
+            width: 52px; height: 52px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .cabin-logo-placeholder {
+            width: 52px; height: 52px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.07);
+            border: 1.5px dashed rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; opacity: 0.35;
+            flex-shrink: 0;
+        }
+        .cabin-tournament-info {
+            text-align: right;
+        }
+        .cabin-tournament-name {
+            font-size: 0.82rem; font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+        .cabin-tournament-date {
+            font-size: 0.72rem; font-weight: 600;
+            color: rgba(255,255,255,0.55);
+            margin-top: 0.15rem;
+        }
+
+        .btn-remove {
+            background: rgba(255,255,255,0.07);
+            border: none; color: rgba(255,255,255,0.5);
+            border-radius: 5px;
+            width: 22px; height: 22px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem;
+            align-self: flex-start;
+        }
+        .btn-remove:hover { background: rgba(220,38,38,0.5); color: #fff; }
+
+        /* Team list */
+        .cabin-body {
+            min-height: 60px;
+            padding: 0.15rem 0;
+        }
+        .team-item {
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.4rem 0.75rem 0.4rem 1rem;
+            border-bottom: 1px solid #f2f2f2;
+            cursor: grab;
+            user-select: none;
+            font-size: 0.93rem; font-weight: 700;
+            background: #fff;
+            transition: background 0.1s;
+        }
+        .team-item:last-child { border-bottom: none; }
+        .team-item:hover { background: #f7f9ff; }
+        .team-item.sortable-ghost { opacity: 0.2; background: #dbeafe; }
+        .drag-handle { color: #ccc; font-size: 0.8rem; cursor: grab; flex-shrink: 0; }
+        .team-num { font-size: 0.72rem; color: #aaa; width: 1.4rem; text-align: right; flex-shrink: 0; }
+        .team-name {
+            flex: 1; outline: none; border-bottom: 1px solid transparent;
+            cursor: text; min-width: 0;
+        }
+        .team-name:focus { border-bottom-color: #94a3b8; }
+        .team-del {
+            flex-shrink: 0; background: none; border: none;
+            color: #ccc; font-size: 1rem; cursor: pointer;
+            width: 22px; height: 22px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s, color 0.1s;
+        }
+        .team-del:hover { background: rgba(220,38,38,0.12); color: #dc2626; }
+        .team-copy {
+            flex-shrink: 0; background: none; border: none;
+            color: #bbb; font-size: 0.85rem; cursor: pointer;
+            width: 22px; height: 22px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s, color 0.1s;
+        }
+        .team-copy:hover { background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+        /* Alternative entry */
+        .team-item.alt {
+            background: #fffbeb;
+            border-left: 3px solid #fbbf24;
+            font-weight: 400;
+            font-style: italic;
+        }
+        .team-item.alt:hover { background: #fef3c7; }
+        .team-alt-badge {
+            flex-shrink: 0;
+            font-size: 0.6rem; font-weight: 800; font-style: normal;
+            letter-spacing: 0.05em; color: #d97706;
+            background: rgba(245,158,11,0.12);
+            border-radius: 3px; padding: 0.1rem 0.3rem;
+        }
+
+        /* Copy-to-cabin popup */
+        .copy-popup {
+            position: fixed; z-index: 500;
+            background: #fff; border: 1px solid #e2e8f0;
+            border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+            padding: 0.3rem 0; min-width: 160px;
+            font-style: normal;
+        }
+        .copy-popup-hd {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: #94a3b8;
+            padding: 0.35rem 0.75rem 0.2rem;
+        }
+        .copy-popup-item {
+            display: block; width: 100%; text-align: left;
+            background: none; border: none; cursor: pointer;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.83rem; color: #1e293b;
+            transition: background 0.1s;
+        }
+        .copy-popup-item:hover { background: #f1f5f9; }
+        .cabin-empty-hint {
+            padding: 0.9rem; text-align: center;
+            color: #ccc; font-size: 0.8rem; font-style: italic;
+            pointer-events: none;
+        }
+
+        /* ══ PRINT ══ */
+        @page { size: A4 landscape; margin: 0; }
+
+        @media print {
+            .toolbar { display: none !important; }
+            body { background: #fff; }
+
+            .cards-area {
+                display: block;
+                padding: 0;
+                gap: 0;
+            }
+
+            /* One card = one A4 landscape page = 297mm × 210mm */
+            .cabin-card {
+                width: 297mm;
+                height: 210mm;
+                border-radius: 0;
+                box-shadow: none;
+                border: none;
+                page-break-after: always;
+                break-after: page;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .cabin-card:last-child {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+
+            /* ── PRINT HEADER: full-width dark banner ── */
+            .cabin-head {
+                padding: 9mm 14mm 8mm;
+                min-height: 0;
+                height: 72mm;
+                flex-shrink: 0;
+                align-items: center;
+            }
+
+            .cabin-head-name {
+                justify-content: center;
+            }
+            .cabin-lbl {
+                font-size: 0.62rem;
+                letter-spacing: 0.32em;
+                margin-bottom: 0.4rem;
+            }
+            .cabin-title  { font-size: 6rem; }
+            .cabin-count  { font-size: 0.95rem; margin-top: 0.5rem; }
+
+            .cabin-head-divider { margin: 2mm 0; }
+
+            .cabin-logo  { width: 90px; height: 90px; border-radius: 8px; }
+            .cabin-logo-placeholder { width: 90px; height: 90px; }
+
+            .cabin-tournament-name { font-size: 1.05rem; }
+            .cabin-tournament-date { font-size: 0.88rem; margin-top: 0.3rem; }
+
+            .btn-remove  { display: none !important; }
+
+            /* Team list fills remaining space */
+            .cabin-body {
+                flex: 1;
+                padding: 0;
+                overflow: hidden;
+            }
+            .team-item {
+                padding: 0 14mm;
+                height: calc((210mm - 72mm) / 8);
+                font-size: 1.4rem;
+                border-bottom: 1px solid #e8e8e8;
+                cursor: default;
+            }
+            .drag-handle { display: none !important; }
+            .team-del    { display: none !important; }
+            .team-copy   { display: none !important; }
+            .team-num    { font-size: 1.05rem; width: 2.5rem; }
+            .team-name   { border-bottom: none !important; cursor: default !important; }
+            .team-item.alt { background: #fffbeb; border-left: 4px solid #fbbf24; }
+            .team-alt-badge { font-size: 0.85rem; padding: 0 0.4rem; }
+            .copy-popup  { display: none !important; }
+            .cabin-empty-hint { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span class="toolbar-title">&#128682; Kabinenschilder &middot; <span>{{ tournament.name }}</span></span>
+    <span class="hint">Teams verschieben per Drag &amp; Drop &middot; Namen anklicken zum Bearbeiten &middot; &#10005; zum Entfernen</span>
+    <button class="btn btn-add" onclick="addCabin()">&#43; Kabine</button>
+    <div style="width:1px;height:1.5rem;background:rgba(255,255,255,0.15);flex-shrink:0"></div>
+    <button class="btn btn-dark" onclick="window.print()">&#128438; Drucken / PDF</button>
+    <a href="javascript:history.back()" class="btn btn-outline">&#8592; Zur&uuml;ck</a>
+</div>
+
+<div class="cards-area" id="cards-area">
+    {% for group in groups %}
+    {% set team_list = teams_by_group[group.id] %}
+    <div class="cabin-card">
+        <div class="cabin-head">
+            <div class="cabin-head-name">
+                <div class="cabin-lbl">Kabine</div>
+                <div class="cabin-title" contenteditable="true">{{ group.name }}</div>
+                <div class="cabin-count">{{ team_list|length }} Mannschaft{{ 'en' if team_list|length != 1 else '' }}</div>
+            </div>
+            <div class="cabin-head-divider"></div>
+            <div class="cabin-head-info">
+                {% if settings.org_logo_url %}
+                <img src="{{ settings.org_logo_url }}" alt="Logo" class="cabin-logo">
+                {% else %}
+                <div class="cabin-logo-placeholder">&#127942;</div>
+                {% endif %}
+                <div class="cabin-tournament-info">
+                    <div class="cabin-tournament-name">{{ tournament.name }}</div>
+                    <div class="cabin-tournament-date">
+                        {% if tournament.event_date %}&#128197; {{ tournament.event_date.strftime('%d.%m.%Y') }}{% if tournament.event_time %} &middot; {{ tournament.event_time[:5] }} Uhr{% endif %}{% endif %}
+                        {% if tournament.description %}<br>{{ tournament.description }}{% endif %}
+                    </div>
+                </div>
+                <button class="btn-remove" onclick="removeCabin(this.closest('.cabin-card'))" title="Kabine entfernen">&#215;</button>
+            </div>
+        </div>
+
+        <div class="cabin-body">
+            {% for team in team_list %}
+            <div class="team-item">
+                <span class="drag-handle">&#8942;</span>
+                <span class="team-num">{{ loop.index }}.</span>
+                <span class="team-name" contenteditable="true">{{ team.name }}</span>
+                <button class="team-copy" onclick="openCopyPopup(this)" title="Als Alternative zu anderer Kabine hinzufügen">&#43;</button>
+                <button class="team-del" onclick="removeTeam(this)" title="Mannschaft entfernen">&#10005;</button>
+            </div>
+            {% endfor %}
+            {% if not team_list %}
+            <div class="cabin-empty-hint">Keine Teams &ndash; hierher ziehen</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+let cabinCounter = {{ groups | length }};
+
+const ORG_LOGO    = {{ (settings.org_logo_url or '') | tojson }};
+const TOURNAMENT  = {{ tournament.name | tojson }};
+const EVENT_DATE  = {{ (tournament.event_date.strftime('%d.%m.%Y') if tournament.event_date else '') | tojson }};
+const EVENT_TIME  = {{ (tournament.event_time[:5] if tournament.event_time else '') | tojson }};
+const DESCRIPTION = {{ (tournament.description or '') | tojson }};
+
+function logoHTML() {
+    if (ORG_LOGO) return `<img src="${ORG_LOGO}" alt="Logo" class="cabin-logo">`;
+    return `<div class="cabin-logo-placeholder">&#127942;</div>`;
+}
+
+function tournamentInfoHTML() {
+    let dateStr = EVENT_DATE ? `&#128197; ${EVENT_DATE}` + (EVENT_TIME ? ` &middot; ${EVENT_TIME} Uhr` : '') : '';
+    let desc = DESCRIPTION ? `<br>${DESCRIPTION}` : '';
+    return `<div class="cabin-tournament-name">${TOURNAMENT}</div>
+            <div class="cabin-tournament-date">${dateStr}${desc}</div>`;
+}
+
+function teamItemHTML(name) {
+    return `<div class="team-item">
+        <span class="drag-handle">&#8942;</span>
+        <span class="team-num"></span>
+        <span class="team-name" contenteditable="true">${name}</span>
+        <button class="team-copy" onclick="openCopyPopup(this)" title="Als Alternative zu anderer Kabine hinzufügen">&#43;</button>
+        <button class="team-del" onclick="removeTeam(this)" title="Mannschaft entfernen">&#10005;</button>
+    </div>`;
+}
+
+function teamAltHTML(name) {
+    return `<div class="team-item alt">
+        <span class="drag-handle">&#8942;</span>
+        <span class="team-alt-badge">ALT</span>
+        <span class="team-name" contenteditable="true">${name}</span>
+        <button class="team-copy" onclick="openCopyPopup(this)" title="Nochmals als Alternative hinzufügen">&#43;</button>
+        <button class="team-del" onclick="removeTeam(this)" title="Entfernen">&#10005;</button>
+    </div>`;
+}
+
+function initSortable(bodyEl) {
+    Sortable.create(bodyEl, {
+        group: 'teams',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-handle',
+        onEnd: refreshAll,
+    });
+}
+
+function refreshAll() {
+    document.querySelectorAll('.cabin-card').forEach(card => {
+        const body    = card.querySelector('.cabin-body');
+        const items   = body.querySelectorAll('.team-item');
+        const countEl = card.querySelector('.cabin-count');
+        let numIdx = 1;
+        items.forEach(item => {
+            const num = item.querySelector('.team-num');
+            if (num) {
+                if (item.classList.contains('alt')) {
+                    num.textContent = '';
+                } else {
+                    num.textContent = (numIdx++) + '.';
+                }
+            }
+        });
+        const primary = body.querySelectorAll('.team-item:not(.alt)').length;
+        const alt     = body.querySelectorAll('.team-item.alt').length;
+        if (countEl) {
+            countEl.textContent = primary + ' Mannschaft' + (primary !== 1 ? 'en' : '') +
+                (alt ? ` · ${alt} Alt.` : '');
+        }
+        let hint = body.querySelector('.cabin-empty-hint');
+        if (items.length === 0) {
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.className = 'cabin-empty-hint';
+                hint.textContent = 'Keine Teams \u2013 hierher ziehen';
+                body.appendChild(hint);
+            }
+        } else {
+            if (hint) hint.remove();
+        }
+    });
+}
+
+document.querySelectorAll('.cabin-body').forEach(initSortable);
+
+function addCabin() {
+    cabinCounter++;
+    const card = document.createElement('div');
+    card.className = 'cabin-card';
+    card.innerHTML = `
+        <div class="cabin-head">
+            <div class="cabin-head-name">
+                <div class="cabin-lbl">Kabine</div>
+                <div class="cabin-title" contenteditable="true">Kabine ${cabinCounter}</div>
+                <div class="cabin-count">0 Mannschaften</div>
+            </div>
+            <div class="cabin-head-divider"></div>
+            <div class="cabin-head-info">
+                ${logoHTML()}
+                <div class="cabin-tournament-info">${tournamentInfoHTML()}</div>
+                <button class="btn-remove" onclick="removeCabin(this.closest('.cabin-card'))" title="Kabine entfernen">&#215;</button>
+            </div>
+        </div>
+        <div class="cabin-body">
+            <div class="cabin-empty-hint">Keine Teams \u2013 hierher ziehen</div>
+        </div>
+    `;
+    document.getElementById('cards-area').appendChild(card);
+    initSortable(card.querySelector('.cabin-body'));
+}
+
+function removeCabin(card) {
+    const n = card.querySelectorAll('.team-item').length;
+    if (n > 0 && !confirm(n + ' Team(s) in dieser Kabine. Kabine trotzdem entfernen?')) return;
+    card.remove();
+}
+
+function removeTeam(btn) {
+    const item = btn.closest('.team-item');
+    item.remove();
+    refreshAll();
+}
+
+// ── Copy-to-cabin popup ──
+let _activePopup = null;
+
+function openCopyPopup(btn) {
+    closePopup();
+    const name = btn.closest('.team-item').querySelector('.team-name').textContent.trim();
+    const currentCard = btn.closest('.cabin-card');
+
+    const popup = document.createElement('div');
+    popup.className = 'copy-popup';
+    popup.innerHTML = '<div class="copy-popup-hd">Als Alternative in Kabine:</div>';
+
+    document.querySelectorAll('.cabin-card').forEach(card => {
+        if (card === currentCard) return;
+        const label = card.querySelector('.cabin-title').textContent.trim();
+        const item = document.createElement('button');
+        item.className = 'copy-popup-item';
+        item.textContent = label;
+        item.onclick = () => {
+            addAltToCard(card, name);
+            closePopup();
+        };
+        popup.appendChild(item);
+    });
+
+    if (popup.querySelectorAll('.copy-popup-item').length === 0) {
+        popup.innerHTML += '<div style="padding:0.35rem 0.75rem;font-size:0.8rem;color:#94a3b8">Keine anderen Kabinen.</div>';
+    }
+
+    document.body.appendChild(popup);
+    _activePopup = popup;
+
+    const rect = btn.getBoundingClientRect();
+    popup.style.top  = (rect.bottom + 4) + 'px';
+    popup.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+
+    setTimeout(() => document.addEventListener('click', closePopup, {once: true}), 0);
+}
+
+function closePopup() {
+    if (_activePopup) { _activePopup.remove(); _activePopup = null; }
+}
+
+function addAltToCard(card, name) {
+    const body = card.querySelector('.cabin-body');
+    const hint = body.querySelector('.cabin-empty-hint');
+    if (hint) hint.remove();
+    const div = document.createElement('div');
+    div.innerHTML = teamAltHTML(name);
+    body.appendChild(div.firstElementChild);
+    refreshAll();
+}
+</script>
+</body>
+</html>

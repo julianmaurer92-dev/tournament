@@ -1,0 +1,91 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Benutzer bearbeiten - {{ user.username }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.user_list') }}" class="btn btn-outline btn-sm">&#8592; Benutzer</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            &#128100; {{ user.username }}
+            <span class="role-badge role-{{ user.role }}" style="margin-left:0.5rem">{{ user.role }}</span>
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.edit_user', uid=user.id) }}" class="admin-form-col">
+            <div class="admin-form-row">
+                <label class="form-label-custom">Rolle:</label>
+                <select name="role" id="edit-role" onchange="toggleTournamentAccess(this.value)">
+                    <option value="editor" {% if user.role == 'editor' %}selected{% endif %}>Editor</option>
+                    <option value="viewer" {% if user.role == 'viewer' %}selected{% endif %}>Viewer (nur lesen)</option>
+                    <option value="superadmin" {% if user.role == 'superadmin' %}selected{% endif %}>Superadmin</option>
+                </select>
+            </div>
+            <div class="admin-form-row">
+                <label class="form-label-custom">Neues Passwort:</label>
+                <input type="password" name="password" placeholder="Leer lassen = unverändert">
+            </div>
+
+            <div id="tournament-access-panel" class="tournament-access-panel"
+                 {% if user.role == 'superadmin' %}style="display:none"{% endif %}>
+                <p class="form-hint" style="margin-bottom:0.5rem">Turnier-Zugang:</p>
+                <div class="tournament-checkboxes">
+                    {% for t in tournaments %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tournament_ids" value="{{ t.id }}"
+                               {% if t.id in assigned_ids %}checked{% endif %}>
+                        {{ t.name }}
+                        {% if t.event_date %}
+                        <span class="item-badge badge-date" style="font-size:0.7rem">{{ t.event_date.strftime('%d.%m.%Y') }}</span>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                    {% if not tournaments %}
+                    <span class="empty-hint">Keine Turniere vorhanden.</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="admin-form-row" style="margin-top:1rem">
+                <button type="submit" class="btn btn-accent">Speichern</button>
+                <a href="{{ url_for('admin.user_list') }}" class="btn btn-outline">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.role-badge {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.role-superadmin { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e44; }
+.role-editor     { background: #3b82f622; color: #60a5fa; border: 1px solid #3b82f644; }
+.role-viewer     { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+.form-label-custom { font-size: 0.88rem; color: var(--text-muted, #9ca3af); min-width: 120px; }
+.tournament-access-panel {
+    margin-top: 0.75rem; padding: 0.75rem;
+    background: var(--panel-bg, #1a2332);
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border, #2d3748);
+}
+.tournament-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.checkbox-label {
+    display: flex; align-items: center; gap: 0.4rem; cursor: pointer;
+    font-size: 0.88rem; padding: 4px 8px;
+    border-radius: var(--radius-sm, 6px); border: 1px solid var(--border, #2d3748);
+}
+.checkbox-label:hover { background: var(--hover, #2d3748); }
+</style>
+
+<script>
+function toggleTournamentAccess(role) {
+    const panel = document.getElementById('tournament-access-panel');
+    panel.style.display = (role === 'superadmin') ? 'none' : 'block';
+}
+</script>
+{% endblock %}

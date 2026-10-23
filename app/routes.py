@@ -35,7 +35,7 @@ def api_state(slug):
 
     tid = tournament.id
 
-    live_match = Match.query.filter_by(status="live", tournament_id=tid).first()
+    live_matches_q = Match.query.filter_by(status="live", tournament_id=tid).order_by(Match.field).all()
 
     past_matches = (
         Match.query.filter_by(status="finished", is_final=False, tournament_id=tid)
@@ -63,7 +63,8 @@ def api_state(slug):
 
     return jsonify({
         "tournament": tournament.to_dict(),
-        "live_match": live_match.to_dict() if live_match else None,
+        "live_match": live_matches_q[0].to_dict() if live_matches_q else None,
+        "live_matches": [m.to_dict() for m in live_matches_q],
         "past_matches": [m.to_dict() for m in past_matches],
         "upcoming_matches": [m.to_dict() for m in upcoming_matches],
         "final_matches": [m.to_dict() for m in final_matches],
@@ -73,8 +74,74 @@ def api_state(slug):
     })
 
 
+@main_bp.route("/t/<slug>/tv/")
+def tournament_tv(slug):
+    tournament = Tournament.query.filter_by(slug=slug).first()
+    if not tournament:
+        abort(404)
+    g.tournament = tournament
+    return render_template("tv.html", tournament=tournament)
+
+
+@main_bp.route("/t/<slug>/phone/")
+def tournament_phone(slug):
+    tournament = Tournament.query.filter_by(slug=slug).first()
+    if not tournament:
+        abort(404)
+    g.tournament = tournament
+    return render_template("phone.html", tournament=tournament)
+
+
 @main_bp.route("/speisekarte")
 def speisekarte():
     speisen = MenuItem.query.filter_by(category="speise").order_by(MenuItem.display_order).all()
     getraenke = MenuItem.query.filter_by(category="getraenk").order_by(MenuItem.display_order).all()
     return render_template("speisekarte.html", speisen=speisen, getraenke=getraenke)
+
+
+@main_bp.route("/t/")
+def tournament_mobile_landing():
+    tournaments = Tournament.query.filter_by(is_active=True).order_by(
+        Tournament.display_order, Tournament.name
+    ).all()
+    rules_by_tournament = {
+        t.id: get_all_settings(t.id).get("tournament_rules", "")
+        for t in tournaments
+    }
+    return render_template("phone_landing.html", tournaments=tournaments,
+                           rules_by_tournament=rules_by_tournament)
+
+
+@main_bp.route("/phone/")
+def phone_landing():
+    tournaments = Tournament.query.filter_by(is_active=True).order_by(
+        Tournament.display_order, Tournament.name
+    ).all()
+    rules_by_tournament = {
+        t.id: get_all_settings(t.id).get("tournament_rules", "")
+        for t in tournaments
+    }
+    return render_template("phone_landing.html", tournaments=tournaments,
+                           rules_by_tournament=rules_by_tournament)
+
+
+@main_bp.route("/phone/speisekarte")
+def phone_speisekarte():
+    speisen = MenuItem.query.filter_by(category="speise").order_by(MenuItem.display_order).all()
+    getraenke = MenuItem.query.filter_by(category="getraenk").order_by(MenuItem.display_order).all()
+    return render_template("phone_speisekarte.html", speisen=speisen, getraenke=getraenke)
+
+
+@main_bp.route("/tv/")
+def tv_landing():
+    tournaments = Tournament.query.filter_by(is_active=True).order_by(
+        Tournament.display_order, Tournament.name
+    ).all()
+    return render_template("tv_landing.html", tournaments=tournaments)
+
+
+@main_bp.route("/tv/speisekarte")
+def tv_speisekarte():
+    speisen = MenuItem.query.filter_by(category="speise").order_by(MenuItem.display_order).all()
+    getraenke = MenuItem.query.filter_by(category="getraenk").order_by(MenuItem.display_order).all()
+    return render_template("tv_speisekarte.html", speisen=speisen, getraenke=getraenke)

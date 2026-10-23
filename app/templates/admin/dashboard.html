@@ -1,452 +1,764 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}Admin - {{ tournament.name }}{% endblock %}
-{% block body_class %}admin-page{% endblock %}
+{% block title %}Dashboard – {{ tournament.name }}{% endblock %}
 
 {% block head %}
-<!-- SortableJS for drag & drop match reordering -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<style>
+/* ── OUTER LAYOUT ── */
+.dash-wrap {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 56px);
+    overflow: hidden;
+    padding: 0.5rem 1rem 0.75rem;
+    gap: 0.4rem;
+    box-sizing: border-box;
+}
+
+/* ── CTRL BAR ── */
+.ctrl-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 9px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+.cb-sep { width: 1px; height: 18px; background: var(--border, #374151); flex-shrink: 0; margin: 0 0.1rem; }
+.ph-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ph-dot.group { background: #22c55e; box-shadow: 0 0 5px rgba(34,197,94,.7); }
+.ph-dot.setup { background: #f59e0b; box-shadow: 0 0 5px rgba(245,158,11,.7); }
+.ph-dot.final { background: #818cf8; box-shadow: 0 0 5px rgba(129,140,248,.7); }
+.ph-dot.done  { background: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,.7); }
+.btn-toggle.active { background: rgba(34,197,94,.15); border-color: #22c55e; color: #4ade80; }
+
+
+/* ── CONTENT ROW: matches left, standings right ── */
+.content-row {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── MATCH CARD (fills remaining space) ── */
+.match-card {
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 10px;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* ── STANDINGS SIDEBAR (always visible, fixed width) ── */
+.standings-sidebar {
+    width: 520px;
+    flex-shrink: 0;
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.ss-hd {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border, #1e293b);
+    background: rgba(15,20,30,0.97);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #6b7280);
+    flex-shrink: 0;
+}
+.ss-group-hd {
+    padding: 0.45rem 1rem 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted, #6b7280);
+    border-bottom: 1px solid var(--border, #1e293b);
+    background: rgba(0,0,0,0.08);
+}
+.ss-group-block + .ss-group-block { border-top: 1px solid var(--border, #1e293b); }
+
+/* Collapsible sections inside match-card */
+.mc-sec-hd {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--border, #1e293b);
+    background: rgba(15,20,30,0.97);
+    cursor: pointer;
+    user-select: none;
+}
+.mc-sec-hd:hover { background: rgba(20,28,42,0.99); }
+.mc-sec-arrow { font-size: 0.65rem; opacity: 0.55; flex-shrink: 0; }
+.mc-sec-title { font-size: 0.78rem; font-weight: 700; color: var(--text, #f1f5f9); }
+.mc-sec-body { }
+.mc-sec-body.collapsed { display: none; }
+
+/* Standings tables */
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0; }
+.st-group-block { border-right: 1px solid var(--border, #1e293b); border-bottom: 1px solid var(--border, #1e293b); }
+.st-group-block:last-child { border-right: none; }
+.st-group-hd {
+    padding: 0.28rem 0.75rem;
+    font-size: 0.62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted, #6b7280);
+    background: rgba(0,0,0,0.1);
+    border-bottom: 1px solid var(--border, #1e293b);
+}
+.st-tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.st-tbl th {
+    padding: 0.35rem 1rem;
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted, #6b7280);
+    border-bottom: 1px solid var(--border, #1e293b);
+    background: rgba(0,0,0,0.06); text-align: center;
+}
+.st-tbl th:first-child { text-align: left; }
+.st-tbl td { padding: 0.55rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.04); text-align: center; vertical-align: middle; }
+.st-tbl td:first-child { text-align: left; font-weight: 600; color: var(--text, #f1f5f9); }
+.st-tbl tbody tr:last-child td { border-bottom: none; }
+.st-tbl tbody tr:hover { background: rgba(255,255,255,0.03); }
+.st-rank { font-size: 0.75rem; color: var(--text-muted, #6b7280); margin-right: 0.2rem; }
+.st-pts { font-weight: 800; color: var(--color-primary, #22c55e); }
+.st-proj { font-size: 0.7rem; color: var(--text-muted, #9ca3af); font-style: italic; }
+
+
+.m-tbl { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.m-tbl th {
+    padding: 0.36rem 0.85rem;
+    text-align: left; font-size: 0.63rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted, #6b7280);
+    border-bottom: 2px solid var(--border, #1e293b);
+    white-space: nowrap; background: rgba(0,0,0,0.12);
+}
+.m-tbl td { padding: 0.36rem 0.85rem; border-bottom: 1px solid var(--border, #1e293b); vertical-align: middle; }
+.m-tbl tbody tr:last-child td { border-bottom: none; }
+.m-tbl tbody tr:hover { background: rgba(255,255,255,0.02); }
+.m-tbl tbody tr.is-live { background: rgba(34,197,94,0.05); }
+.m-tbl tbody tr.is-done { opacity: 0.6; }
+
+.score-tag {
+    display: inline-block; font-size: 0.8rem; font-weight: 800;
+    font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.07);
+    border-radius: 5px; padding: 0.1em 0.5em;
+}
+.score-tag.live { background: rgba(34,197,94,0.18); color: #4ade80; }
+.score-tag.done { background: rgba(59,130,246,0.12); color: #93c5fd; }
+
+.s-ind {
+    display: inline-flex; align-items: center; gap: 0.28rem;
+    font-size: 0.68rem; font-weight: 700;
+    padding: 0.12em 0.5em; border-radius: 5px;
+}
+.s-ind.planned { background: rgba(107,114,128,0.15); color: var(--text-muted, #9ca3af); }
+.s-ind.live    { background: rgba(34,197,94,0.15); color: #4ade80; }
+.s-ind.done    { background: rgba(59,130,246,0.12); color: #93c5fd; }
+.s-ind.live::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: #22c55e; animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+.drag-handle { cursor: grab; color: var(--text-muted,#6b7280); font-size: 0.75rem; opacity: 0.4; }
+.drag-handle:hover { opacity: 0.9; }
+.sortable-ghost  { opacity: 0.25; }
+.sortable-chosen { background: rgba(34,197,94,0.04) !important; }
+
+/* Live nav group */
+.live-nav-group {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--border, #374151); border-radius: 7px; overflow: hidden;
+}
+.live-nav-group a {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.75rem; font-weight: 600; padding: 0.28rem 0.6rem;
+    color: var(--text-muted, #9ca3af); text-decoration: none;
+    border-right: 1px solid var(--border, #374151); white-space: nowrap;
+}
+.live-nav-group a:last-child { border-right: none; }
+.live-nav-group a:hover { background: rgba(255,255,255,0.06); color: var(--text, #f1f5f9); }
+</style>
 {% endblock %}
 
-{% block content %}
-<header class="admin-header">
-    <div class="admin-header-left">
-        <span class="admin-header-icon">&#9917;</span>
-        <h1>{{ tournament.name }}</h1>
-    </div>
-    <nav class="admin-nav">
-        <a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
-        <a href="{{ url_for('admin.design', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#127912; Design</a>
-        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Live-Ansicht</a>
-        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-    </nav>
-</header>
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-<div class="admin-container">
-    <!-- Phase Banner -->
-    <div class="phase-banner phase-{{ phase }}">
-        {% if phase == 'GROUP_STAGE' %}
-            <span class="phase-icon">&#9917;</span>
-            <span class="phase-label">Gruppenphase</span>
-            <div class="phase-actions">
-                <button class="btn btn-sm btn-accent" onclick="endGroupStage()">Gruppenphase beenden</button>
-            </div>
-        {% elif phase == 'FINAL_SETUP' %}
-            <span class="phase-icon">&#9881;</span>
-            <span class="phase-label">Gruppenphase beendet &ndash; Finalrunde einrichten</span>
-            <div class="phase-actions">
-                <a href="{{ url_for('admin.finals_setup', slug=tournament.slug) }}" class="btn btn-sm btn-accent">&#127942; Finalrunde einrichten</a>
-                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Zuruecksetzen</button>
-            </div>
-        {% elif phase == 'FINAL_ROUND' %}
-            <span class="phase-icon">&#127942;</span>
-            <span class="phase-label">Finalrunde</span>
-            <div class="phase-actions">
-                <button class="btn btn-sm btn-accent" onclick="finishTournament()">Turnier beenden</button>
-                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Finalrunde zuruecksetzen</button>
-            </div>
-        {% elif phase == 'FINISHED' %}
-            <span class="phase-icon">&#127942;</span>
-            <span class="phase-label">Turnier beendet</span>
-            <div class="phase-actions">
-                <button class="btn btn-sm btn-outline" onclick="resetPhase()">Zuruecksetzen</button>
-            </div>
-        {% endif %}
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    <!-- Announcement/Info Message -->
-    <section class="admin-panel announcement-panel">
-        <div class="panel-header">
-            <h2>&#128226; Info-Meldung</h2>
-            <span class="form-hint">Wird auf der Live-Ansicht angezeigt</span>
-        </div>
-        <div class="announcement-form">
-            <input type="text" id="announcement-input"
-                   value="{{ settings.announcement or '' }}"
-                   placeholder="z.B. Geldbeutel gefunden - bitte zur Turnierleitung"
-                   maxlength="200"
-                   class="announcement-input">
-            <button class="btn btn-sm btn-accent" onclick="saveAnnouncement()">Speichern</button>
-            <button class="btn btn-sm btn-outline" onclick="clearAnnouncement()">Loeschen</button>
-        </div>
-        {% if settings.announcement %}
-        <div class="announcement-preview">
-            <span class="form-hint">Aktuelle Meldung:</span>
-            <span class="announcement-text">{{ settings.announcement }}</span>
-        </div>
-        {% endif %}
-    </section>
-
-    <!-- Final Matches Section -->
-    {% if phase in ('FINAL_ROUND', 'FINISHED') and final_matches %}
-    <section class="admin-panel" style="margin-bottom:1rem">
-        <div class="panel-header"><h2>&#127942; Finalrunde</h2></div>
-        <div class="items-list">
-            {% for match in final_matches %}
-            <div class="item-card match-status-{{ match.status }}">
-                <div class="item-main">
-                    <span class="item-badge badge-final">{{ match.final_label }}</span>
-                    <span class="item-name">{{ match.team1.name if match.team1 else 'TBD' }}</span>
-                    <span class="match-score-admin">{{ match.score_team1 }} : {{ match.score_team2 }}</span>
-                    <span class="item-name">{{ match.team2.name if match.team2 else 'TBD' }}</span>
-                    <span class="status-badge status-{{ match.status }}">
-                        {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
-                    </span>
-                </div>
-                <div class="item-actions">
-                    {% if match.team1 and match.team2 %}
-                    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-xs btn-accent">Steuerung</a>
-                    {% else %}
-                    <span class="empty-hint">Teams ausstehend</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
-
-    <div class="admin-grid-3">
-
-        <!-- ── Groups ── -->
-        <section class="admin-panel">
-            <div class="panel-header"><h2>Gruppen</h2></div>
-            {% if phase == 'GROUP_STAGE' %}
-            <form method="POST" action="{{ url_for('admin.create_group', slug=tournament.slug) }}" class="admin-form-row">
-                <input type="text" name="name" placeholder="Gruppenname (z.B. Gruppe A)" required>
-                <button type="submit" class="btn btn-accent">Erstellen</button>
-            </form>
-            {% endif %}
-            <div class="items-list">
-                {% for group in groups %}
-                <div class="item-card">
-                    <div class="item-main">
-                        <span class="item-name">{{ group.name }}</span>
-                        <span class="item-badge">{{ group.teams | length }} Teams</span>
-                    </div>
-                    {% if phase == 'GROUP_STAGE' %}
-                    <div class="item-actions">
-                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('group-{{ group.id }}')">Bearbeiten</button>
-                        <form method="POST" action="{{ url_for('admin.delete_group', slug=tournament.slug, gid=group.id) }}" class="inline"
-                              onsubmit="return confirm('Gruppe loeschen?')">
-                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
-                        </form>
-                    </div>
-                    <form method="POST" action="{{ url_for('admin.edit_group', slug=tournament.slug, gid=group.id) }}"
-                          class="edit-row hidden" id="group-{{ group.id }}">
-                        <input type="text" name="name" value="{{ group.name }}" required>
-                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
-                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('group-{{ group.id }}')">Abbrechen</button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                {% if not groups %}
-                <p class="empty-hint">Noch keine Gruppen.</p>
-                {% endif %}
-            </div>
-        </section>
-
-        <!-- ── Teams ── -->
-        <section class="admin-panel">
-            <div class="panel-header"><h2>Mannschaften</h2></div>
-            {% if phase == 'GROUP_STAGE' %}
-            <form method="POST" action="{{ url_for('admin.create_team', slug=tournament.slug) }}" class="admin-form-col">
-                <div class="admin-form-row">
-                    <input type="text" name="name" placeholder="Teamname" required>
-                    <select name="group_id">
-                        <option value="">Keine Gruppe</option>
-                        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="admin-form-row">
-                    <input type="text" name="logo_url" placeholder="Logo-URL (optional)">
-                    <input type="text" name="players" placeholder="Spieler (kommagetrennt)">
-                    <button type="submit" class="btn btn-accent">Hinzufuegen</button>
-                </div>
-            </form>
-            <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end">
-                <button class="btn btn-sm btn-outline" onclick="toggleCsvImport()">&#128196; CSV-Import</button>
-            </div>
-            <div id="csv-import-panel" class="hidden" style="margin-top:0.5rem">
-                <div class="ctrl-card" style="padding:0.8rem">
-                    <p class="form-hint" style="margin-bottom:0.5rem">Format: Mannschaftsname, Gruppe, Logolink (pro Zeile)</p>
-                    <textarea id="csv-input" rows="6" placeholder="FC Bayern, Gruppe A, https://example.com/logo.png&#10;BVB, Gruppe A, &#10;Schalke 04, Gruppe B, https://example.com/s04.png" style="width:100%;font-size:0.82rem;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;resize:vertical"></textarea>
-                    <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end;gap:0.5rem">
-                        <label class="form-hint" style="cursor:pointer">
-                            <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="loadCsvFile(this)">
-                            &#128193; Datei laden
-                        </label>
-                        <button class="btn btn-sm btn-accent" onclick="importCsv()">Importieren</button>
-                    </div>
-                    <div id="csv-status" class="form-hint" style="margin-top:0.4rem"></div>
-                </div>
-            </div>
-            {% endif %}
-            <div class="items-list">
-                {% for team in teams %}
-                <div class="item-card">
-                    <div class="item-main">
-                        <span class="item-name">{{ team.name }}</span>
-                        {% if team.group %}
-                        <span class="item-badge badge-group">{{ team.group.name }}</span>
-                        {% else %}
-                        <span class="item-badge badge-none">Keine Gruppe</span>
-                        {% endif %}
-                    </div>
-                    {% if team.players %}<div class="item-meta">{{ team.players }}</div>{% endif %}
-                    {% if phase == 'GROUP_STAGE' %}
-                    <div class="item-actions">
-                        <button class="btn btn-xs btn-outline" onclick="toggleEdit('team-{{ team.id }}')">Bearbeiten</button>
-                        <form method="POST" action="{{ url_for('admin.delete_team', slug=tournament.slug, tid=team.id) }}" class="inline"
-                              onsubmit="return confirm('Team loeschen?')">
-                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
-                        </form>
-                    </div>
-                    <form method="POST" action="{{ url_for('admin.edit_team', slug=tournament.slug, tid=team.id) }}"
-                          class="edit-row hidden" id="team-{{ team.id }}">
-                        <input type="text" name="name" value="{{ team.name }}" required>
-                        <select name="group_id">
-                            <option value="">Keine Gruppe</option>
-                            {% for g in groups %}<option value="{{ g.id }}" {% if team.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
-                        </select>
-                        <input type="text" name="logo_url" value="{{ team.logo_url }}" placeholder="Logo-URL">
-                        <input type="text" name="players" value="{{ team.players }}" placeholder="Spieler">
-                        <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
-                        <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('team-{{ team.id }}')">Abbrechen</button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                {% if not teams %}<p class="empty-hint">Noch keine Teams.</p>{% endif %}
-            </div>
-        </section>
-
-        <!-- ── Matches (with drag & drop) ── -->
-        <section class="admin-panel">
-            <div class="panel-header">
-                <h2>Spiele <span class="drag-hint">Reihenfolge per Drag &amp; Drop</span></h2>
-            </div>
-            {% if phase == 'GROUP_STAGE' and groups|length >= 1 and teams|length >= 2 %}
-            <form method="POST" action="{{ url_for('admin.create_match', slug=tournament.slug) }}" class="admin-form-col" id="match-form">
-                <div class="admin-form-row">
-                    <select name="group_id" id="match-group" required>
-                        <option value="">Gruppe waehlen</option>
-                        {% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
-                    </select>
-                    <input type="number" name="timer_duration" value="{{ settings.default_timer_regular|default('600') }}" min="60" step="60" class="input-narrow">
-                    <span class="form-hint">Sek.</span>
-                </div>
-                <div class="admin-form-row">
-                    <select name="team1_id" id="match-team1" required>
-                        <option value="">Heim</option>
-                    </select>
-                    <span class="form-vs">vs</span>
-                    <select name="team2_id" id="match-team2" required>
-                        <option value="">Gast</option>
-                    </select>
-                    <button type="submit" class="btn btn-accent">Anlegen</button>
-                </div>
-            </form>
-            <div class="admin-form-row" style="margin-top:0.5rem;justify-content:flex-end">
-                <button class="btn btn-sm btn-outline" onclick="generateRoundRobin()">&#9861; Spiele generieren</button>
-            </div>
-            {% elif phase != 'GROUP_STAGE' %}
-            <p class="empty-hint">Gruppenphase beendet.</p>
-            {% else %}
-            <p class="empty-hint">Mind. 1 Gruppe und 2 Teams noetig.</p>
-            {% endif %}
-
-            <!-- Sortable match list -->
-            <div class="items-list" id="sortable-matches">
-                {% for match in matches %}
-                <div class="item-card match-status-{{ match.status }} sortable-item" data-id="{{ match.id }}">
-                    <div class="item-main">
-                        <span class="drag-handle" title="Ziehen zum Sortieren">&#9776;</span>
-                        <span class="item-name">{{ match.team1.name }}</span>
-                        <span class="match-score-admin">{{ match.score_team1 }} : {{ match.score_team2 }}</span>
-                        <span class="item-name">{{ match.team2.name }}</span>
-                        <span class="status-badge status-{{ match.status }}">
-                            {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
-                        </span>
-                        {% if match.group %}<span class="item-badge badge-group">{{ match.group.name }}</span>{% endif %}
-                    </div>
-                    <div class="item-actions">
-                        <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-xs btn-accent">Steuerung</a>
-                        {% if phase == 'GROUP_STAGE' %}
-                        <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" class="inline"
-                              onsubmit="return confirm('Spiel loeschen?')">
-                            <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-                {% if not matches %}<p class="empty-hint">Noch keine Spiele.</p>{% endif %}
-            </div>
-        </section>
-    </div>
+{% block navbar_items %}
+<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
+<a href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#9881; Administration</a>
+<div class="live-nav-group">
+    <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" target="_blank">&#128187; Web</a>
+    <a href="{{ url_for('main.tournament_phone', slug=tournament.slug) }}" target="_blank">&#128241;</a>
+    <a href="{{ url_for('main.tournament_tv', slug=tournament.slug) }}" target="_blank">&#128250;</a>
 </div>
+{% if control_match %}
+<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=control_match.id) }}"
+   class="btn btn-sm {% if live_matches %}btn-success{% else %}btn-outline{% endif %}">
+    &#9654; Steuerung{% if live_matches|length > 1 %} ({{ live_matches|length }}){% endif %}
+</a>
+{% endif %}
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+{% set matches_done = matches | selectattr('status', 'equalto', 'finished') | list | length %}
+{% set matches_live = matches | selectattr('status', 'equalto', 'live') | list | length %}
+{% set ph_cls = 'group' if phase == 'GROUP_STAGE' else ('setup' if phase == 'FINAL_SETUP' else ('final' if phase == 'FINAL_ROUND' else 'done')) %}
+
+<div class="dash-wrap">
+
+<!-- ══ ROW 1: CTRL BAR ══ -->
+<div class="ctrl-bar">
+
+    <!-- Phase -->
+    <span class="ph-dot {{ ph_cls }}"></span>
+    <span style="font-size:0.8rem;font-weight:700;white-space:nowrap;color:var(--text,#f1f5f9)">
+        {% if phase == 'GROUP_STAGE' %}Gruppenphase
+        {% elif phase == 'FINAL_SETUP' %}Finale einrichten
+        {% elif phase == 'FINAL_ROUND' %}Finalrunde
+        {% else %}Beendet{% endif %}
+    </span>
+
+
+    {% if current_user.role == 'superadmin' %}
+    {% if phase == 'GROUP_STAGE' %}
+    <button class="btn btn-xs btn-warning" onclick="endGroupStage()">Beenden</button>
+    {% elif phase == 'FINAL_SETUP' %}
+    <a href="{{ url_for('admin.finals_setup', slug=tournament.slug) }}" class="btn btn-xs btn-primary">&#127942; Finalrunde</a>
+    <button class="btn btn-xs btn-outline" onclick="finishTournament()">Ohne Finale</button>
+    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">&#8634;</button>
+    {% elif phase == 'FINAL_ROUND' %}
+    <button class="btn btn-xs btn-warning" onclick="finishTournament()">Beenden</button>
+    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">&#8634;</button>
+    {% elif phase == 'FINISHED' %}
+    <button class="btn btn-xs btn-outline" onclick="resetPhase()">&#8634; Reset</button>
+    {% endif %}
+    {% endif %}
+
+    <span class="cb-sep"></span>
+
+    <!-- Announcement -->
+    <span style="font-size:0.8rem;opacity:.6">&#128226;</span>
+    <input type="text" class="form-control form-control-sm" id="announcement-input"
+           value="{{ settings.announcement or '' }}"
+           placeholder="Ankündigung…" maxlength="200" style="max-width:260px"
+           {% if not current_user.can_edit() %}readonly{% endif %}>
+    {% if current_user.can_edit() %}
+    <button class="btn btn-xs btn-primary" onclick="saveAnnouncement()">Senden</button>
+    <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:.55">&#10005;</button>
+    {% endif %}
+
+    {% if settings.num_fields == '2' and current_user.can_edit() %}
+    <span class="cb-sep"></span>
+    <button class="btn btn-xs btn-success" onclick="startNextMatches()">&#9654;&#9654; Beide starten</button>
+    {% endif %}
+
+</div><!-- /ctrl-bar -->
+
+
+
+
+<!-- ══ CONTENT ROW ══ -->
+<div class="content-row">
+
+<!-- ── MATCH CARD ── -->
+<div class="match-card">
+
+    <!-- ── Sektion: Gruppenspiele ── -->
+    <div class="mc-sec-hd" onclick="toggleSection('matches')">
+        <span class="mc-sec-arrow" id="arrow-matches">&#9660;</span>
+        <span class="mc-sec-title">Gruppenspiele</span>
+        <span class="badge badge-gray-lt ms-1">{{ matches|length }}</span>
+        <span class="text-muted ms-2" style="font-size:0.6rem;opacity:.5">Drag &amp; Drop</span>
+    </div>
+    <div id="sec-matches" class="mc-sec-body">
+        <table class="m-tbl">
+            <thead>
+                <tr>
+                    <th style="width:24px"></th>
+                    <th style="width:24px">#</th>
+                    <th>Begegnung</th>
+                    <th>Gruppe</th>
+                    {% if settings.num_fields == '2' %}<th>Feld</th>{% endif %}
+                    <th>Ergebnis</th>
+                    <th>Status</th>
+                    <th style="width:110px">Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="sortable-matches">
+                {% for match in matches %}
+                <tr class="sortable-item {% if match.status=='live' %}is-live{% elif match.status=='finished' %}is-done{% endif %}" data-id="{{ match.id }}">
+                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td style="color:var(--text-muted,#9ca3af);font-size:0.72rem;font-variant-numeric:tabular-nums">{{ loop.index }}</td>
+                    <td class="fw-semibold" style="white-space:nowrap">
+                        {{ match.team1.name }}
+                        <span style="color:var(--text-muted,#6b7280);font-weight:400;margin:0 0.2rem">vs</span>
+                        {{ match.team2.name }}
+                    </td>
+                    <td>{% if match.group %}<span class="badge badge-blue-lt" style="font-size:0.67rem">{{ match.group.name }}</span>{% endif %}</td>
+                    {% if settings.num_fields == '2' %}
+                    <td>
+                        {% if current_user.can_edit() %}
+                        <button class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="border:none;cursor:pointer;background:none;padding:0;font-size:0.72rem" onclick="toggleField({{ match.id }},this)">F{{ match.field or 1 }}</button>
+                        {% else %}<span class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="font-size:0.67rem">F{{ match.field or 1 }}</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td><span class="score-tag {% if match.status=='live' %}live{% elif match.status=='finished' %}done{% endif %}">{{ match.score_team1 }} : {{ match.score_team2 }}</span></td>
+                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">&#10003;</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
+                    <td>
+                        <div class="btn-list" style="gap:0.2rem">
+                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">&#9654;</a>
+                            {% if current_user.can_edit() %}
+                            {% if match.status in ('live','finished') %}
+                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">&#8634;</button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">&#8646;</button>
+                            {% endif %}
+                            {% if phase == 'GROUP_STAGE' and current_user.can_delete() %}
+                            <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" style="display:inline" onsubmit="return confirm('Spiel löschen?')">
+                                <button type="submit" class="btn btn-sm btn-danger">&#215;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not matches %}
+                <tr><td colspan="8" style="text-align:center;padding:2rem 1rem;color:var(--text-muted,#6b7280);font-size:0.85rem">
+                    {% if phase == 'GROUP_STAGE' %}Noch keine Gruppenspiele.{% else %}Keine Gruppenspiele.{% endif %}
+                </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── Sektion: Finalrunde ── -->
+    {% if final_matches or groups %}
+    <div class="mc-sec-hd" onclick="toggleSection('finals')">
+        <span class="mc-sec-arrow" id="arrow-finals">&#9654;</span>
+        <span class="mc-sec-title">&#127942; Finalrunde</span>
+        {% if not final_matches %}<span class="st-proj ms-1">– projiziert aus aktuellem Stand</span>{% endif %}
+    </div>
+    <div id="sec-finals" class="mc-sec-body collapsed">
+        {% if final_matches %}
+        <table class="m-tbl">
+            <thead>
+                <tr>
+                    <th style="width:24px"></th>
+                    <th>Runde</th>
+                    <th>Begegnung</th>
+                    {% if settings.num_fields == '2' %}<th>Feld</th>{% endif %}
+                    <th>Ergebnis</th>
+                    <th>Status</th>
+                    <th style="width:110px">Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="sortable-finals">
+                {% for match in final_matches %}
+                <tr class="sortable-item {% if match.status=='live' %}is-live{% elif match.status=='finished' %}is-done{% endif %}" data-id="{{ match.id }}">
+                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td><span class="badge badge-yellow-lt" style="font-size:0.68rem">{{ match.final_label }}</span></td>
+                    <td class="fw-semibold" style="white-space:nowrap">
+                        {{ match.team1.name if match.team1 else 'TBD' }}
+                        <span style="color:var(--text-muted,#6b7280);font-weight:400;margin:0 0.2rem">vs</span>
+                        {{ match.team2.name if match.team2 else 'TBD' }}
+                    </td>
+                    {% if settings.num_fields == '2' %}
+                    <td>
+                        {% if current_user.can_edit() %}
+                        <button class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="border:none;cursor:pointer;background:none;padding:0;font-size:0.72rem" onclick="toggleField({{ match.id }},this)">F{{ match.field or 1 }}</button>
+                        {% else %}<span class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="font-size:0.67rem">F{{ match.field or 1 }}</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td><span class="score-tag {% if match.status=='live' %}live{% elif match.status=='finished' %}done{% endif %}">{{ match.score_team1 }} : {{ match.score_team2 }}</span></td>
+                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">&#10003;</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
+                    <td>
+                        <div class="btn-list" style="gap:0.2rem">
+                            {% if match.team1 and match.team2 %}
+                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">&#9654;</a>
+                            {% if current_user.can_edit() and match.status == 'planned' %}
+                            <button class="btn btn-sm btn-success" onclick="startFinalMatch({{ match.id }})" title="Live setzen" style="font-size:0.75rem">&#9654; Live</button>
+                            {% endif %}
+                            {% endif %}
+                            {% if current_user.can_edit() %}
+                            {% if match.status in ('live','finished') %}
+                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">&#8634;</button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">&#8646;</button>
+                            {% endif %}
+                            {% if current_user.can_delete() %}
+                            <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" style="display:inline" onsubmit="return confirm('Finalspiel löschen?')">
+                                <button type="submit" class="btn btn-sm btn-danger">&#215;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        {# Projected matchups from current standings – interactive during group phase #}
+        {% if projected_matchups %}
+        <div style="padding:0.35rem 0.75rem 0.2rem;font-size:0.7rem;color:var(--text-muted,#6b7280)">
+            &#9432; Projiziert &mdash; Reihenfolge und Heim/Gast per Drag &amp; Drop anpassbar
+        </div>
+        <table class="m-tbl">
+            <thead><tr>
+                <th style="width:24px"></th>
+                <th>Runde</th>
+                <th>Begegnung (projiziert)</th>
+                <th style="width:36px"></th>
+            </tr></thead>
+            <tbody id="sortable-proj">
+                {% for row in projected_matchups %}
+                <tr class="sortable-item" data-label="{{ row.label }}"
+                    data-team1="{{ row.team1 }}" data-team2="{{ row.team2 }}"
+                    {% if row.tbd %}data-tbd="1"{% endif %}>
+                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td><span class="badge badge-yellow-lt" style="font-size:0.68rem">{{ row.label }}</span></td>
+                    <td class="fw-semibold" style="font-size:0.82rem">
+                        <span class="proj-t1">{{ row.team1 }}</span>
+                        <span style="color:var(--text-muted,#6b7280);font-weight:400;margin:0 0.3rem">vs</span>
+                        <span class="proj-t2">{{ row.team2 }}</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="swapProjRow(this)" title="Heim/Gast tauschen" style="padding:0.15rem 0.35rem">&#8646;</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding:0.8rem 1rem;color:var(--text-muted,#6b7280);font-size:0.8rem">Noch keine Paarungen berechenbar.</div>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div><!-- /match-card -->
+
+<!-- ── STANDINGS SIDEBAR ── -->
+{% if groups %}
+<div class="standings-sidebar">
+    <div class="ss-hd">&#128202; Tabellen</div>
+    {% for group in groups %}
+    {% set st = standings_by_group.get(group.id, []) %}
+    <div class="ss-group-block">
+        <div class="ss-group-hd">{{ group.name }}</div>
+        <table class="st-tbl">
+            <thead><tr><th>Team</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr></thead>
+            <tbody>
+                {% for row in st %}
+                <tr>
+                    <td><span class="st-rank">{{ row.rank }}.</span> {{ row.team.name }}</td>
+                    <td>{{ row.played }}</td>
+                    <td>{{ row.goals_for }}:{{ row.goals_against }}</td>
+                    <td><span class="st-pts">{{ row.points }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="padding:0.5rem;color:var(--text-muted,#6b7280);font-size:0.72rem;text-align:center">–</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+</div><!-- /content-row -->
+
+</div><!-- /dash-wrap -->
 
 <script>
 const SLUG = '{{ tournament.slug }}';
+const HAS_FINALS = {{ 'true' if final_matches else 'false' }};
 
-function toggleEdit(id) {
-    document.getElementById(id).classList.toggle('hidden');
+// ── UI state persistence ──
+const UI_KEY = 'dash_ui_' + SLUG;
+function saveUiState() {
+    const state = {};
+    ['matches','finals'].forEach(n => {
+        const el = document.getElementById('sec-' + n);
+        if (el) state['sec_' + n] = !el.classList.contains('collapsed');
+    });
+    sessionStorage.setItem(UI_KEY, JSON.stringify(state));
 }
-
-// ── Phase management ──
-function phaseApi(url) {
-    return fetch(url, {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
-    }).then(r => r.json());
-}
-
-function endGroupStage() {
-    if (!confirm('Gruppenphase beenden? Danach koennen keine Gruppenspiele mehr erstellt werden.')) return;
-    phaseApi(`/admin/t/${SLUG}/api/phase/end-group-stage`).then(d => {
-        if (d.error) { alert(d.error); return; }
-        location.reload();
+function restoreUiState() {
+    const raw = sessionStorage.getItem(UI_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    ['matches','finals'].forEach(n => {
+        const body  = document.getElementById('sec-' + n);
+        const arrow = document.getElementById('arrow-' + n);
+        if (!body) return;
+        const open = state['sec_' + n];
+        if (open === true)  { body.classList.remove('collapsed'); if(arrow) arrow.innerHTML='&#9660;'; }
+        if (open === false) { body.classList.add('collapsed');    if(arrow) arrow.innerHTML='&#9654;'; }
     });
 }
 
-function finishTournament() {
-    if (!confirm('Turnier als beendet markieren?')) return;
-    phaseApi(`/admin/t/${SLUG}/api/phase/finish-tournament`).then(d => {
-        if (d.error) { alert(d.error); return; }
-        location.reload();
-    });
+// ── Section toggle ──
+function toggleSection(name) {
+    const body  = document.getElementById('sec-' + name);
+    const arrow = document.getElementById('arrow-' + name);
+    if (!body) return;
+    const collapsed = body.classList.toggle('collapsed');
+    arrow.innerHTML = collapsed ? '&#9654;' : '&#9660;';
+    saveUiState();
 }
 
-function resetPhase() {
-    if (!confirm('Zuruecksetzen? Alle Finalspiele werden geloescht!')) return;
-    phaseApi(`/admin/t/${SLUG}/api/phase/reset`).then(d => {
-        if (d.error) { alert(d.error); return; }
-        location.reload();
-    });
-}
-
-function generateRoundRobin() {
-    if (!confirm('Alle fehlenden Gruppenspiele (Jeder gegen Jeden) generieren?')) return;
-    fetch(`/admin/t/${SLUG}/api/matches/generate-round-robin`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
-    }).then(r => r.json()).then(d => {
-        if (d.error) { alert(d.error); return; }
-        alert(d.created + ' Spiel(e) erstellt.');
-        location.reload();
-    });
-}
-
-function toggleCsvImport() {
-    document.getElementById('csv-import-panel').classList.toggle('hidden');
-}
-
-function loadCsvFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => { document.getElementById('csv-input').value = e.target.result; };
-    reader.readAsText(file);
-}
-
-function importCsv() {
-    const csvText = document.getElementById('csv-input').value.trim();
-    if (!csvText) { alert('Keine CSV-Daten eingegeben.'); return; }
-    const status = document.getElementById('csv-status');
-    status.textContent = 'Importiere...';
-
-    fetch(`/admin/t/${SLUG}/api/teams/import-csv`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({csv: csvText}),
-    }).then(r => r.json()).then(d => {
-        if (d.error) { status.textContent = 'Fehler: ' + d.error; return; }
-        status.textContent = d.message;
-        if (d.created > 0) setTimeout(() => location.reload(), 1500);
-    }).catch(() => { status.textContent = 'Netzwerkfehler'; });
-}
-
-// ── Team data for group-based filtering ──
-const TEAMS_BY_GROUP = {
-    {% for g in groups %}
-    {{ g.id }}: [
-        {% for t in teams %}{% if t.group_id == g.id %}
-        { id: {{ t.id }}, name: "{{ t.name }}" },
-        {% endif %}{% endfor %}
-    ],
-    {% endfor %}
-};
-
-// Filter team dropdowns when group changes
-const groupSelect = document.getElementById('match-group');
-const team1Select = document.getElementById('match-team1');
-const team2Select = document.getElementById('match-team2');
-
-if (groupSelect) {
-    groupSelect.addEventListener('change', () => {
-        const gid = parseInt(groupSelect.value);
-        const teams = TEAMS_BY_GROUP[gid] || [];
-
-        team1Select.innerHTML = '<option value="">Heim</option>';
-        team2Select.innerHTML = '<option value="">Gast</option>';
-
-        teams.forEach(t => {
-            team1Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-            team2Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-        });
-    });
-}
-
-// Initialize SortableJS on the matches list
-document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('sortable-matches');
+// ── Sortable ──
+function initSortable(id, url) {
+    const el = document.getElementById(id);
     if (!el) return;
-
     Sortable.create(el, {
-        handle: '.drag-handle',
-        animation: 200,
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
+        handle: '.drag-handle', animation: 150,
+        ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen',
         onEnd: () => {
-            const items = el.querySelectorAll('.sortable-item');
-            const order = Array.from(items).map(item => parseInt(item.dataset.id));
-
-            fetch(`/admin/t/${SLUG}/api/matches/reorder`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({order}),
-            }).then(r => {
-                if (!r.ok) console.error('Reorder failed');
-            });
+            const order = Array.from(el.querySelectorAll('.sortable-item')).map(i => parseInt(i.dataset.id));
+            fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({order}) });
         },
     });
+}
+// ── Projected finals (group phase) ──
+const PROJ_KEY = 'final_proj_' + SLUG;
+
+function swapProjRow(btn) {
+    const tr = btn.closest('tr');
+    const t1 = tr.querySelector('.proj-t1');
+    const t2 = tr.querySelector('.proj-t2');
+    [t1.textContent, t2.textContent] = [t2.textContent, t1.textContent];
+    [tr.dataset.team1, tr.dataset.team2] = [tr.dataset.team2, tr.dataset.team1];
+    saveProjState();
+}
+
+function saveProjState() {
+    const tbody = document.getElementById('sortable-proj');
+    if (!tbody) return;
+    const state = Array.from(tbody.querySelectorAll('tr')).map(tr => ({
+        label: tr.dataset.label,
+        team1: tr.dataset.team1,
+        team2: tr.dataset.team2,
+    }));
+    localStorage.setItem(PROJ_KEY, JSON.stringify(state));
+}
+
+function restoreProjState() {
+    const raw = localStorage.getItem(PROJ_KEY);
+    if (!raw) return;
+    try {
+        const state = JSON.parse(raw);
+        const tbody = document.getElementById('sortable-proj');
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const knownLabels = new Set(rows.map(r => r.dataset.label));
+        // Only restore if labels still match (standings may have changed slot set)
+        if (!state.every(s => knownLabels.has(s.label))) return;
+        state.forEach(s => {
+            const row = rows.find(r => r.dataset.label === s.label);
+            if (!row) return;
+            tbody.appendChild(row);
+            row.dataset.team1 = s.team1;
+            row.dataset.team2 = s.team2;
+            row.querySelector('.proj-t1').textContent = s.team1;
+            row.querySelector('.proj-t2').textContent = s.team2;
+        });
+    } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    restoreUiState();
+    initSortable('sortable-matches', `/admin/t/${SLUG}/api/matches/reorder`);
+    initSortable('sortable-finals',  `/admin/t/${SLUG}/api/finals/reorder`);
+    const projTbody = document.getElementById('sortable-proj');
+    if (projTbody) {
+        Sortable.create(projTbody, {
+            handle: '.drag-handle', animation: 150,
+            ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen',
+            onEnd: saveProjState,
+        });
+        restoreProjState();
+    }
 });
 
-// Announcement functions
+// ── Match actions ──
+function resetMatchPlanned(mid) {
+    fetch(`/admin/t/${SLUG}/api/matches/${mid}/status`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'planned'}) })
+        .then(r=>r.json()).then(d=>{ if(d.error) alert(d.error); else location.reload(); });
+}
+function startFinalMatch(mid) {
+    fetch(`/admin/t/${SLUG}/api/matches/${mid}/status`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'live'}) })
+        .then(r=>r.json()).then(d=>{ if(d.error) alert(d.error); else location.reload(); });
+}
+function swapMatchTeams(mid) {
+    fetch(`/admin/t/${SLUG}/api/matches/${mid}/swap-teams`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' })
+        .then(r=>r.json()).then(d=>{ if(d.error) alert(d.error); else location.reload(); });
+}
+function startNextMatches() {
+    fetch(`/admin/t/${SLUG}/api/matches/start-next`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' })
+        .then(r=>r.json()).then(d=>{ if(d.error){alert(d.error);return;} location.reload(); });
+}
+function toggleField(mid, btn) {
+    fetch(`/admin/t/${SLUG}/api/matches/${mid}/set-field`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' })
+        .then(r=>r.json()).then(d=>{
+            if(d.error){alert(d.error);return;}
+            btn.textContent = `F${d.field}`;
+            btn.className = btn.className.replace(/badge-(green|yellow)-lt/, d.field===1?'badge-green-lt':'badge-yellow-lt');
+        });
+}
+// ── Phase ──
+function phaseApi(url) { return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()); }
+function endGroupStage() { document.getElementById('end-group-modal').classList.add('open'); }
+function closeEndGroupModal() { document.getElementById('end-group-modal').classList.remove('open'); }
+function pickFinalMode(mode) {
+    closeEndGroupModal();
+    if (mode === '__keep__') {
+        // Keep existing finals as-is — go directly to dashboard, no reordering
+        phaseApi(`/admin/t/${SLUG}/api/phase/use-existing-finals`)
+            .then(d => { if(d.error) alert(d.error); else location.reload(); });
+    } else if (mode === '__none__') {
+        // No final round — end tournament directly after group phase
+        if (!confirm('Turnier nach der Gruppenphase beenden? Es wird keine Finalrunde geben.')) return;
+        phaseApi(`/admin/t/${SLUG}/api/phase/no-finals`)
+            .then(d => { if(d.error) alert(d.error); else location.reload(); });
+    } else {
+        fetch(`/admin/t/${SLUG}/api/settings`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({final_mode: mode})})
+            .then(() => phaseApi(`/admin/t/${SLUG}/api/phase/end-group-stage`))
+            .then(d => { if(d.error) alert(d.error); else window.location.href = `/admin/t/${SLUG}/finals-setup`; });
+    }
+}
+function finishTournament(){ if(!confirm('Turnier beenden?')) return; phaseApi(`/admin/t/${SLUG}/api/phase/finish-tournament`).then(d=>{if(d.error)alert(d.error);else location.reload();}); }
+function resetPhase()      { if(!confirm('Zurücksetzen? Alle Finalspiele werden gelöscht!')) return; phaseApi(`/admin/t/${SLUG}/api/phase/reset`).then(d=>{if(d.error)alert(d.error);else location.reload();}); }
+
+
+// ── Announcement ──
 function saveAnnouncement() {
     const text = document.getElementById('announcement-input').value.trim();
-    fetch(`/admin/t/${SLUG}/api/announcement`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({announcement: text}),
-    }).then(r => r.json()).then(d => {
-        if (d.ok) location.reload();
-        else alert('Fehler: ' + (d.error || 'Unbekannt'));
-    }).catch(() => alert('Netzwerkfehler'));
+    fetch(`/admin/t/${SLUG}/api/announcement`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({announcement:text})})
+        .then(r=>r.json()).then(d=>{ if(d.ok)location.reload(); else alert('Fehler: '+(d.error||'Unbekannt')); })
+        .catch(()=>alert('Netzwerkfehler'));
 }
+function clearAnnouncement() { document.getElementById('announcement-input').value=''; saveAnnouncement(); }
 
-function clearAnnouncement() {
-    document.getElementById('announcement-input').value = '';
-    saveAnnouncement();
-}
 </script>
+
+<style>
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;display:none }
+.modal-overlay.open { display:flex }
+.modal-box { background:var(--bg-secondary,#1e293b);border:1px solid var(--border,#334155);border-radius:0.6rem;padding:1.2rem 1.4rem;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4) }
+.modal-hd { font-size:0.95rem;font-weight:700;margin-bottom:0.8rem;color:var(--text,#f1f5f9) }
+.egm-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.5rem; margin-bottom:0.75rem; }
+.egm-tile {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:0.3rem;
+    padding:0.75rem 0.5rem;
+    border-radius:10px; cursor:pointer;
+    border:1.5px solid var(--border,#334155);
+    background:rgba(255,255,255,0.02);
+    transition:border-color .15s, background .15s, transform .1s;
+    user-select:none;
+}
+.egm-tile:hover { border-color:rgba(99,102,241,0.55); background:rgba(99,102,241,0.07); transform:translateY(-1px); }
+.egm-tile.keep { border-color:rgba(34,197,94,0.3); }
+.egm-tile.keep:hover { border-color:#22c55e; background:rgba(34,197,94,0.08); }
+.egm-tile.egm-tile-none { border-color:rgba(248,113,113,0.25); }
+.egm-tile.egm-tile-none:hover { border-color:#f87171; background:rgba(248,113,113,0.07); }
+.egm-section-label { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em;
+    color:var(--text-muted,#64748b); margin:0.75rem 0 0.35rem; }
+.egm-section-label:first-child { margin-top:0; }
+.egm-tile-icon { font-size:1.5rem; line-height:1; }
+.egm-tile-name { font-size:0.78rem; font-weight:700; color:var(--text,#f1f5f9); line-height:1.2; }
+.egm-tile-sub { font-size:0.66rem; color:var(--text-muted,#94a3b8); line-height:1.3; }
+</style>
+
+<!-- ── End group stage modal ── -->
+<div id="end-group-modal" class="modal-overlay" onclick="if(event.target===this)closeEndGroupModal()">
+    <div class="modal-box" style="max-width:480px">
+        <div class="modal-hd">&#127942; Gruppenphase beenden</div>
+
+        <!-- Sektion 1: Neue Finalrunde -->
+        <div class="egm-section-label">Neue Finalrunde erstellen</div>
+        <div class="egm-grid">
+            <div class="egm-tile" onclick="pickFinalMode('semi_final')">
+                <div class="egm-tile-icon">&#9864;</div>
+                <div class="egm-tile-name">HF + Finale</div>
+                <div class="egm-tile-sub">4 Teams, Halbfinale</div>
+            </div>
+            <div class="egm-tile" onclick="pickFinalMode('rank_vs_rank')">
+                <div class="egm-tile-icon">&#128202;</div>
+                <div class="egm-tile-name">Platzierungsspiele</div>
+                <div class="egm-tile-sub">1.A vs 1.B &hellip;</div>
+            </div>
+            <div class="egm-tile" onclick="pickFinalMode('direct_final')">
+                <div class="egm-tile-icon">&#9889;</div>
+                <div class="egm-tile-name">Direktes Finale</div>
+                <div class="egm-tile-sub">Bester vs. Zweiter</div>
+            </div>
+            <div class="egm-tile" onclick="pickFinalMode('classic_ko')">
+                <div class="egm-tile-icon">&#9876;</div>
+                <div class="egm-tile-name">Klassisch KO</div>
+                <div class="egm-tile-sub">Auto-Setzliste</div>
+            </div>
+            <div class="egm-tile" onclick="pickFinalMode('free_ko')">
+                <div class="egm-tile-icon">&#127922;</div>
+                <div class="egm-tile-name">Freie KO</div>
+                <div class="egm-tile-sub">Manuell festlegen</div>
+            </div>
+            <div class="egm-tile" onclick="pickFinalMode('custom')">
+                <div class="egm-tile-icon">&#9998;</div>
+                <div class="egm-tile-name">Eigene Paarungen</div>
+                <div class="egm-tile-sub">Vollst&auml;ndig frei</div>
+            </div>
+        </div>
+
+        <!-- Sektion 2: Definierte Finalrunde (nur wenn vorhanden) -->
+        {% if final_matches %}
+        <div class="egm-section-label">Definierte Finalrunde spielen</div>
+        <div class="egm-grid">
+            <div class="egm-tile keep" onclick="pickFinalMode('__keep__')">
+                <div class="egm-tile-icon">&#10003;</div>
+                <div class="egm-tile-name">Vorhandene Finalrunde</div>
+                <div class="egm-tile-sub">Bereits eingerichtete Spiele verwenden</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sektion 3: Kein Finale -->
+        <div class="egm-section-label">Ohne Finalrunde</div>
+        <div class="egm-grid">
+            <div class="egm-tile egm-tile-none" onclick="pickFinalMode('__none__')">
+                <div class="egm-tile-icon">&#9724;</div>
+                <div class="egm-tile-name">Turnier beenden</div>
+                <div class="egm-tile-sub">Endet nach der Gruppenphase</div>
+            </div>
+        </div>
+
+        <div style="text-align:right;margin-top:0.5rem">
+            <button class="btn btn-sm btn-outline" onclick="closeEndGroupModal()">Abbrechen</button>
+        </div>
+    </div>
+</div>
 {% endblock %}

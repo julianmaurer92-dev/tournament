@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speisekarte – TV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #22c55e;
+            --bg:      #050a10;
+            --bg2:     #0b1420;
+            --bg3:     #111c2e;
+            --text:    #f1f5f9;
+            --muted:   #64748b;
+            --border:  rgba(255,255,255,0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+
+        #tv-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.8rem 2rem;
+            background: var(--bg2);
+            border-bottom: 2px solid var(--primary);
+        }
+        .tv-header-title { font-size: clamp(1.2rem, 2.5vw, 2rem); font-weight: 900; color: var(--primary); }
+        .tv-header-link {
+            font-size: clamp(0.75rem, 1.2vw, 1rem); font-weight: 700;
+            color: var(--muted); text-decoration: none;
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.4rem 1rem;
+        }
+        .tv-header-link:hover { color: var(--primary); border-color: var(--primary); }
+
+        .tv-content { padding: 2rem; max-width: 1000px; margin: 0 auto; }
+
+        .tv-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 2rem;
+        }
+
+        .tv-menu-section-title {
+            font-size: clamp(0.85rem, 1.4vw, 1.2rem);
+            font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        .tv-menu-item {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.6rem;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        .tv-menu-item-info { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }
+        .tv-menu-item-name { font-size: clamp(0.9rem, 1.5vw, 1.3rem); font-weight: 700; }
+        .tv-menu-item-desc { font-size: clamp(0.72rem, 1.1vw, 1rem); color: var(--muted); }
+        .tv-menu-item-price { font-size: clamp(0.9rem, 1.5vw, 1.3rem); font-weight: 800; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
+
+        .tv-empty { text-align: center; padding: 5rem 2rem; color: var(--muted); font-size: clamp(1rem, 1.5vw, 1.4rem); }
+        .tv-empty-icon { font-size: clamp(2.5rem, 4vw, 4rem); margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+<div id="tv-header">
+    <span class="tv-header-title">&#127860; Speisen &amp; Getraenke</span>
+    <a href="{{ url_for('main.tv_landing') }}" class="tv-header-link">&larr; Uebersicht</a>
+</div>
+
+<div class="tv-content">
+    {% if not speisen and not getraenke %}
+    <div class="tv-empty">
+        <div class="tv-empty-icon">&#127860;</div>
+        <p>Noch keine Speisekarte verfuegbar</p>
+    </div>
+    {% else %}
+    <div class="tv-menu-grid">
+        {% if speisen %}
+        <div>
+            <div class="tv-menu-section-title">&#127828; Speisen</div>
+            {% for item in speisen %}
+            <div class="tv-menu-item">
+                <div class="tv-menu-item-info">
+                    <span class="tv-menu-item-name">{{ item.name }}</span>
+                    {% if item.description %}
+                    <span class="tv-menu-item-desc">{{ item.description }}</span>
+                    {% endif %}
+                </div>
+                {% if item.price %}
+                <span class="tv-menu-item-price">{{ item.price }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if getraenke %}
+        <div>
+            <div class="tv-menu-section-title">&#127866; Getraenke</div>
+            {% for item in getraenke %}
+            <div class="tv-menu-item">
+                <div class="tv-menu-item-info">
+                    <span class="tv-menu-item-name">{{ item.name }}</span>
+                    {% if item.description %}
+                    <span class="tv-menu-item-desc">{{ item.description }}</span>
+                    {% endif %}
+                </div>
+                {% if item.price %}
+                <span class="tv-menu-item-price">{{ item.price }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

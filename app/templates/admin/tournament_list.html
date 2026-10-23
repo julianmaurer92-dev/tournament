@@ -1,85 +1,332 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}Admin - Turniere{% endblock %}
-{% block body_class %}admin-page{% endblock %}
+{% block title %}CupPlan{% endblock %}
 
-{% block content %}
-<header class="admin-header">
-    <div class="admin-header-left">
-        <span class="admin-header-icon">&#9917;</span>
-        <h1>Turnierverwaltung</h1>
+{% block head %}
+<style>
+.tlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.tcard {
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: border-color 0.15s;
+}
+.tcard:hover { border-color: rgba(34,197,94,0.3); }
+.tcard-top { display: flex; align-items: flex-start; gap: 1rem; }
+.tcard-icon {
+    width: 48px; height: 48px; flex-shrink: 0;
+    border-radius: 12px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+}
+.tcard-info { flex: 1; min-width: 0; }
+.tcard-name {
+    font-size: 1.05rem; font-weight: 700;
+    color: var(--text, #f1f5f9);
+    margin-bottom: 0.2rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tcard-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted, #6b7280);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tcard-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.tcard-slug {
+    font-size: 0.75rem; color: var(--text-muted, #6b7280);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: monospace;
+}
+.tcard-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+
+/* Create form card */
+.create-card {
+    background: var(--bg-secondary, #111827);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+.create-card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border, #1e293b);
+    display: flex; align-items: center; gap: 0.6rem;
+    font-weight: 700; font-size: 0.95rem; color: var(--text, #f1f5f9);
+}
+.create-card-body { padding: 1.25rem 1.5rem; }
+
+/* Inline edit panel */
+.edit-panel {
+    background: rgba(34,197,94,0.03);
+    border-top: 1px solid rgba(34,197,94,0.12);
+    border-radius: 0 0 14px 14px;
+    padding: 1.1rem 1.5rem;
+    display: none;
+}
+
+/* Navbar role badge */
+.role-chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2em 0.65em;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.role-superadmin { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+.role-editor     { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+.role-viewer     { background: rgba(107,114,128,0.15);color: #9ca3af; border: 1px solid rgba(107,114,128,0.25); }
+
+.section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block navbar_items %}
+{% if current_user.role == "superadmin" %}
+<a href="{{ url_for('admin.user_list') }}" class="btn btn-outline btn-sm">&#128100; Benutzer</a>
+<a href="{{ url_for('admin.menu_admin') }}" class="btn btn-outline btn-sm">&#127860; Speisekarte</a>
+<a href="{{ url_for('admin.export_import_page') }}" class="btn btn-outline btn-sm">&#128190; Export/Import</a>
+{% endif %}
+<a href="{{ url_for('main.landing') }}" class="btn btn-outline btn-sm" target="_blank">&#127760; Live-Ansicht</a>
+<span class="role-chip role-{{ current_user.role }}">{{ current_user.role }}</span>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+
+{% if current_user.role == "superadmin" %}
+<div class="create-card">
+    <div class="create-card-header">
+        <span style="color:var(--color-primary,#22c55e)">&#43;</span> Neues Turnier erstellen
     </div>
-    <nav class="admin-nav">
-        <a href="{{ url_for('admin.menu_admin') }}" class="btn btn-outline btn-sm">&#127860; Speisekarte</a>
-        <a href="{{ url_for('main.landing') }}" class="btn btn-outline btn-sm">Live-Ansicht</a>
-        <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-    </nav>
-</header>
-
-<div class="admin-container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    <section class="admin-panel" style="margin-bottom:1.5rem">
-        <div class="panel-header"><h2>Neues Turnier erstellen</h2></div>
-        <form method="POST" action="{{ url_for('admin.create_tournament') }}" class="admin-form-row">
-            <input type="text" name="name" placeholder="Turniername (z.B. U13)" required>
-            <input type="date" name="event_date" title="Datum des Turniers">
-            <input type="text" name="description" placeholder="Beschreibung (optional)">
-            <button type="submit" class="btn btn-accent">Erstellen</button>
-        </form>
-    </section>
-
-    <section class="admin-panel">
-        <div class="panel-header"><h2>Turniere</h2></div>
-        <div class="items-list">
-            {% for t in tournaments %}
-            <div class="item-card">
-                <div class="item-main">
-                    <span class="item-name">{{ t.name }}</span>
-                    {% if t.event_date %}
-                    <span class="item-badge badge-date">{{ t.event_date.strftime('%d.%m.%Y') }}</span>
-                    {% endif %}
-                    {% if t.description %}
-                    <span class="item-badge">{{ t.description }}</span>
-                    {% endif %}
-                    <span class="item-badge badge-group">/t/{{ t.slug }}/</span>
+    <div class="create-card-body">
+        <form method="POST" action="{{ url_for('admin.create_tournament') }}">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Name</label>
+                    <input type="text" class="form-control" name="name" placeholder="z.B. U13 Turnier" required>
                 </div>
-                <div class="item-actions">
-                    <a href="{{ url_for('admin.dashboard', slug=t.slug) }}" class="btn btn-xs btn-accent">Dashboard</a>
-                    <button class="btn btn-xs btn-outline" onclick="toggleEdit('tournament-{{ t.id }}')">Bearbeiten</button>
-                    <form method="POST" action="{{ url_for('admin.delete_tournament', tid=t.id) }}" class="inline"
-                          onsubmit="return confirm('Turnier und alle Daten loeschen?')">
-                        <button type="submit" class="btn btn-xs btn-danger">Loeschen</button>
-                    </form>
+                <div class="col-md-2">
+                    <label class="form-label text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Datum</label>
+                    <input type="date" class="form-control" name="event_date">
                 </div>
-                <form method="POST" action="{{ url_for('admin.edit_tournament', tid=t.id) }}"
-                      class="edit-row hidden" id="tournament-{{ t.id }}">
-                    <input type="text" name="name" value="{{ t.name }}" required>
-                    <input type="date" name="event_date" value="{{ t.event_date.isoformat() if t.event_date else '' }}">
-                    <input type="text" name="description" value="{{ t.description }}" placeholder="Beschreibung">
-                    <button type="submit" class="btn btn-xs btn-accent">Speichern</button>
-                    <button type="button" class="btn btn-xs btn-outline" onclick="toggleEdit('tournament-{{ t.id }}')">Abbrechen</button>
-                </form>
+                <div class="col-md-1">
+                    <label class="form-label text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Uhrzeit</label>
+                    <input type="time" class="form-control" name="event_time">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Beschreibung</label>
+                    <input type="text" class="form-control" name="description" placeholder="Optional">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">&#43; Erstellen</button>
+                </div>
             </div>
-            {% endfor %}
-            {% if not tournaments %}
-            <p class="empty-hint">Noch keine Turniere erstellt.</p>
+            <div class="row g-3 align-items-center mb-2">
+                <div class="col-auto">
+                    <span class="text-muted" style="font-size:0.82rem">&#9201; Spielzeit:</span>
+                </div>
+                <div class="col-auto" style="display:flex;align-items:center;gap:0.4rem">
+                    <input type="number" class="form-control form-control-sm" name="timer_regular_min"
+                           value="10" min="1" max="90" step="0.5" style="width:72px">
+                    <span class="text-muted" style="font-size:0.8rem">Min</span>
+                </div>
+                <div class="col-auto">
+                    <span class="text-muted" style="font-size:0.82rem">&#43; Verlaengerung:</span>
+                </div>
+                <div class="col-auto" style="display:flex;align-items:center;gap:0.4rem">
+                    <input type="number" class="form-control form-control-sm" name="timer_extra_min"
+                           value="5" min="0.5" max="30" step="0.5" style="width:72px">
+                    <span class="text-muted" style="font-size:0.8rem">Min</span>
+                </div>
+                <div class="col-auto">
+                    <span class="text-muted" style="font-size:0.82rem">&#9881; Spielfelder:</span>
+                </div>
+                <div class="col-auto">
+                    <select class="form-select form-select-sm" name="num_fields" style="width:auto">
+                        <option value="1">1 Feld</option>
+                        <option value="2">2 Felder</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <span class="text-muted" style="font-size:0.82rem">&#127942; Finalrundentyp:</span>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select form-select-sm" name="final_mode">
+                        <option value="">Noch nicht festlegen</option>
+                        <option value="rank_vs_rank">Platzierungsspiele (1.A vs 1.B, 2.A vs 2.B ...)</option>
+                        <option value="semi_final">Halbfinale + Finale (4 Teams)</option>
+                        <option value="direct_final">Direktes Finale (#1 vs #2)</option>
+                        <option value="classic_ko">Klassische KO-Runde</option>
+                        <option value="free_ko">Freie KO-Runde</option>
+                        <option value="custom">Eigene Paarungen</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <span class="text-muted" style="font-size:0.78rem">Kann spaeter geaendert werden.</span>
+                </div>
+            </div>
+            <div class="row g-3 align-items-center mt-1">
+                <div class="col-auto">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--text-muted,#6b7280)">
+                        <input type="checkbox" name="hide_table" value="1" class="form-check-input" style="width:1rem;height:1rem;margin:0">
+                        Tabelle ausblenden &nbsp;
+                        <input type="checkbox" name="hide_scores" value="1" class="form-check-input" style="width:1rem;height:1rem;margin:0;margin-left:0.75rem">
+                        Ergebnisse ausblenden
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="section-label">
+    {{ tournaments | length }} Turnier{% if tournaments | length != 1 %}e{% endif %}
+</div>
+
+{% if tournaments %}
+<div class="tlist-grid">
+    {% for t in tournaments %}
+    <div class="tcard" id="tcard-{{ t.id }}">
+        <div class="tcard-top">
+            <div class="tcard-icon">&#9917;</div>
+            <div class="tcard-info">
+                <div class="tcard-name">{{ t.name }}</div>
+                {% if t.description %}
+                <div class="tcard-desc">{{ t.description }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tcard-meta">
+            {% if t.event_date %}
+            <span class="badge badge-blue-lt">&#128197; {{ t.event_date.strftime('%d.%m.%Y') }}</span>
+            {% endif %}
+            <span class="tcard-slug">/t/{{ t.slug }}/</span>
+        </div>
+
+        <div class="tcard-actions">
+            <a href="{{ url_for('admin.dashboard', slug=t.slug) }}" class="btn btn-primary btn-sm">&#9654; Dashboard</a>
+            {% if current_user.role == "superadmin" %}
+            <button class="btn btn-sm btn-outline" onclick="toggleEdit({{ t.id }})">&#9998; Bearbeiten</button>
+            <form method="POST" action="{{ url_for('admin.delete_tournament', tid=t.id) }}"
+                  style="display:inline" onsubmit="return confirm('Turnier und alle Daten unwiderruflich loeschen?')">
+                <button type="submit" class="btn btn-sm btn-danger">&#215; Loeschen</button>
+            </form>
             {% endif %}
         </div>
-    </section>
+
+        {% if current_user.role == "superadmin" %}
+        <div class="edit-panel" id="edit-{{ t.id }}">
+            <form method="POST" action="{{ url_for('admin.edit_tournament', tid=t.id) }}">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-5">
+                        <label class="form-label text-muted" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Name</label>
+                        <input type="text" class="form-control form-control-sm" name="name" value="{{ t.name }}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Datum</label>
+                        <input type="date" class="form-control form-control-sm" name="event_date"
+                               value="{{ t.event_date.isoformat() if t.event_date else '' }}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label text-muted" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Zeit</label>
+                        <input type="time" class="form-control form-control-sm" name="event_time"
+                               value="{{ t.event_time or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Beschreibung</label>
+                        <input type="text" class="form-control form-control-sm" name="description" value="{{ t.description or '' }}">
+                    </div>
+                </div>
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto">
+                        <span class="text-muted" style="font-size:0.8rem">&#127942; Finalrundentyp:</span>
+                    </div>
+                    <div class="col-md-5">
+                        <select class="form-select form-select-sm" name="final_mode">
+                            <option value="" {% if not final_modes[t.id] %}selected{% endif %}>Noch nicht festlegen</option>
+                            <option value="rank_vs_rank" {% if final_modes[t.id] == 'rank_vs_rank' %}selected{% endif %}>Platzierungsspiele (1.A vs 1.B ...)</option>
+                            <option value="semi_final" {% if final_modes[t.id] == 'semi_final' %}selected{% endif %}>Halbfinale + Finale</option>
+                            <option value="direct_final" {% if final_modes[t.id] == 'direct_final' %}selected{% endif %}>Direktes Finale</option>
+                            <option value="classic_ko" {% if final_modes[t.id] == 'classic_ko' %}selected{% endif %}>Klassische KO-Runde</option>
+                            <option value="free_ko" {% if final_modes[t.id] == 'free_ko' %}selected{% endif %}>Freie KO-Runde</option>
+                            <option value="custom" {% if final_modes[t.id] == 'custom' %}selected{% endif %}>Eigene Paarungen</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <span class="text-muted" style="font-size:0.8rem">&#9881; Felder:</span>
+                    </div>
+                    <div class="col-auto">
+                        <select class="form-select form-select-sm" name="num_fields" style="width:auto">
+                            <option value="1" {% if num_fields_map[t.id] == '1' %}selected{% endif %}>1 Feld</option>
+                            <option value="2" {% if num_fields_map[t.id] == '2' %}selected{% endif %}>2 Felder</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--text-muted,#6b7280)">
+                            <input type="checkbox" name="hide_table" value="1" class="form-check-input"
+                                   style="width:1rem;height:1rem;margin:0"
+                                   {% if hide_results_map[t.id] == '1' %}checked{% endif %}>
+                            Tabelle ausblenden &nbsp;
+                            <input type="checkbox" name="hide_scores" value="1" class="form-check-input"
+                                   style="width:1rem;height:1rem;margin:0;margin-left:0.75rem"
+                                   {% if hide_results_map[t.id] == '1' %}checked{% endif %}>
+                            Ergebnisse ausblenden
+                        </label>
+                    </div>
+                </div>
+                <div class="btn-list">
+                    <button type="submit" class="btn btn-sm btn-primary">Speichern</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="toggleEdit({{ t.id }})">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
 </div>
+
+{% else %}
+<div style="text-align:center;padding:4rem 2rem;color:var(--text-muted,#6b7280)">
+    <div style="font-size:3.5rem;margin-bottom:1rem">&#9917;</div>
+    <div style="font-weight:700;font-size:1.1rem;color:var(--text,#f1f5f9);margin-bottom:0.4rem">Noch keine Turniere vorhanden</div>
+    {% if current_user.role == "superadmin" %}
+    <div style="font-size:0.88rem">Erstelle dein erstes Turnier oben.</div>
+    {% endif %}
+</div>
+{% endif %}
 
 <script>
 function toggleEdit(id) {
-    document.getElementById(id).classList.toggle('hidden');
+    const panel = document.getElementById('edit-' + id);
+    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
 </script>
 {% endblock %}

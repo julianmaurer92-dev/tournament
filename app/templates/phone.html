@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="{{ site_settings.theme or 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>{{ site_settings.tournament_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: {{ site_settings.color_primary }};
+            --title:   {{ site_settings.color_title }};
+            --bg:      #050a10;
+            --bg2:     #0b1420;
+            --bg3:     #111c2e;
+            --text:    #f1f5f9;
+            --muted:   #64748b;
+            --border:  rgba(255,255,255,0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100%; }
+
+        /* ── Header ── */
+        header {
+            background: var(--bg2);
+            border-bottom: 2px solid var(--primary);
+            padding: 0.9rem 1rem;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        #ph-title { font-size: 1.15rem; font-weight: 800; color: var(--title); }
+        .ph-view-links { display: flex; gap: 0.4rem; }
+        .ph-view-link { font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); text-decoration: none; }
+        .ph-view-link:hover, .ph-view-link.active { color: var(--primary); border-color: var(--primary); }
+        .ph-info-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 0.85rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .ph-info-btn:hover { color: var(--primary); border-color: var(--primary); }
+        .ph-info-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1.5rem; }
+        .ph-info-overlay.open { display: flex; }
+        .ph-info-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem 1.5rem; width: 100%; max-width: 320px; text-align: center; }
+        .ph-info-logo { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .ph-info-app { font-size: 1.2rem; font-weight: 900; color: var(--primary); margin-bottom: 0.25rem; }
+        .ph-info-version { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.25rem; }
+        .ph-info-dev { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .ph-info-role { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; margin-bottom: 1.5rem; }
+        .ph-info-close { width: 100%; padding: 0.65rem; background: var(--primary); color: #000; font-weight: 800; font-size: 0.9rem; font-family: inherit; border: none; border-radius: 8px; cursor: pointer; }
+
+        /* ── Announcement ── */
+        #ph-announcement { display: none; background: rgba(234,179,8,0.12); border-bottom: 1px solid #eab308; color: #fde68a; padding: 0.6rem 1rem; font-size: 0.88rem; font-weight: 600; text-align: center; }
+
+        /* ── Tab bar ── */
+        #ph-tabs {
+            display: flex; background: var(--bg2); border-bottom: 1px solid var(--border);
+            position: sticky; top: 57px; z-index: 99;
+        }
+        .ph-tab {
+            flex: 1; padding: 0.8rem 0.25rem; text-align: center; font-size: 0.78rem; font-weight: 700;
+            color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer;
+            user-select: none; letter-spacing: 0.03em;
+        }
+        .ph-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        /* ── Tab panels ── */
+        .ph-panel { display: none; padding: 1rem; }
+        .ph-panel.active { display: block; }
+
+        /* ── Live card ── */
+        .ph-live-card {
+            background: var(--bg2);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 14px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .ph-live-badge { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.18em; color: var(--primary); margin-bottom: 0.6rem; }
+        .ph-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+        /* vertical live layout: team – score – team */
+        .ph-matchup { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; margin: 0.6rem 0; width: 100%; }
+        .ph-team-name { font-size: 1.2rem; font-weight: 800; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.5rem; }
+        .ph-score-row { display: flex; align-items: center; justify-content: center; gap: 0.3rem; margin: 0.4rem 0; }
+        .ph-score { font-size: 2.8rem; font-weight: 900; color: var(--primary); font-variant-numeric: tabular-nums; min-width: 2.5rem; text-align: center; }
+        .ph-score-divider { font-size: 2rem; color: var(--muted); }
+        .ph-timer { font-size: 1rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; margin-top: 0.5rem; }
+        .ph-timer.urgent { color: #ef4444; }
+        .ph-group-tag { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
+        .ph-field-tag { font-size: 0.72rem; font-weight: 700; color: var(--primary); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 4px; padding: 0.15em 0.5em; display: inline-block; margin-bottom: 0.4rem; }
+
+        /* ── No live ── */
+        .ph-no-live { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+        .ph-no-live-icon { font-size: 3rem; margin-bottom: 0.6rem; }
+        .ph-no-live-text { font-size: 1.1rem; font-weight: 700; }
+
+        /* ── Rules panel ── */
+        .ph-rules-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        .ph-rules-card-hd {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted);
+        }
+        .ph-rules-content {
+            padding: 1rem;
+            font-size: 0.92rem;
+            line-height: 1.75;
+            white-space: pre-wrap;
+            color: var(--text);
+        }
+        .ph-rules-empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.9rem; }
+
+        /* ── Match list items ── */
+        .ph-match-item {
+            background: var(--bg2); border-radius: 10px; padding: 0.85rem 1rem;
+            display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem;
+            border: 1px solid var(--border);
+        }
+        .ph-match-teams { flex: 1; font-size: 0.95rem; font-weight: 700; }
+        .ph-match-vs { color: var(--muted); font-weight: 400; font-size: 0.85rem; margin: 0 0.3rem; }
+        .ph-match-score { font-size: 1.1rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; min-width: 3rem; text-align: center; }
+        .ph-match-badge { font-size: 0.7rem; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.05); border-radius: 5px; padding: 0.2em 0.5em; white-space: nowrap; }
+        .ph-section-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.75rem; }
+        .ph-empty { text-align: center; color: var(--muted); padding: 2rem 0; font-size: 0.95rem; }
+
+        /* ── Standings ── */
+        .ph-group-title { font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.5rem; margin-top: 1.25rem; }
+        .ph-group-title:first-child { margin-top: 0; }
+        .ph-standings-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
+        .ph-standings-table th { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); text-align: left; }
+        .ph-standings-table td { font-size: 0.95rem; font-weight: 600; padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .ph-standings-table tr:first-child td { color: var(--primary); }
+        .ph-standings-table .pts { font-weight: 800; color: var(--primary); }
+        .ph-standings-table .rank { color: var(--muted); font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex;align-items:center;gap:0.55rem;min-width:0">
+        {% if site_settings.org_logo_url %}
+        <img id="ph-logo" src="{{ site_settings.org_logo_url }}" alt="Logo"
+             style="height:32px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0;border-radius:4px">
+        {% endif %}
+        <div id="ph-title">&#9917; {{ site_settings.tournament_name }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.4rem">
+        <a href="{{ url_for('main.tournament_mobile_landing') }}" class="ph-view-link" title="Zurück zur Übersicht">&#8592; Übersicht</a>
+        <a href="{{ url_for('main.phone_speisekarte') }}" class="ph-view-link" title="Speisekarte">&#127860;</a>
+        <button class="ph-info-btn" onclick="document.getElementById('ph-info-overlay').classList.add('open')" title="Info">&#x2139;</button>
+    </div>
+</header>
+
+<div id="ph-announcement"></div>
+
+<div id="ph-tabs">
+    <div class="ph-tab active" onclick="switchTab('live')" id="tab-live">&#9679; Live</div>
+    <div class="ph-tab" onclick="switchTab('table')" id="tab-table">&#128202; Tabelle</div>
+    <div class="ph-tab" onclick="switchTab('matches')" id="tab-matches">&#128203; Spiele</div>
+    <div class="ph-tab" onclick="switchTab('teams')" id="tab-teams">&#128101; Teams</div>
+    <div class="ph-tab" onclick="switchTab('rules')" id="tab-rules">&#128220; Bestimmungen</div>
+</div>
+
+<div class="ph-panel active" id="panel-live"></div>
+<div class="ph-panel" id="panel-table"></div>
+<div class="ph-panel" id="panel-matches"></div>
+<div class="ph-panel" id="panel-teams"></div>
+<div class="ph-panel" id="panel-rules">
+    <div id="rules-card" class="ph-rules-card" style="display:none">
+        <div class="ph-rules-card-hd">&#128220; Turnierbestimmungen</div>
+        <div id="rules-content" class="ph-rules-content"></div>
+    </div>
+    <div id="rules-empty" class="ph-rules-empty">Keine Turnierbestimmungen hinterlegt.</div>
+</div>
+
+<div id="ph-info-overlay" class="ph-info-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="ph-info-box">
+        <div class="ph-info-logo">&#9917;</div>
+        <div class="ph-info-app">CupPlan</div>
+        <div class="ph-info-version">Version 1.5 &nbsp;&middot;&nbsp; 16.03.2026</div>
+        <div class="ph-info-dev">Maurer Julian</div>
+        <div class="ph-info-role">Designer &amp; Developer</div>
+        <button class="ph-info-close" onclick="document.getElementById('ph-info-overlay').classList.remove('open')">Schließen</button>
+    </div>
+</div>
+
+<script>
+const TOURNAMENT_ID   = {{ tournament.id }};
+const TOURNAMENT_SLUG = '{{ tournament.slug }}';
+
+let timerInterval = null;
+let timerRemaining = 0;
+let timerRunning = false;
+let timerSync = 0;
+
+// ── Socket ──
+const socket = io();
+socket.on('connect', () => socket.emit('join_tournament', {tournament_id: TOURNAMENT_ID}));
+socket.on('state_update', (s) => applyState(s));
+setInterval(() => {
+    if (!socket.connected) {
+        fetch(`/t/${TOURNAMENT_SLUG}/api/state`).then(r=>r.json()).then(s=>applyState(s)).catch(()=>{});
+    }
+}, 15000);
+
+// ── Tabs ──
+function switchTab(name) {
+    ['live','table','matches','teams','rules'].forEach(n => {
+        document.getElementById('panel-' + n).classList.toggle('active', n === name);
+        document.getElementById('tab-' + n).classList.toggle('active', n === name);
+    });
+}
+// Auto-open tab if requested from landing page
+(function() {
+    const tab = sessionStorage.getItem('ph_tab');
+    if (tab) { sessionStorage.removeItem('ph_tab'); switchTab(tab); }
+})();
+
+// ── Helpers ──
+function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+
+// ── Live timer ──
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (!timerRunning) return;
+        const elapsed = (Date.now() - timerSync) / 1000;
+        const rem = Math.max(0, timerRemaining - elapsed);
+        document.querySelectorAll('.ph-timer').forEach(el => {
+            el.textContent = '⏱ ' + fmt(Math.round(rem));
+            el.classList.toggle('urgent', rem <= 60 && rem > 0);
+        });
+    }, 500);
+}
+
+// ── Apply state ──
+function applyState(s) {
+    if (!s) return;
+    const settings = s.settings || {};
+    const legacyHide = settings.hide_results === '1' && settings.hide_table !== '1' && settings.hide_scores !== '1';
+    const hideTable  = settings.hide_table  === '1' || legacyHide;
+    const hideScores = settings.hide_scores === '1' || legacyHide;
+
+    if (settings.tournament_name) {
+        document.getElementById('ph-title').textContent = '⚽ ' + settings.tournament_name;
+        document.title = settings.tournament_name;
+    }
+    if (settings.org_logo_url !== undefined) {
+        let logo = document.getElementById('ph-logo');
+        if (settings.org_logo_url) {
+            if (!logo) {
+                logo = document.createElement('img');
+                logo.id = 'ph-logo';
+                logo.alt = 'Logo';
+                logo.style.cssText = 'height:32px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0;border-radius:4px';
+                document.getElementById('ph-title').parentNode.prepend(logo);
+            }
+            logo.src = settings.org_logo_url;
+        } else if (logo) {
+            logo.remove();
+        }
+    }
+    if (settings.color_primary) document.documentElement.style.setProperty('--primary', settings.color_primary);
+    if (settings.color_title)   document.documentElement.style.setProperty('--title',   settings.color_title);
+
+    // Announcement
+    const ann = document.getElementById('ph-announcement');
+    if (settings.announcement && settings.announcement.trim()) {
+        ann.textContent = '📢 ' + settings.announcement;
+        ann.style.display = 'block';
+    } else { ann.style.display = 'none'; }
+
+    // Rules
+    if (settings.tournament_rules !== undefined) {
+        const cardEl  = document.getElementById('rules-card');
+        const rulesEl = document.getElementById('rules-content');
+        const emptyEl = document.getElementById('rules-empty');
+        if (settings.tournament_rules && settings.tournament_rules.trim()) {
+            rulesEl.textContent = settings.tournament_rules;
+            cardEl.style.display = 'block';
+            emptyEl.style.display = 'none';
+        } else {
+            cardEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+        }
+    }
+
+    const liveMatches = s.live_matches && s.live_matches.length ? s.live_matches : (s.live_match ? [s.live_match] : []);
+    renderLive(liveMatches, s.upcoming_matches || [], s.final_matches || [], hideScores);
+    renderTable(s.standings_by_group, s.groups, hideTable);
+    renderMatches(s.past_matches || [], s.upcoming_matches || [], s.final_matches || [], hideScores);
+    renderTeams(s.standings_by_group, s.groups);
+
+    // Update tab live indicator
+    const tabLive = document.getElementById('tab-live');
+    tabLive.textContent = liveMatches.length > 0 ? '🔴 Live' : '⚪ Live';
+}
+
+// ── Panel: Live ──
+function renderLive(matches, upcoming, finals, hideResults) {
+    const el = document.getElementById('panel-live');
+
+    let html = '';
+    if (matches.length === 0) {
+        html += `<div class="ph-no-live">
+            <div class="ph-no-live-icon">⚽</div>
+            <div class="ph-no-live-text">Kein Spiel aktiv</div>
+        </div>`;
+    } else {
+        matches.forEach(m => {
+            const fieldTag = matches.length > 1 ? `<div class="ph-field-tag">Spielfeld ${m.field || 1}</div>` : '';
+            const groupTag = m.group_name ? `<div class="ph-group-tag">${esc(m.group_name)}</div>` : '';
+            const finalTag = m.final_label ? `<div class="ph-group-tag">🏆 ${esc(m.final_label)}</div>` : '';
+            const phaseTag = m.is_penalty
+                ? `<div class="ph-field-tag" style="color:#ef4444;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3)">⚽ Elfmeter</div>`
+                : m.is_extra_time ? `<div class="ph-field-tag">⏱ Verlängerung</div>` : '';
+            const scoreHtml = hideResults
+                ? `<div class="ph-score-row"><span class="ph-score" style="font-size:1.4rem;color:var(--muted)">vs</span></div>`
+                : `<div class="ph-score-row">
+                       <span class="ph-score">${m.score_team1}</span>
+                       <span class="ph-score-divider">:</span>
+                       <span class="ph-score">${m.score_team2}</span>
+                   </div>`;
+            html += `<div class="ph-live-card">
+                <div class="ph-live-badge"><div class="ph-live-dot"></div>LIVE</div>
+                ${fieldTag}${phaseTag}${groupTag}${finalTag}
+                <div class="ph-matchup">
+                    <div class="ph-team-name">${m.team1 ? esc(m.team1.name) : 'TBD'}</div>
+                    ${scoreHtml}
+                    <div class="ph-team-name">${m.team2 ? esc(m.team2.name) : 'TBD'}</div>
+                </div>
+                <div class="ph-timer">⏱ ${fmt(m.timer_remaining)}</div>
+            </div>`;
+        });
+        // sync timer with first match
+        timerRemaining = matches[0].timer_remaining;
+        timerRunning   = matches[0].timer_running;
+        timerSync      = Date.now();
+        startTimer();
+    }
+
+    // Next matches: group upcoming OR planned finals
+    const plannedFinals = finals.filter(m => m.status === 'planned');
+    const nextItems = upcoming.length > 0 ? upcoming.slice(0, 4) : plannedFinals.slice(0, 4);
+    const nextTitle = upcoming.length > 0 ? 'Nächste Spiele' : '🏆 Nächste Finalspiele';
+
+    if (nextItems.length > 0) {
+        html += `<div class="ph-section-title">${nextTitle}</div>`;
+        nextItems.forEach(m => {
+            const badge = m.final_label
+                ? `<span class="ph-match-badge">🏆 ${esc(m.final_label)}</span>`
+                : (m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '');
+            html += `<div class="ph-match-item">
+                <div class="ph-match-teams">
+                    ${m.team1 ? esc(m.team1.name) : 'TBD'}
+                    <span class="ph-match-vs">vs</span>
+                    ${m.team2 ? esc(m.team2.name) : 'TBD'}
+                </div>
+                ${badge}
+            </div>`;
+        });
+    }
+
+    el.innerHTML = html;
+}
+
+// ── Panel: Table ──
+function renderTable(standingsMap, groups, hideTable) {
+    const tab = document.getElementById('tab-table');
+    const el = document.getElementById('panel-table');
+    if (hideTable) {
+        if (tab) tab.style.display = 'none';
+        el.innerHTML = '';
+        return;
+    }
+    if (tab) tab.style.display = '';
+    if (!groups || groups.length === 0) { el.innerHTML = '<div class="ph-empty">Keine Gruppen</div>'; return; }
+    let html = '';
+    groups.forEach(g => {
+        const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
+        const headers = '<tr><th>#</th><th>Team</th><th>Sp</th><th class="pts">Pkt</th><th>TD</th></tr>';
+        const rows = data.map(s =>
+            `<tr><td class="rank">${s.rank}</td><td>${esc(s.team.name)}</td><td>${s.played}</td><td class="pts">${s.points}</td><td>${s.goal_diff >= 0 ? '+' : ''}${s.goal_diff}</td></tr>`
+        ).join('');
+        html += `<div class="ph-group-title">${esc(g.name)}</div>
+            <table class="ph-standings-table"><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
+    });
+    el.innerHTML = html || '<div class="ph-empty">Keine Tabellendaten</div>';
+}
+
+// ── Panel: Matches ──
+function renderMatches(past, upcoming, finals, hideResults) {
+    const el = document.getElementById('panel-matches');
+    let html = '';
+
+    if (upcoming.length > 0) {
+        html += `<div class="ph-section-title">Kommende Spiele</div>`;
+        upcoming.forEach(m => {
+            const badge = m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '';
+            html += `<div class="ph-match-item">
+                <div class="ph-match-teams">${m.team1 ? esc(m.team1.name) : '?'}<span class="ph-match-vs">vs</span>${m.team2 ? esc(m.team2.name) : '?'}</div>
+                ${badge}
+            </div>`;
+        });
+    }
+
+    if (past.length > 0) {
+        html += `<div class="ph-section-title" style="margin-top:1.25rem">Ergebnisse</div>`;
+        past.forEach(m => {
+            const score = hideResults
+                ? `<span class="ph-match-score">✓</span>`
+                : `<span class="ph-match-score">${m.score_team1}:${m.score_team2}</span>`;
+            const badge = m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '';
+            html += `<div class="ph-match-item">
+                <div class="ph-match-teams">${m.team1 ? esc(m.team1.name) : '?'}<span class="ph-match-vs">vs</span>${m.team2 ? esc(m.team2.name) : '?'}</div>
+                ${score}${badge}
+            </div>`;
+        });
+    }
+
+    // Finals section
+    if (finals.length > 0) {
+        html += `<div class="ph-section-title" style="margin-top:1.25rem;color:var(--primary)">🏆 Finalrunde</div>`;
+        finals.forEach(m => {
+            const label = m.final_label ? `<span class="ph-match-badge" style="color:var(--primary)">${esc(m.final_label)}</span>` : '';
+            let score = '';
+            if (m.status === 'finished') {
+                score = hideResults
+                    ? `<span class="ph-match-score">✓</span>`
+                    : `<span class="ph-match-score">${m.score_team1}:${m.score_team2}</span>`;
+            } else if (m.status === 'live') {
+                score = hideResults
+                    ? `<span class="ph-match-score" style="color:#ef4444;font-size:0.9rem">LIVE</span>`
+                    : `<span class="ph-match-score" style="color:#ef4444">${m.score_team1}:${m.score_team2}</span>`;
+            }
+            const t1 = m.team1 ? esc(m.team1.name) : 'TBD';
+            const t2 = m.team2 ? esc(m.team2.name) : 'TBD';
+            const liveBar = m.status === 'live' ? ' style="border-color:rgba(239,68,68,0.35)"' : '';
+            html += `<div class="ph-match-item"${liveBar}>
+                <div class="ph-match-teams">${t1}<span class="ph-match-vs">vs</span>${t2}</div>
+                ${score}${label}
+            </div>`;
+        });
+    }
+
+    el.innerHTML = html || '<div class="ph-empty">Noch keine Spiele</div>';
+}
+
+// ── Panel: Teams ──
+function renderTeams(standingsMap, groups) {
+    const el = document.getElementById('panel-teams');
+    if (!groups || groups.length === 0) {
+        el.innerHTML = '<div class="ph-empty">Keine Gruppen vorhanden</div>';
+        return;
+    }
+    let html = '';
+    groups.forEach(g => {
+        const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
+        html += `<div class="ph-group-title">${esc(g.name)}</div>`;
+        if (data.length === 0) {
+            html += `<div class="ph-empty" style="padding:0.5rem 0;text-align:left;font-size:0.85rem">Keine Teams</div>`;
+        } else {
+            data.forEach((s, i) => {
+                html += `<div class="ph-match-item" style="padding:0.65rem 1rem">
+                    <span style="font-size:0.8rem;color:var(--muted);min-width:1.4rem">${i + 1}.</span>
+                    <div class="ph-match-teams" style="font-size:0.95rem">${esc(s.team.name)}</div>
+                </div>`;
+            });
+        }
+    });
+    el.innerHTML = html;
+}
+</script>
+</body>
+</html>

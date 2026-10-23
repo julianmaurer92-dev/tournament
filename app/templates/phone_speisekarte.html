@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Speisekarte</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #22c55e;
+            --bg:      #050a10;
+            --bg2:     #0b1420;
+            --bg3:     #111c2e;
+            --text:    #f1f5f9;
+            --muted:   #64748b;
+            --border:  rgba(255,255,255,0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100%; }
+
+        header {
+            background: var(--bg2);
+            border-bottom: 2px solid var(--primary);
+            padding: 0.9rem 1rem;
+            display: flex; align-items: center; gap: 0.75rem;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .ph-back {
+            font-size: 0.75rem; padding: 0.3rem 0.6rem;
+            border-radius: 6px; border: 1px solid var(--border);
+            color: var(--muted); text-decoration: none; flex-shrink: 0;
+        }
+        .ph-back:hover { color: var(--primary); border-color: var(--primary); }
+        #ph-title { font-size: 1.15rem; font-weight: 800; color: var(--primary); }
+
+        .menu-container { padding: 1rem; }
+
+        .menu-section { margin-bottom: 1.5rem; }
+        .menu-section-title {
+            font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem;
+        }
+        .menu-item {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+        }
+        .menu-item-info { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+        .menu-item-name { font-size: 0.95rem; font-weight: 700; }
+        .menu-item-desc { font-size: 0.78rem; color: var(--muted); }
+        .menu-item-price { font-size: 0.95rem; font-weight: 800; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
+
+        .ph-empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.9rem; }
+        .ph-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    </style>
+</head>
+<body>
+<header>
+    <a href="{{ url_for('main.phone_landing') }}" class="ph-back">&larr; Uebersicht</a>
+    <span id="ph-title">&#127860; Speisekarte</span>
+</header>
+
+<div class="menu-container">
+    {% if not speisen and not getraenke %}
+    <div class="ph-empty">
+        <div class="ph-empty-icon">&#127860;</div>
+        <p>Noch keine Speisekarte verfuegbar</p>
+    </div>
+    {% else %}
+        {% if speisen %}
+        <div class="menu-section">
+            <div class="menu-section-title">&#127828; Speisen</div>
+            {% for item in speisen %}
+            <div class="menu-item">
+                <div class="menu-item-info">
+                    <span class="menu-item-name">{{ item.name }}</span>
+                    {% if item.description %}
+                    <span class="menu-item-desc">{{ item.description }}</span>
+                    {% endif %}
+                </div>
+                {% if item.price %}
+                <span class="menu-item-price">{{ item.price }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if getraenke %}
+        <div class="menu-section">
+            <div class="menu-section-title">&#127866; Getraenke</div>
+            {% for item in getraenke %}
+            <div class="menu-item">
+                <div class="menu-item-info">
+                    <span class="menu-item-name">{{ item.name }}</span>
+                    {% if item.description %}
+                    <span class="menu-item-desc">{{ item.description }}</span>
+                    {% endif %}
+                </div>
+                {% if item.price %}
+                <span class="menu-item-price">{{ item.price }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+</body>
+</html>

@@ -12,9 +12,9 @@ def _build_state(tournament_id):
     if not tournament:
         return {}
 
-    live_match = Match.query.filter_by(
+    live_matches = Match.query.filter_by(
         status="live", tournament_id=tournament_id
-    ).first()
+    ).order_by(Match.field).all()
 
     # Group matches only (non-final)
     past_matches = (
@@ -48,7 +48,8 @@ def _build_state(tournament_id):
 
     return {
         "tournament": tournament.to_dict(),
-        "live_match": live_match.to_dict() if live_match else None,
+        "live_match": live_matches[0].to_dict() if live_matches else None,
+        "live_matches": [m.to_dict() for m in live_matches],
         "past_matches": [m.to_dict() for m in past_matches],
         "upcoming_matches": [m.to_dict() for m in upcoming_matches],
         "final_matches": [m.to_dict() for m in final_matches],

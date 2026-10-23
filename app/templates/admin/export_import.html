@@ -1,0 +1,228 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Export &amp; Import{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block page_content %}
+<!-- EXPORT -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">&#8681; Exportieren</h3>
+        <span class="card-subtitle ms-2">Turnierwochenende als JSON-Datei herunterladen</span>
+    </div>
+    <div class="card-body">
+        {% if tournaments %}
+        <div style="margin-bottom:0.75rem">
+            <div class="section-label">Turniere</div>
+            <label class="checkbox-label" style="gap:0.5rem;font-weight:600;margin-bottom:0.5rem">
+                <input type="checkbox" id="export-select-all" onchange="toggleAll('export-cb', this.checked)">
+                Alle auswaehlen
+            </label>
+            <div class="tournament-checkboxes" style="margin-top:0.5rem">
+                {% for t in tournaments %}
+                <label class="checkbox-label">
+                    <input type="checkbox" class="export-cb" value="{{ t.id }}">
+                    {{ t.name }}
+                    {% if t.event_date %}
+                    <span class="item-badge badge-date" style="font-size:0.7rem">{{ t.event_date.strftime('%d.%m.%Y') }}</span>
+                    {% endif %}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p class="empty-hint" style="margin-bottom:0.75rem">Keine Turniere vorhanden.</p>
+        {% endif %}
+
+        <div style="margin-bottom:1rem">
+            <div class="section-label">Speisekarte</div>
+            <label class="checkbox-label">
+                <input type="checkbox" id="export-include-menu" checked>
+                Speisen &amp; Getraenke einschlie&szlig;en
+            </label>
+        </div>
+
+        <button class="btn btn-accent" onclick="doExport()">&#8681; Exportieren</button>
+        <span class="text-muted small ms-2">Enthalt alle Turniere und optional die Speisekarte.</span>
+    </div>
+</div>
+
+<!-- IMPORT -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">&#8679; Importieren</h3>
+        <span class="card-subtitle ms-2">Turnierwochenende aus einer JSON-Exportdatei wiederherstellen</span>
+    </div>
+    <div class="card-body">
+        <div style="margin-bottom:1rem">
+            <label class="form-hint" style="display:block;margin-bottom:0.4rem">Backup-Datei auswaehlen (.json):</label>
+            <input type="file" id="import-file" accept=".json,application/json"
+                   onchange="readImportFile(this)" style="font-size:0.9rem">
+        </div>
+
+        <div id="import-preview" style="display:none;margin-bottom:1rem">
+            <div id="import-tournaments-section" style="display:none;margin-bottom:0.75rem">
+                <div class="section-label">Turniere in der Datei</div>
+                <div id="import-checkboxes" class="tournament-checkboxes"></div>
+                <label class="checkbox-label" style="gap:0.5rem;font-weight:600;margin-top:0.5rem">
+                    <input type="checkbox" id="import-select-all" onchange="toggleAll('import-cb', this.checked)">
+                    Alle auswaehlen
+                </label>
+            </div>
+
+            <div id="import-menu-section" style="display:none">
+                <div class="section-label">Speisekarte</div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="import-include-menu" checked>
+                    <span id="import-menu-label">Speisen &amp; Getraenke importieren</span>
+                    <span class="text-muted small">(vorhandene Eintraege mit gleichem Namen werden uebersprungen)</span>
+                </label>
+            </div>
+        </div>
+
+        <form id="import-form" method="POST" action="{{ url_for('admin.import_tournaments') }}"
+              enctype="multipart/form-data" style="display:none">
+            <input type="file" name="file" id="import-file-hidden" style="display:none">
+            <input type="hidden" name="include_menu" id="import-menu-flag" value="0">
+            <div id="import-name-inputs"></div>
+            <button type="submit" class="btn btn-accent">&#8679; Importieren</button>
+            <span class="form-hint" style="margin-left:0.5rem">
+                Bereits vorhandene Turnier-Slugs werden umbenannt (kein Ueberschreiben).
+            </span>
+        </form>
+
+        <div id="import-error" style="display:none;color:#f87171;font-size:0.88rem;margin-top:0.5rem"></div>
+    </div>
+</div>
+
+<style>
+.tournament-checkboxes { display:flex; flex-wrap:wrap; gap:0.5rem; }
+.checkbox-label {
+    display:flex; align-items:center; gap:0.4rem; cursor:pointer;
+    font-size:0.88rem; padding:4px 10px;
+    border-radius:var(--radius-sm,6px); border:1px solid var(--border,#2d3748);
+}
+.checkbox-label:hover { background:var(--hover,#2d3748); }
+.section-label { font-size:0.72rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--text-muted,#64748b); margin-bottom:0.4rem; }
+</style>
+
+<script>
+// ── Export ──
+function doExport() {
+    const checked = [...document.querySelectorAll('.export-cb:checked')].map(el => el.value);
+    const includeMenu = document.getElementById('export-include-menu').checked;
+    if (!checked.length && !includeMenu) {
+        alert('Bitte mindestens ein Turnier auswaehlen oder die Speisekarte einschliessen.');
+        return;
+    }
+    let url = `/admin/api/export?ids=${checked.join(',')}`;
+    if (includeMenu) url += '&include_menu=1';
+    window.location.href = url;
+}
+
+// ── Import: read file client-side ──
+let importFileObject = null;
+
+function readImportFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    importFileObject = file;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const errEl = document.getElementById('import-error');
+        errEl.style.display = 'none';
+        let data;
+        try { data = JSON.parse(e.target.result); }
+        catch { errEl.textContent = 'Datei ist kein gueltiges JSON.'; errEl.style.display = 'block'; return; }
+
+        if (data.version !== '1' || (!Array.isArray(data.tournaments) && !data.menu_items)) {
+            errEl.textContent = 'Ungueltiges Exportformat.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        // Tournaments section
+        const tSection = document.getElementById('import-tournaments-section');
+        const box = document.getElementById('import-checkboxes');
+        box.innerHTML = '';
+        if (Array.isArray(data.tournaments) && data.tournaments.length > 0) {
+            data.tournaments.forEach(t => {
+                const label = document.createElement('label');
+                label.className = 'checkbox-label';
+                const date = t.event_date ? ` <span class="item-badge badge-date" style="font-size:0.7rem">${t.event_date}</span>` : '';
+                label.innerHTML = `<input type="checkbox" class="import-cb" value="${escHtml(t.name)}" checked> ${escHtml(t.name)}${date}`;
+                box.appendChild(label);
+            });
+            tSection.style.display = '';
+        } else {
+            tSection.style.display = 'none';
+        }
+
+        // Menu section
+        const mSection = document.getElementById('import-menu-section');
+        if (Array.isArray(data.menu_items) && data.menu_items.length > 0) {
+            document.getElementById('import-menu-label').textContent =
+                `${data.menu_items.length} Speisekarten-Eintraege importieren`;
+            mSection.style.display = '';
+        } else {
+            mSection.style.display = 'none';
+        }
+
+        document.getElementById('import-preview').style.display = 'block';
+        document.getElementById('import-form').style.display = 'block';
+    };
+    reader.readAsText(file);
+}
+
+function doImport() {
+    const selected = [...document.querySelectorAll('.import-cb:checked')].map(el => el.value);
+    const includeMenu = document.getElementById('import-include-menu')?.checked;
+    if (!selected.length && !includeMenu) {
+        alert('Bitte mindestens ein Turnier auswaehlen oder die Speisekarte importieren.');
+        return;
+    }
+    if (!importFileObject) return;
+
+    // Copy file into hidden input via DataTransfer
+    const dt = new DataTransfer();
+    dt.items.add(importFileObject);
+    document.getElementById('import-file-hidden').files = dt.files;
+
+    // Menu flag
+    document.getElementById('import-menu-flag').value = includeMenu ? '1' : '0';
+
+    // Build hidden name inputs
+    const container = document.getElementById('import-name-inputs');
+    container.innerHTML = '';
+    selected.forEach(name => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'names';
+        input.value = name;
+        container.appendChild(input);
+    });
+
+    document.getElementById('import-form').submit();
+}
+
+// Wire the submit button manually so we can validate first
+document.getElementById('import-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    doImport();
+});
+
+// ── Helpers ──
+function toggleAll(cls, checked) {
+    document.querySelectorAll('.' + cls).forEach(el => el.checked = checked);
+}
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

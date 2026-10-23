@@ -11,19 +11,30 @@
 {% block content %}
 <header class="header">
     <div class="header-inner">
-        <a href="{{ url_for('main.landing') }}" class="header-back" title="Zurueck zur Uebersicht">&larr;</a>
         <div class="header-logo">&#9917;</div>
         <div class="header-text">
             <h1 id="tournament-name">{{ site_settings.tournament_name }}</h1>
             <p class="header-sub">Live-Ergebnisse &amp; Tabelle</p>
         </div>
-        <a href="{{ url_for('main.speisekarte') }}" class="header-menu-link" title="Speisekarte">&#127860; Speisekarte</a>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+            <a href="{{ url_for('main.landing') }}" class="header-menu-link" title="Turnierübersicht">&#127942; Übersicht</a>
+            <a href="{{ url_for('main.speisekarte') }}" class="header-menu-link" title="Speisekarte">&#127860; Speisekarte</a>
+        </div>
     </div>
 </header>
 
+<!-- Mobile tab bar (hidden on desktop via CSS) -->
+<nav class="mobile-tabs" id="mobile-tabs">
+    <button class="mobile-tab active" data-tab="live" onclick="switchTab('live')">
+        <span class="mobile-tab-dot" id="live-dot"></span>&#9654; Live
+    </button>
+    <button class="mobile-tab" data-tab="matches" onclick="switchTab('matches')">&#128203; Spiele</button>
+    <button class="mobile-tab" data-tab="table" onclick="switchTab('table')">&#128200; Tabelle</button>
+</nav>
+
 <div class="layout">
-    <!-- Left sidebar -->
-    <aside class="sidebar sidebar-left">
+    <!-- Left sidebar: past + upcoming matches -->
+    <aside class="sidebar sidebar-left mobile-panel" id="panel-matches">
         <section class="panel">
             <h2 class="panel-title">VERGANGENE SPIELE</h2>
             <div id="past-matches" class="match-list">
@@ -39,7 +50,7 @@
     </aside>
 
     <!-- Center: live match + bracket + winner -->
-    <main class="center">
+    <main class="center mobile-panel active-panel" id="panel-live">
         <div id="winner-display"></div>
         <div id="next-match-prep"></div>
         <div id="live-match" class="live-match-container">
@@ -52,8 +63,8 @@
         <div id="bracket-container"></div>
     </main>
 
-    <!-- Right sidebar: all group standings stacked -->
-    <aside class="sidebar sidebar-right">
+    <!-- Right sidebar: standings -->
+    <aside class="sidebar sidebar-right mobile-panel" id="panel-table">
         <div id="standings">
             <p class="empty-state">Keine Teams registriert</p>
         </div>
@@ -63,6 +74,23 @@
 <script>
     const TOURNAMENT_ID = {{ tournament.id }};
     const TOURNAMENT_SLUG = '{{ tournament.slug }}';
+
+    function switchTab(tab) {
+        // Only active on mobile (tab bar visible)
+        if (window.getComputedStyle(document.getElementById('mobile-tabs')).display === 'none') return;
+        document.querySelectorAll('.mobile-panel').forEach(p => p.classList.remove('active-panel'));
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        const panelMap = { live: 'panel-live', matches: 'panel-matches', table: 'panel-table' };
+        document.getElementById(panelMap[tab]).classList.add('active-panel');
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    // Show live dot when a match is live
+    function updateLiveDot(hasLive) {
+        const dot = document.getElementById('live-dot');
+        if (dot) dot.style.display = hasLive ? 'inline-block' : 'none';
+    }
 </script>
 {% endblock %}
 

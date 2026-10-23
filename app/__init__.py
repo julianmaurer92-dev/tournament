@@ -16,12 +16,12 @@ def create_app():
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "DATABASE_URL", "postgresql://tournament:tournament_secret@localhost:5432/tournament"
+        "DATABASE_URL", "postgresql://cupplan:cupplan_secret@localhost:5432/cupplan"
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_size": 20,
-        "max_overflow": 40,
+        "pool_size": 3,       # 1 worker needs very few persistent connections
+        "max_overflow": 5,    # burst up to 8 total – well within postgres max_connections=20
         "pool_timeout": 30,
         "pool_recycle": 1800,
         "pool_pre_ping": True,
@@ -81,15 +81,38 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        _migrate_db()
         _ensure_admin(app)
 
     return app
 
 
+def _migrate_db():
+    """Add missing columns to existing tables (safe to run on every start)."""
+    migrations = [
+        "ALTER TABLE match ADD COLUMN IF NOT EXISTS field INTEGER DEFAULT 1",
+        "ALTER TABLE match ADD COLUMN IF NOT EXISTS is_penalty BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE tournament ADD COLUMN IF NOT EXISTS event_time VARCHAR(5)",
+        # Widen tournament_settings.value from VARCHAR(500) to TEXT
+        "ALTER TABLE tournament_settings ALTER COLUMN value TYPE TEXT",
+        # team_payment table is created by db.create_all(); no ALTER needed
+    ]
+    with db.engine.connect() as conn:
+        for sql in migrations:
+            conn.execute(db.text(sql))
+        conn.commit()
+
+
 def _ensure_admin(app):
     from app.models import Admin
     if not Admin.query.first():
-        admin = Admin(username="admin")
+        admin = Admin(username="admin", role="superadmin")
         admin.set_password(app.config["ADMIN_PASSWORD"])
         db.session.add(admin)
         db.session.commit()
+    else:
+        # Migrate existing admin to superadmin if role not set
+        existing = Admin.query.filter_by(role="editor").first()
+        if existing and Admin.query.count() == 1:
+            existing.role = "superadmin"
+            db.session.commit()

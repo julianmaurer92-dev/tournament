@@ -28,6 +28,11 @@ class Admin(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=True)
     email = db.Column(db.String(254), unique=True, nullable=True)
+    role = db.Column(db.String(20), default="editor", nullable=False)  # superadmin | editor | viewer
+
+    tournament_access = db.relationship(
+        "UserTournamentAccess", backref="user", lazy="dynamic", cascade="all, delete-orphan"
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -36,6 +41,29 @@ class Admin(UserMixin, db.Model):
         if not self.password_hash:
             return False
         return check_password_hash(self.password_hash, password)
+
+    def has_tournament_access(self, tournament_id):
+        if self.role == "superadmin":
+            return True
+        return UserTournamentAccess.query.filter_by(
+            user_id=self.id, tournament_id=tournament_id
+        ).first() is not None
+
+    def can_edit(self):
+        return self.role in ("superadmin", "editor")
+
+    def can_delete(self):
+        return self.role == "superadmin"
+
+
+# ──────────────────────────────────────
+# User ↔ Tournament Access (many-to-many)
+# ──────────────────────────────────────
+
+class UserTournamentAccess(db.Model):
+    __tablename__ = "user_tournament_access"
+    user_id = db.Column(db.Integer, db.ForeignKey("admin.id"), primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournament.id"), primary_key=True)
 
 
 # ──────────────────────────────────────
@@ -48,6 +76,7 @@ class Tournament(db.Model):
     slug = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, default="")
     event_date = db.Column(db.Date, nullable=True)
+    event_time = db.Column(db.String(5), nullable=True)  # "HH:MM"
     is_active = db.Column(db.Boolean, default=True)
     display_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -86,6 +115,13 @@ SETTINGS_DEFAULTS = {
     "default_timer_regular": "600",
     "default_timer_extra": "300",
     "announcement": "",
+    "hide_results": "0",
+    "hide_table": "0",
+    "hide_scores": "0",
+    "theme": "dark",
+    "num_fields": "1",
+    "org_logo_url": "",
+    "tournament_rules": "",
 }
 
 
@@ -93,7 +129,7 @@ class TournamentSettings(db.Model):
     __tablename__ = "tournament_settings"
     tournament_id = db.Column(db.Integer, db.ForeignKey("tournament.id"), primary_key=True)
     key = db.Column(db.String(100), primary_key=True)
-    value = db.Column(db.String(500), nullable=False)
+    value = db.Column(db.Text, nullable=False)
 
     tournament_rel = db.relationship("Tournament", backref="settings")
 
@@ -193,6 +229,21 @@ class Team(db.Model):
 
 
 # ──────────────────────────────────────
+# Team Payments (Startgebühr)
+# ──────────────────────────────────────
+
+class TeamPayment(db.Model):
+    __tablename__ = "team_payment"
+    team_id = db.Column(db.Integer, db.ForeignKey("team.id"), primary_key=True)
+    paid = db.Column(db.Boolean, default=False, nullable=False)
+    paid_at = db.Column(db.DateTime, nullable=True)
+    amount = db.Column(db.Float, nullable=True)   # actual paid amount (may differ from default)
+    receipt_number = db.Column(db.String(50), nullable=True)
+
+    team = db.relationship("Team", backref=db.backref("payment", uselist=False))
+
+
+# ──────────────────────────────────────
 # Matches
 # ──────────────────────────────────────
 
@@ -208,12 +259,15 @@ class Match(db.Model):
     scheduled_time = db.Column(db.DateTime, nullable=True)
     match_order = db.Column(db.Integer, default=0)
 
+    field = db.Column(db.Integer, default=1)  # 1 or 2 – which pitch the match is played on
+
     # Timer (seconds)
     timer_duration = db.Column(db.Integer, default=600)
     timer_remaining = db.Column(db.Integer, default=600)
     timer_running = db.Column(db.Boolean, default=False)
     timer_started_at = db.Column(db.Float, nullable=True)
     is_extra_time = db.Column(db.Boolean, default=False)
+    is_penalty = db.Column(db.Boolean, default=False)
 
     # Final round fields
     is_final = db.Column(db.Boolean, default=False)
@@ -251,10 +305,12 @@ class Match(db.Model):
                 self.scheduled_time.isoformat() if self.scheduled_time else None
             ),
             "match_order": self.match_order,
+            "field": self.field or 1,
             "timer_duration": self.timer_duration,
             "timer_remaining": remaining,
             "timer_running": self.timer_running,
             "is_extra_time": self.is_extra_time,
+            "is_penalty": self.is_penalty,
             "is_final": self.is_final,
             "final_round": self.final_round,
             "final_position": self.final_position,

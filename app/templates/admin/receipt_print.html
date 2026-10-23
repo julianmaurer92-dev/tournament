@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quittungen – {{ tournament.name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 11pt;
+    color: #000;
+    background: #d0d0d0;
+    line-height: 1.5;
+}
+
+/* ── Screen toolbar ── */
+.screen-toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0; z-index: 100;
+    background: #1f2937;
+    color: #fff;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+.toolbar-title { font-size: 0.88rem; font-weight: 600; opacity: 0.85; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+.btn-print {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    background: #16a34a; color: #fff;
+    border: none; border-radius: 6px;
+    font-size: 0.88rem; font-weight: 700; font-family: inherit;
+    cursor: pointer;
+}
+.btn-print:hover { background: #15803d; }
+.btn-close {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255,255,255,0.1); color: #fff;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+    font-size: 0.88rem; font-weight: 600; font-family: inherit;
+    cursor: pointer; text-decoration: none;
+}
+.btn-close:hover { background: rgba(255,255,255,0.18); }
+.toolbar-hint {
+    font-size: 0.75rem; opacity: 0.55;
+}
+
+/* ── Page wrapper ── */
+.page-wrap {
+    padding: 64px 0 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* ══════════════════════════════════════════
+   A4 SHEET — contains 2 A5 receipts
+   A4 portrait = 210mm × 297mm
+   A5 landscape = 210mm × 148.5mm (×2 = A4)
+   ══════════════════════════════════════════ */
+.receipt-page {
+    width: 210mm;
+    background: #fff;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── A5 Receipt ── */
+.receipt {
+    width: 210mm;
+    height: 148.5mm;
+    background: #fff;
+    padding: 10mm 14mm 8mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Cut line between the two receipts ── */
+.cut-line {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+    color: #aaa;
+    font-size: 7pt;
+    font-weight: 500;
+    font-family: inherit;
+    user-select: none;
+    height: 6mm;
+    flex-shrink: 0;
+}
+.cut-line::before, .cut-line::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed #bbb;
+}
+.cut-line span { flex-shrink: 0; }
+
+/* ── Header: title + logo ── */
+.rcpt-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 5mm;
+}
+.rcpt-title {
+    font-size: 16pt;
+    font-weight: 800;
+    color: #000;
+    line-height: 1.15;
+}
+.rcpt-subtitle {
+    font-size: 8.5pt;
+    font-weight: 500;
+    color: #555;
+    margin-top: 0.5mm;
+}
+.rcpt-logo {
+    max-height: 24mm;
+    max-width: 36mm;
+    object-fit: contain;
+    margin-left: 6mm;
+    flex-shrink: 0;
+}
+.rcpt-logo-placeholder {
+    width: 24mm; height: 24mm;
+    border: 1.5px dashed #ccc;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: #ccc;
+    font-size: 7.5pt;
+    text-align: center;
+    margin-left: 6mm;
+    flex-shrink: 0;
+}
+
+/* ── Dividers ── */
+.rcpt-line {
+    border: none;
+    border-top: 1.5px solid #000;
+    margin: 0 0 4mm;
+}
+.rcpt-line-thin {
+    border: none;
+    border-top: 0.5px solid #999;
+    margin: 3mm 0;
+}
+
+/* ── Field rows ── */
+.rcpt-fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5mm;
+}
+.rcpt-row {
+    display: grid;
+    grid-template-columns: 50mm 1fr;
+    align-items: baseline;
+    gap: 3mm;
+}
+.rcpt-label {
+    font-size: 10.5pt;
+    font-weight: 400;
+    color: #000;
+    white-space: nowrap;
+}
+.rcpt-value {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #000;
+}
+.rcpt-value.dashed::before    { content: '----'; font-weight: 400; letter-spacing: -1px; margin-right: 2pt; }
+.rcpt-value.dashed::after     { content: '----'; font-weight: 400; letter-spacing: -1px; margin-left: 2pt; }
+.rcpt-value.dashed-sm::before { content: '---';  font-weight: 400; letter-spacing: -1px; margin-right: 2pt; }
+.rcpt-value.dashed-sm::after  { content: '---';  font-weight: 400; letter-spacing: -1px; margin-left: 2pt; }
+.rcpt-date-ul { text-decoration: underline; }
+
+/* ── Signature section ── */
+.rcpt-sigs {
+    margin-top: auto;
+    padding-top: 5mm;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 5mm;
+    align-items: end;
+}
+.rcpt-sig-line {
+    border-bottom: 1.5px solid #000;
+    margin-bottom: 1.5mm;
+    height: 8mm;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 1mm;
+}
+.rcpt-sig-label {
+    font-size: 7.5pt;
+    font-weight: 400;
+    color: #000;
+}
+
+/* ── Org footer ── */
+.rcpt-org-footer {
+    margin-top: 3mm;
+    font-size: 7pt;
+    color: #666;
+    border-top: 0.5px solid #ccc;
+    padding-top: 1.5mm;
+    text-align: center;
+}
+
+/* ════════════════════════
+   PRINT STYLES
+   ════════════════════════ */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    body { background: #fff; }
+    .screen-toolbar { display: none !important; }
+
+    .page-wrap {
+        padding: 0;
+        gap: 0;
+        align-items: stretch;
+    }
+
+    /* Each A4 sheet — exactly A4 height, nothing overflows */
+    .receipt-page {
+        width: 100%;
+        height: 297mm;
+        overflow: hidden;
+        page-break-after: always;
+        box-shadow: none;
+    }
+    .receipt-page:last-child { page-break-after: auto; }
+
+    /* Each A5 receipt — exactly half A4 */
+    .receipt {
+        width: 100%;
+        height: 148.5mm;
+        box-shadow: none;
+    }
+
+    /* Cut line: zero height, border drawn via outline to avoid layout impact */
+    .cut-line {
+        height: 0;
+        padding: 0;
+        overflow: hidden;
+        border: none;
+        outline: none;
+        border-top: 1px dashed #aaa;
+        margin: 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- Screen toolbar -->
+<div class="screen-toolbar">
+    <div>
+        <div class="toolbar-title">
+            &#128438;
+            {% if single %}Quittung – {{ teams[0].name if teams else '' }}
+            {% else %}{{ teams|length }} Quittung(en) – {{ tournament.name }}{% endif %}
+        </div>
+        <div class="toolbar-hint">
+            {% if single %}1 Quittung &middot; A5 (halbe A4-Seite)
+            {% else %}{{ ((teams|length + 1) // 2) }} A4-Seite(n) &middot; 2 Quittungen pro Blatt{% endif %}
+        </div>
+    </div>
+    <div class="toolbar-actions" style="align-items:center;gap:0.75rem">
+        <label style="font-size:0.8rem;opacity:0.7;white-space:nowrap">&#128197; Datum:</label>
+        <input type="date" id="receipt-date" value="{{ tournament.event_date.strftime('%Y-%m-%d') if tournament.event_date else '' }}"
+               style="padding:0.35rem 0.6rem;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:0.85rem;font-family:inherit;cursor:pointer"
+               oninput="updateDates(this.value)">
+        <a href="javascript:history.back()" class="btn-close">&#8592; Zurück</a>
+        <button class="btn-print" onclick="window.print()">&#128438; Als PDF / Drucken</button>
+    </div>
+</div>
+
+<script>
+function fmtDate(isoVal) {
+    if (!isoVal) return '';
+    const [y, m, d] = isoVal.split('-');
+    return d + '.' + m + '.' + y;
+}
+function updateDates(val) {
+    const fmt = fmtDate(val);
+    document.querySelectorAll('.rcpt-date-display').forEach(el => el.textContent = fmt);
+}
+// Set initial value on load
+document.addEventListener('DOMContentLoaded', function() {
+    const inp = document.getElementById('receipt-date');
+    if (inp && inp.value) updateDates(inp.value);
+});
+</script>
+
+<div class="page-wrap">
+
+{% if teams %}
+
+{# ── Group receipts into pairs (2 per A4 page) ── #}
+{% for pair in teams | batch(2) %}
+<div class="receipt-page">
+
+    {% for team in pair %}
+    {% set payment = payments.get(team.id) %}
+    {% set is_paid = payment and payment.paid %}
+    {% set amount = (payment.amount if (payment and payment.amount is not none) else (settings.entry_fee|float if settings.entry_fee else 0)) | float %}
+    {% set receipt_num = payment.receipt_number if (payment and payment.receipt_number) else '' %}
+    {% set paid_date = payment.paid_at.strftime('%d.%m.%Y') if (payment and payment.paid_at) else '' %}
+    {% set today = tournament.event_date.strftime('%d.%m.%Y') if tournament.event_date else '' %}
+    {% set display_date = paid_date or today %}
+    {# display_date is the initial fallback; JS overrides via .rcpt-date-display #}
+    {% set amount_words = euros_to_words(amount) if amount else '' %}
+
+    {% if not loop.first %}
+    <div class="cut-line"><span>&#9986;&nbsp;Hier trennen</span></div>
+    {% endif %}
+
+    <div class="receipt">
+
+        <!-- Header: Titel + Logo -->
+        <div class="rcpt-header">
+            <div>
+                <div class="rcpt-title">Startgebühr &ndash; Quittung</div>
+                {% if receipt_num %}
+                <div class="rcpt-subtitle">Nr. {{ receipt_num }}</div>
+                {% endif %}
+            </div>
+            {% if settings.org_logo_url %}
+            <img src="{{ settings.org_logo_url }}" alt="Logo" class="rcpt-logo"
+                 onerror="this.style.display='none'">
+            {% else %}
+            <div class="rcpt-logo-placeholder">Logo<br>hier</div>
+            {% endif %}
+        </div>
+
+        <hr class="rcpt-line">
+
+        <!-- Felder -->
+        <div class="rcpt-fields">
+            <div class="rcpt-row">
+                <span class="rcpt-label">Betrag:</span>
+                <span class="rcpt-value dashed">
+                    {% if amount %}{{ "%.2f"|format(amount)|replace(".", ",") }} &euro;{% else %}&nbsp;{% endif %}
+                </span>
+            </div>
+
+            <div class="rcpt-row">
+                <span class="rcpt-label">Betrag in Worten:</span>
+                <span class="rcpt-value dashed-sm">{{ amount_words or '&nbsp;' }}</span>
+            </div>
+
+            <hr class="rcpt-line-thin">
+
+            <div class="rcpt-row">
+                <span class="rcpt-label">Turnier:</span>
+                <span class="rcpt-value">
+                    {{ tournament.name }} am <span class="rcpt-date-display rcpt-date-ul">{{ tournament.event_date.strftime('%d.%m.%Y') if tournament.event_date else '' }}</span>
+                </span>
+            </div>
+
+            <div class="rcpt-row">
+                <span class="rcpt-label">Teilnehmer:</span>
+                <span class="rcpt-value">{{ team.name }}</span>
+            </div>
+
+            {% if settings.receipt_text %}
+            <div class="rcpt-row">
+                <span class="rcpt-label">Verwendungszweck:</span>
+                <span class="rcpt-value" style="font-weight:400">{{ settings.receipt_text }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Unterschrift -->
+        <div class="rcpt-sigs">
+            <div>
+                <div class="rcpt-sig-line">
+                    <span class="rcpt-date-display" style="font-size:10.5pt;font-weight:700">{{ display_date }}</span>
+                </div>
+                <div class="rcpt-sig-label">Datum</div>
+            </div>
+            <div>
+                <div class="rcpt-sig-line"></div>
+                <div class="rcpt-sig-label">Unterschrift / Stempel</div>
+            </div>
+        </div>
+
+        <!-- Org-Info Footer -->
+        {% if settings.org_name or settings.org_address or settings.org_iban %}
+        <div class="rcpt-org-footer">
+            {% if settings.org_name %}{{ settings.org_name }}{% endif %}
+            {% if settings.org_address %} &middot; {{ settings.org_address | replace('\n', ' · ') }}{% endif %}
+            {% if settings.org_iban %} &middot; IBAN: {{ settings.org_iban }}{% endif %}
+        </div>
+        {% endif %}
+
+    </div><!-- /receipt -->
+    {% endfor %}
+
+</div><!-- /receipt-page -->
+{% endfor %}
+
+{% else %}
+<div style="text-align:center;padding:4rem;color:#6b7280;font-family:Inter,sans-serif;background:#fff;width:210mm;border-radius:4px">
+    <div style="font-size:2rem;margin-bottom:1rem">&#128203;</div>
+    <div style="font-weight:700;margin-bottom:0.5rem">Keine Teams gefunden</div>
+    <div style="font-size:0.85rem">Bitte zuerst Teams in der Organisationsseite anlegen.</div>
+</div>
+{% endif %}
+
+</div><!-- /page-wrap -->
+</body>
+</html>

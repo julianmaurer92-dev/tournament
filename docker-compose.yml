@@ -1,17 +1,30 @@
 services:
   db:
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_DB: tournament
-      POSTGRES_USER: tournament
-      POSTGRES_PASSWORD: tournament_secret
+      POSTGRES_DB: cupplan
+      POSTGRES_USER: cupplan
+      POSTGRES_PASSWORD: cupplan_secret
+    # Tuned for small VPS – default postgres is too generous with RAM
+    command: >
+      postgres
+      -c shared_buffers=64MB
+      -c effective_cache_size=256MB
+      -c max_connections=20
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=4MB
+      -c log_min_duration_statement=-1
     volumes:
       - pg-data:/var/lib/postgresql/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tournament"]
+      test: ["CMD-SHELL", "pg_isready -U cupplan"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,7 +36,7 @@ services:
     environment:
       - SECRET_KEY=change-me-in-production-please
       - ADMIN_PASSWORD=admin123
-      - DATABASE_URL=postgresql://tournament:tournament_secret@db:5432/tournament
+      - DATABASE_URL=postgresql://cupplan:cupplan_secret@db:5432/cupplan
       - GOOGLE_CLIENT_ID=
       - GOOGLE_CLIENT_SECRET=
       - ADMIN_EMAILS=
@@ -31,6 +44,10 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 volumes:
   pg-data:

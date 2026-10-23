@@ -1,0 +1,760 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Administration – {{ tournament.name }}{% endblock %}
+
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-primary btn-sm">&#9654; Dashboard</a>
+<a href="{{ url_for('admin.design', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#127912; Design</a>
+<a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="btn btn-outline btn-sm" target="_blank">&#128438; Spielplan</a>
+<a href="{{ url_for('admin.organisation', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#128188; Org</a>
+{% if control_match %}
+<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=control_match.id) }}"
+   class="btn btn-sm {% if live_matches %}btn-success{% else %}btn-outline{% endif %}">
+    &#9654; Steuerung{% if live_matches|length > 1 %} ({{ live_matches|length }}){% endif %}
+</a>
+{% endif %}
+<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% endblock %}
+
+{% block head %}
+<style>
+.admin-section-title {
+    font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-muted, #64748b);
+    margin: 2rem 0 0.75rem; padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border, #1e293b);
+}
+.admin-section-title:first-child { margin-top: 0; }
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+@media (max-width: 1100px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px)  { .admin-grid { grid-template-columns: 1fr; } }
+.adm-card {
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border, #1e293b);
+    border-radius: 10px; overflow: hidden; margin-bottom: 1.25rem;
+}
+.adm-card-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem;
+    background: rgba(0,0,0,0.15);
+    border-bottom: 1px solid var(--border, #1e293b);
+    font-size: 0.78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted, #9ca3af);
+}
+.adm-card-bd { padding: 0.85rem 1rem; }
+.adm-tbl { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.adm-tbl td { padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border, #1e293b); vertical-align: middle; }
+.adm-tbl tbody tr:last-child td { border-bottom: none; }
+.adm-tbl tr.edit-row td { padding: 0.4rem 0.5rem; background: rgba(34,197,94,0.04); }
+.form-hint { font-size: 0.72rem; color: var(--text-muted, #64748b); margin-bottom: 0.4rem; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--border, #1e293b); gap: 0.75rem; }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 0.82rem; font-weight: 600; color: var(--text, #f1f5f9); flex-shrink: 0; }
+.setting-sub { font-size: 0.7rem; color: var(--text-muted, #64748b); }
+.link-card {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border, #1e293b); border-radius: 8px;
+    color: var(--text, #f1f5f9); text-decoration: none;
+    font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;
+    transition: border-color 0.15s, background 0.15s;
+}
+.link-card:hover { border-color: var(--color-primary, #22c55e); background: rgba(34,197,94,0.05); color: var(--color-primary, #22c55e); }
+.link-card-icon { font-size: 1.1rem; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.5rem">
+    <div>
+        <h2 style="font-size:1.3rem;font-weight:800;color:var(--text,#f1f5f9);margin:0">&#9881; Turnieradministration</h2>
+        <div style="font-size:0.82rem;color:var(--text-muted,#64748b);margin-top:0.2rem">{{ tournament.name }}</div>
+    </div>
+    <div class="btn-list">
+        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+        <button class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.35)" onclick="openSimModal()">&#127922; Simulieren</button>
+        {% endif %}
+        {% if matches and current_user.can_delete() and phase == 'GROUP_STAGE' %}
+        <button class="btn btn-sm btn-danger" onclick="deleteAllMatches()">&#215; Alle Gruppenspiele</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="admin-grid">
+
+<!-- ══ SPALTE 1: Turnier + Gruppen + Settings ══ -->
+<div>
+
+    <!-- Turnierverwaltung -->
+    <div class="adm-card">
+        <div class="adm-card-hd">&#127942; Turnierverwaltung</div>
+        <div class="adm-card-bd">
+            <form method="POST" action="{{ url_for('admin.edit_tournament', tid=tournament.id) }}?next=admin">
+                <div class="row g-2 mb-2">
+                    <div class="col-12">
+                        <label class="form-label text-muted">Turniername</label>
+                        <input type="text" class="form-control form-control-sm" name="name" value="{{ tournament.name }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted">Datum</label>
+                        <input type="date" class="form-control form-control-sm" name="event_date" value="{{ tournament.event_date.isoformat() if tournament.event_date else '' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted">Uhrzeit</label>
+                        <input type="time" class="form-control form-control-sm" name="event_time" value="{{ tournament.event_time or '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted">Beschreibung</label>
+                        <input type="text" class="form-control form-control-sm" name="description" value="{{ tournament.description or '' }}" placeholder="Optional">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted">Finalrundentyp</label>
+                        <select class="form-select form-select-sm" name="final_mode">
+                            <option value="" {% if not settings.final_mode %}selected{% endif %}>Noch nicht festlegen</option>
+                            <option value="rank_vs_rank" {% if settings.final_mode == 'rank_vs_rank' %}selected{% endif %}>Platzierungsspiele (1.A vs 1.B &hellip;)</option>
+                            <option value="semi_final" {% if settings.final_mode == 'semi_final' %}selected{% endif %}>Halbfinale + Finale (4 Teams)</option>
+                            <option value="direct_final" {% if settings.final_mode == 'direct_final' %}selected{% endif %}>Direktes Finale (#1 vs #2)</option>
+                            <option value="classic_ko" {% if settings.final_mode == 'classic_ko' %}selected{% endif %}>Klassische KO-Runde</option>
+                            <option value="free_ko" {% if settings.final_mode == 'free_ko' %}selected{% endif %}>Freie KO-Runde</option>
+                            <option value="custom" {% if settings.final_mode == 'custom' %}selected{% endif %}>Eigene Paarungen</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted">Spielfelder</label>
+                        <select class="form-select form-select-sm" name="num_fields">
+                            <option value="1" {% if settings.num_fields != '2' %}selected{% endif %}>1 Spielfeld</option>
+                            <option value="2" {% if settings.num_fields == '2' %}selected{% endif %}>2 Spielfelder</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary w-100">Speichern</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Turniereinstellungen -->
+    <div class="adm-card">
+        <div class="adm-card-hd">&#9881; Turniereinstellungen</div>
+        <div class="adm-card-bd">
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Spielzeit (regulaer)</div>
+                    <div class="setting-sub">Minuten pro Spiel</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.4rem">
+                    <input type="number" class="form-control form-control-sm" id="cfg-timer-regular"
+                           value="{{ ((settings.default_timer_regular or 600) | int) // 60 }}"
+                           min="1" max="90" step="0.5" style="width:72px"
+                           onchange="saveSetting('default_timer_regular', Math.round(parseFloat(this.value) * 60))">
+                    <span style="font-size:0.78rem;color:var(--text-muted,#64748b)">Min</span>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Spielzeit (Verlaengerung)</div>
+                    <div class="setting-sub">Minuten Verlaengerungszeit</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.4rem">
+                    <input type="number" class="form-control form-control-sm" id="cfg-timer-extra"
+                           value="{{ ((settings.default_timer_extra or 300) | int) // 60 }}"
+                           min="0.5" max="30" step="0.5" style="width:72px"
+                           onchange="saveSetting('default_timer_extra', Math.round(parseFloat(this.value) * 60))">
+                    <span style="font-size:0.78rem;color:var(--text-muted,#64748b)">Min</span>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Ergebnisse verstecken</div>
+                    <div class="setting-sub">Auf öffentlichen Ansichten</div>
+                </div>
+                <input type="checkbox" id="cfg-hide-table" style="width:18px;height:18px;cursor:pointer"
+                       {% if settings.hide_table == '1' %}checked{% endif %}
+                       onchange="saveSetting('hide_table', this.checked ? '1' : '0')">
+                <label for="cfg-hide-table" style="font-size:0.88rem;margin-right:1rem">Tabelle ausblenden</label>
+                <input type="checkbox" id="cfg-hide-scores" style="width:18px;height:18px;cursor:pointer"
+                       {% if settings.hide_scores == '1' %}checked{% endif %}
+                       onchange="saveSetting('hide_scores', this.checked ? '1' : '0')">
+                <label for="cfg-hide-scores" style="font-size:0.88rem">Ergebnisse ausblenden</label>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Turnierbestimmungen</div>
+                    <div class="setting-sub">Wird in der öffentlichen Ansicht angezeigt</div>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="openRulesModal()" style="white-space:nowrap">
+                    &#9998; Bearbeiten{% if settings.tournament_rules %} <span style="color:#4ade80;font-size:0.7rem">&#10003;</span>{% endif %}
+                </button>
+            </div>
+            <div style="margin-top:0.5rem">
+                <a href="{{ url_for('admin.design', slug=tournament.slug) }}" class="link-card">
+                    <span class="link-card-icon">&#127912;</span>
+                    <div>
+                        <div>Design &amp; Farben</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Logo, Farben, Thema</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Turnierstatus zurücksetzen -->
+    <div class="adm-card">
+        <div class="adm-card-hd" style="color:#f87171">&#9888; Turnierstatus zurücksetzen</div>
+        <div class="adm-card-bd" style="display:flex;flex-direction:column;gap:0.6rem">
+            <div style="font-size:0.78rem;color:var(--text-muted,#64748b);margin-bottom:0.2rem">
+                Aktuelle Phase: <strong style="color:var(--text,#f1f5f9)">
+                {% if settings.tournament_phase == 'GROUP_STAGE' %}Gruppenphase
+                {% elif settings.tournament_phase == 'FINAL_SETUP' %}Finale einrichten
+                {% elif settings.tournament_phase == 'FINAL_ROUND' %}Finalrunde
+                {% else %}Beendet{% endif %}
+                </strong>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="resetToGroupStage()" style="border-color:#f59e0b;color:#f59e0b;text-align:left">
+                <strong>&#8634; Finalphase zurücksetzen</strong>
+                <div style="font-size:0.72rem;opacity:.75;margin-top:0.2rem">Finale-Ergebnisse löschen · Paarungen bleiben · Zurück zur Gruppenphase</div>
+            </button>
+            <button class="btn btn-sm btn-outline" onclick="fullReset()" style="border-color:#ef4444;color:#ef4444;text-align:left">
+                <strong>&#9888; Vollständig zurücksetzen</strong>
+                <div style="font-size:0.72rem;opacity:.75;margin-top:0.2rem">Alle Ergebnisse löschen · Paarungen bleiben · Phase auf Anfang</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Organisation & Links -->
+    <div class="adm-card">
+        <div class="adm-card-hd">&#128188; Organisation</div>
+        <div class="adm-card-bd">
+            <a href="{{ url_for('admin.organisation', slug=tournament.slug) }}" class="link-card">
+                <span class="link-card-icon">&#128184;</span>
+                <div>
+                    <div>Zahlungen &amp; Quittungen</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Startgebühren, Belege drucken</div>
+                </div>
+            </a>
+            <a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="link-card" target="_blank">
+                <span class="link-card-icon">&#128438;</span>
+                <div>
+                    <div>Spielplan drucken</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Druckansicht aller Spiele</div>
+                </div>
+            </a>
+            <a href="{{ url_for('admin.cabin_signs', slug=tournament.slug) }}" class="link-card" target="_blank">
+                <span class="link-card-icon">&#128682;</span>
+                <div>
+                    <div>Kabinenschilder drucken</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted,#64748b);font-weight:400">Mannschaften je Kabine</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══ SPALTE 2: Gruppen + Teams ══ -->
+<div>
+
+    <!-- Gruppenverwaltung -->
+    <div class="adm-card">
+        <div class="adm-card-hd">
+            <span>Gruppenverwaltung</span>
+            <span class="badge badge-gray-lt">{{ groups|length }}</span>
+        </div>
+        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+        <div class="adm-card-bd" style="border-bottom:1px solid var(--border,#1e293b)">
+            <form method="POST" action="{{ url_for('admin.create_group', slug=tournament.slug) }}">
+                <div class="row g-1">
+                    <div class="col"><input type="text" class="form-control form-control-sm" name="name" placeholder="Gruppenname" required></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">&#43; Gruppe</button></div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        <table class="adm-tbl">
+            <tbody>
+                {% for group in groups %}
+                <tr id="group-row-{{ group.id }}">
+                    <td class="fw-semibold" style="color:var(--text,#f1f5f9)">{{ group.name }}</td>
+                    <td><span class="badge badge-gray-lt" style="font-size:0.66rem">{{ group.teams|length }} Teams</span></td>
+                    <td style="text-align:right">
+                        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                        <div class="btn-list" style="gap:0.2rem;justify-content:flex-end">
+                            <button class="btn btn-xs btn-outline" onclick="toggleRowEdit('group',{{ group.id }})">&#9998;</button>
+                            {% if current_user.can_delete() %}
+                            <form method="POST" action="{{ url_for('admin.delete_group', slug=tournament.slug, gid=group.id) }}" style="display:inline" onsubmit="return confirm('Gruppe loeschen?')">
+                                <button type="submit" class="btn btn-xs btn-danger">&#215;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                <tr class="edit-row" id="group-edit-{{ group.id }}" style="display:none">
+                    <td colspan="3">
+                        <form method="POST" action="{{ url_for('admin.edit_group', slug=tournament.slug, gid=group.id) }}">
+                            <div class="row g-1">
+                                <div class="col"><input type="text" class="form-control form-control-sm" name="name" value="{{ group.name }}" required></div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-primary">OK</button>
+                                    <button type="button" class="btn btn-sm" onclick="toggleRowEdit('group',{{ group.id }})">&#215;</button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% if not groups %}<tr><td colspan="3" style="padding:0.75rem;color:var(--text-muted,#6b7280);font-size:0.8rem;text-align:center">Noch keine Gruppen.</td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Teamverwaltung -->
+    <div class="adm-card">
+        <div class="adm-card-hd">
+            <span>Teamverwaltung</span>
+            <div class="btn-list" style="gap:0.35rem">
+                <span class="badge badge-gray-lt">{{ teams|length }}</span>
+                {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                <button class="btn btn-xs btn-outline" onclick="openImpModal('teams')">&#128196; CSV</button>
+                {% endif %}
+            </div>
+        </div>
+        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+        <div class="adm-card-bd" style="border-bottom:1px solid var(--border,#1e293b)">
+            <form method="POST" action="{{ url_for('admin.create_team', slug=tournament.slug) }}">
+                <div class="row g-1 mb-1">
+                    <div class="col"><input type="text" class="form-control form-control-sm" name="name" placeholder="Teamname" required></div>
+                    <div class="col-auto">
+                        <select class="form-select form-select-sm" name="group_id" style="width:auto">
+                            <option value="">Gruppe</option>
+                            {% for grp in groups %}<option value="{{ grp.id }}">{{ grp.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-1">
+                    <div class="col"><input type="text" class="form-control form-control-sm" name="logo_url" placeholder="Logo-URL (optional)"></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">&#43;</button></div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        <table class="adm-tbl" style="max-height:360px;display:block;overflow-y:auto">
+            <tbody>
+                {% for team in teams %}
+                <tr id="team-row-{{ team.id }}">
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if team.logo_url %}<img src="{{ team.logo_url }}" alt="" style="width:14px;height:14px;border-radius:2px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">{% endif %}
+                            <span class="fw-semibold" style="color:var(--text,#f1f5f9)">{{ team.name }}</span>
+                        </div>
+                    </td>
+                    <td>{% if team.group %}<span class="badge badge-blue-lt" style="font-size:0.65rem">{{ team.group.name }}</span>{% else %}<span class="text-muted" style="font-size:0.72rem">—</span>{% endif %}</td>
+                    <td style="text-align:right">
+                        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                        <div class="btn-list" style="gap:0.2rem;justify-content:flex-end">
+                            <button class="btn btn-xs btn-outline" onclick="toggleRowEdit('team',{{ team.id }})">&#9998;</button>
+                            {% if current_user.can_delete() %}
+                            <form method="POST" action="{{ url_for('admin.delete_team', slug=tournament.slug, tid=team.id) }}" style="display:inline" onsubmit="return confirm('Team loeschen?')">
+                                <button type="submit" class="btn btn-xs btn-danger">&#215;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                <tr class="edit-row" id="team-edit-{{ team.id }}" style="display:none">
+                    <td colspan="3">
+                        <form method="POST" action="{{ url_for('admin.edit_team', slug=tournament.slug, tid=team.id) }}">
+                            <div class="row g-1 mb-1">
+                                <div class="col-5"><input type="text" class="form-control form-control-sm" name="name" value="{{ team.name }}" required></div>
+                                <div class="col-4">
+                                    <select class="form-select form-select-sm" name="group_id">
+                                        <option value="">Keine Gruppe</option>
+                                        {% for grp in groups %}<option value="{{ grp.id }}" {% if team.group_id == grp.id %}selected{% endif %}>{{ grp.name }}</option>{% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-3 d-flex gap-1">
+                                    <button type="submit" class="btn btn-sm btn-primary">OK</button>
+                                    <button type="button" class="btn btn-sm" onclick="toggleRowEdit('team',{{ team.id }})">&#215;</button>
+                                </div>
+                            </div>
+                            <div class="row g-1">
+                                <div class="col"><input type="text" class="form-control form-control-sm" name="logo_url" value="{{ team.logo_url or '' }}" placeholder="Logo-URL"></div>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% if not teams %}<tr><td colspan="3" style="padding:0.75rem;color:var(--text-muted,#6b7280);font-size:0.8rem;text-align:center">Noch keine Teams.</td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- ══ SPALTE 3: Spielverwaltung ══ -->
+<div>
+
+    <div class="adm-card">
+        <div class="adm-card-hd">
+            <span>Spielverwaltung</span>
+            <div class="btn-list" style="gap:0.35rem">
+                <span class="badge badge-gray-lt">{{ matches|length }}</span>
+                {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+                <button class="btn btn-xs btn-outline" onclick="openImpModal('matches')">&#128196; CSV</button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if phase == 'GROUP_STAGE' and current_user.can_edit() %}
+        <div class="adm-card-bd" style="border-bottom:1px solid var(--border,#1e293b)">
+            <form method="POST" action="{{ url_for('admin.create_match', slug=tournament.slug) }}" id="match-form">
+                <div class="row g-2 mb-2">
+                    <div class="col-12">
+                        <label class="form-label text-muted">Gruppe</label>
+                        <select class="form-select form-select-sm" name="group_id" id="match-group" required>
+                            <option value="">Gruppe waehlen</option>
+                            {% for grp in groups %}<option value="{{ grp.id }}">{{ grp.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted">Heim</label>
+                        <select class="form-select form-select-sm" name="team1_id" id="match-team1" required><option value="">Heimteam</option></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted">Gast</label>
+                        <select class="form-select form-select-sm" name="team2_id" id="match-team2" required><option value="">Gastteam</option></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted">Zeit (s)</label>
+                        <input type="number" class="form-control form-control-sm" name="timer_duration" value="{{ settings.default_timer_regular|default('600') }}" min="60" step="60">
+                    </div>
+                    {% if settings.num_fields == '2' %}
+                    <div class="col-6">
+                        <label class="form-label text-muted">Spielfeld</label>
+                        <select class="form-select form-select-sm" name="field">
+                            <option value="1">Feld 1</option>
+                            <option value="2">Feld 2</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="btn-list">
+                    <button type="submit" class="btn btn-sm btn-primary">&#43; Erstellen</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="generateRoundRobin()">&#9861; Jeder vs. Jeden</button>
+                </div>
+            </form>
+
+        </div>
+        {% endif %}
+
+        <!-- Match list -->
+        <table class="adm-tbl" style="max-height:440px;display:block;overflow-y:auto">
+            <thead style="position:sticky;top:0;background:var(--bg-secondary,#111827)">
+                <tr>
+                    <th style="padding:0.3rem 0.5rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted,#64748b);border-bottom:1px solid var(--border,#1e293b)">#</th>
+                    <th style="padding:0.3rem 0.5rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted,#64748b);border-bottom:1px solid var(--border,#1e293b)">Begegnung</th>
+                    <th style="padding:0.3rem 0.5rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted,#64748b);border-bottom:1px solid var(--border,#1e293b)">Status</th>
+                    {% if phase == 'GROUP_STAGE' and current_user.can_delete() %}
+                    <th style="padding:0.3rem 0.5rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted,#64748b);border-bottom:1px solid var(--border,#1e293b)"></th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td style="color:var(--text-muted,#9ca3af);font-size:0.72rem;font-variant-numeric:tabular-nums">{{ loop.index }}</td>
+                    <td class="fw-semibold" style="font-size:0.78rem">
+                        {{ match.team1.name }}
+                        <span style="color:var(--text-muted,#6b7280);font-weight:400;margin:0 0.2rem">vs</span>
+                        {{ match.team2.name }}
+                        {% if match.group %}<span class="badge badge-blue-lt" style="font-size:0.62rem;margin-left:0.25rem">{{ match.group.name }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if match.status == 'live' %}<span style="font-size:0.65rem;color:#4ade80">&#9679; Live</span>
+                        {% elif match.status == 'finished' %}<span style="font-size:0.65rem;color:#60a5fa">&#10003;</span>
+                        {% else %}<span style="font-size:0.65rem;color:var(--text-muted,#6b7280)">Geplant</span>{% endif %}
+                    </td>
+                    {% if phase == 'GROUP_STAGE' and current_user.can_delete() %}
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" style="display:inline" onsubmit="return confirm('Spiel loeschen?')">
+                            <button type="submit" class="btn btn-xs btn-danger">&#215;</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                {% if not matches %}
+                <tr><td colspan="4" style="padding:0.75rem;color:var(--text-muted,#6b7280);font-size:0.8rem;text-align:center">Noch keine Gruppenspiele.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</div><!-- /admin-grid -->
+
+<script>
+const SLUG = '{{ tournament.slug }}';
+
+// ── Row edit toggle ──
+function toggleRowEdit(type, id) {
+    const r = document.getElementById(type + '-edit-' + id);
+    r.style.display = r.style.display === 'none' ? '' : 'none';
+}
+
+// ── Match form group→team dropdowns ──
+const TEAMS_BY_GROUP = { {% for grp in groups %}{{ grp.id }}: [{% for t in teams %}{% if t.group_id == grp.id %}{id:{{ t.id }},name:"{{ t.name }}"},{% endif %}{% endfor %}],{% endfor %} };
+const groupSelect = document.getElementById('match-group');
+const team1Select = document.getElementById('match-team1');
+const team2Select = document.getElementById('match-team2');
+if (groupSelect) {
+    groupSelect.addEventListener('change', () => {
+        const gid = parseInt(groupSelect.value);
+        const tms = TEAMS_BY_GROUP[gid] || [];
+        team1Select.innerHTML = '<option value="">Heimteam</option>';
+        team2Select.innerHTML = '<option value="">Gastteam</option>';
+        tms.forEach(t => {
+            team1Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+            team2Select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+    });
+}
+
+// ── Import Modals ──
+const IMP_CONFIGS = {
+    teams: {
+        title: '&#128101; Teams importieren (CSV)',
+        hint: 'Format pro Zeile:  Name, Gruppe, Logo-URL\nBeispiel:\n  Bayern, Gruppe A\n  Dortmund, Gruppe B, https://…/logo.png',
+        placeholder: 'Bayern, Gruppe A\nDortmund, Gruppe B\nSchalke, Gruppe A',
+        url: () => `/admin/t/${SLUG}/api/teams/import-csv`,
+        countKey: 'created',
+    },
+    matches: {
+        title: '&#128203; Spiele importieren (CSV)',
+        hint: 'Format pro Zeile:  Heim, Gast, Feld\nBeispiel:\n  Adler, Falken, 1\n  Loewen, Tiger, 2',
+        placeholder: 'Adler, Falken, 1\nLoewen, Tiger, 2\nBaeren, Woelfe',
+        url: () => `/admin/t/${SLUG}/api/matches/import-csv`,
+        countKey: 'created',
+    },
+};
+
+function openImpModal(type) {
+    const cfg = IMP_CONFIGS[type];
+    document.getElementById('imp-modal-title').innerHTML = cfg.title;
+    document.getElementById('imp-modal-hint').textContent = cfg.hint;
+    document.getElementById('imp-modal-ta').value = '';
+    document.getElementById('imp-modal-ta').placeholder = cfg.placeholder;
+    document.getElementById('imp-modal-status').textContent = '';
+    document.getElementById('imp-modal').dataset.type = type;
+    document.getElementById('imp-modal').classList.add('open');
+    setTimeout(() => document.getElementById('imp-modal-ta').focus(), 80);
+}
+function closeImpModal() { document.getElementById('imp-modal').classList.remove('open'); }
+function impModalFileLoad(input) {
+    const f = input.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => { document.getElementById('imp-modal-ta').value = e.target.result; };
+    r.readAsText(f);
+    input.value = '';
+}
+function runImport() {
+    const type = document.getElementById('imp-modal').dataset.type;
+    const cfg = IMP_CONFIGS[type];
+    const csv = document.getElementById('imp-modal-ta').value.trim();
+    const st = document.getElementById('imp-modal-status');
+    if (!csv) { st.textContent = 'Keine Daten.'; return; }
+    st.textContent = 'Importiere…';
+    fetch(cfg.url(), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({csv}) })
+        .then(r => r.json())
+        .then(d => {
+            if (d.error) { st.textContent = 'Fehler: ' + d.error; return; }
+            const n = d[cfg.countKey] || d.imported || 0;
+            st.textContent = n + ' Einträge importiert' + (d.skipped ? `, ${d.skipped} übersprungen` : '') + '.';
+            if (n > 0) setTimeout(() => { closeImpModal(); location.reload(); }, 1200);
+        })
+        .catch(() => { st.textContent = 'Netzwerkfehler'; });
+}
+
+// ── Round Robin ──
+function generateRoundRobin() {
+    if(!confirm('Jeder-gegen-Jeden generieren?')) return;
+    fetch(`/admin/t/${SLUG}/api/matches/generate-round-robin`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+        .then(r=>r.json()).then(d=>{ if(d.error){alert(d.error);return;} alert(d.created+' Spiel(e) erstellt.'); location.reload(); });
+}
+
+// ── Delete all matches ──
+function deleteAllMatches() {
+    if(!confirm('Alle Gruppenspiele loeschen?')) return;
+    fetch(`/admin/t/${SLUG}/api/matches/delete-all`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+        .then(r=>r.json()).then(d=>{ if(d.error)alert(d.error); else location.reload(); });
+}
+
+// ── Save setting via API ──
+function saveSetting(key, value) {
+    fetch(`/admin/t/${SLUG}/api/settings`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({[key]: value})
+    }).then(r=>r.json()).then(d=>{ if(d.error) alert('Fehler: '+d.error); });
+}
+
+// ── Tournament rules modal ──
+const RULES_INIT = {{ (settings.tournament_rules or '') | tojson }};
+function updateRulesCount() {
+    const n = document.getElementById('rules-modal-ta').value.length;
+    const el = document.getElementById('rules-char-count');
+    el.textContent = n.toLocaleString('de') + ' Zeichen';
+    el.style.color = n > 5000 ? '#4ade80' : 'var(--text-muted,#64748b)';
+}
+function openRulesModal() {
+    document.getElementById('rules-modal-ta').value = RULES_INIT;
+    document.getElementById('rules-modal-status').textContent = '';
+    document.getElementById('rules-modal').classList.add('open');
+    setTimeout(() => { document.getElementById('rules-modal-ta').focus(); updateRulesCount(); }, 80);
+}
+function closeRulesModal() { document.getElementById('rules-modal').classList.remove('open'); }
+function saveRules() {
+    const val = document.getElementById('rules-modal-ta').value;
+    const st = document.getElementById('rules-modal-status');
+    st.textContent = 'Speichere…';
+    fetch(`/admin/t/${SLUG}/api/settings`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tournament_rules: val})
+    }).then(r => {
+        if (!r.ok) { r.text().then(t => { st.textContent = 'Fehler ' + r.status + ': ' + t.slice(0,120); }); return null; }
+        return r.json();
+    }).then(d => {
+        if (!d) return;
+        if (d.error) { st.textContent = 'Fehler: ' + d.error; return; }
+        st.textContent = '✓ Gespeichert';
+        setTimeout(() => { closeRulesModal(); location.reload(); }, 700);
+    }).catch(e => { st.textContent = 'Fehler: ' + e.message; });
+}
+
+// ── Phase reset ──
+function resetToGroupStage() {
+    if (!confirm('Finalphase zurücksetzen?\nErgebnisse der Finalspiele werden gelöscht, Paarungen bleiben erhalten.')) return;
+    fetch(`/admin/t/${SLUG}/api/phase/reset`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+        .then(r=>r.json()).then(d=>{ if(d.error) alert('Fehler: '+d.error); else location.reload(); });
+}
+function fullReset() {
+    if (!confirm('Vollständig zurücksetzen?\nAlle Ergebnisse (Gruppenphase + Finale) werden gelöscht. Paarungen bleiben erhalten.')) return;
+    if (!confirm('Wirklich? Alle Spielergebnisse gehen verloren.')) return;
+    fetch(`/admin/t/${SLUG}/api/phase/full-reset`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+        .then(r=>r.json()).then(d=>{ if(d.error) alert('Fehler: '+d.error); else location.reload(); });
+}
+
+// ── Simulate group matches ──
+function openSimModal() {
+    document.getElementById('sim-password').value = '';
+    document.getElementById('sim-error').textContent = '';
+    document.getElementById('sim-modal').classList.add('open');
+    setTimeout(() => document.getElementById('sim-password').focus(), 50);
+}
+function closeSimModal() { document.getElementById('sim-modal').classList.remove('open'); }
+function runSimulation() {
+    const pw = document.getElementById('sim-password').value;
+    if (!pw) { document.getElementById('sim-error').textContent = 'Bitte Passwort eingeben.'; return; }
+    document.getElementById('sim-error').textContent = '';
+    fetch(`/admin/t/${SLUG}/api/simulate-group-matches`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password: pw})
+    }).then(r => r.json()).then(d => {
+        if (d.error) { document.getElementById('sim-error').textContent = d.error; return; }
+        closeSimModal(); location.reload();
+    }).catch(() => { document.getElementById('sim-error').textContent = 'Netzwerkfehler'; });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const pwInput = document.getElementById('sim-password');
+    if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSimulation(); });
+});
+</script>
+
+<!-- Tournament Rules Modal -->
+<div id="rules-modal" class="imp-modal" onclick="if(event.target===this)closeRulesModal()">
+    <div class="imp-box">
+        <div class="imp-hd">
+            <span>&#128220; Turnierbestimmungen bearbeiten</span>
+            <button class="btn btn-sm btn-outline" onclick="closeRulesModal()" style="padding:0.15rem 0.5rem">&#10005;</button>
+        </div>
+        <div class="imp-hint">Dieser Text wird in der öffentlichen Turnieransicht (Bestimmungen-Tab) für Zuschauer angezeigt.\nZeilenumbrüche werden übernommen.</div>
+        <textarea id="rules-modal-ta" class="imp-ta" style="min-height:380px"
+                  placeholder="Spielmodus, Regeln, Fairplay-Bestimmungen …"
+                  oninput="updateRulesCount()"></textarea>
+        <div class="imp-footer">
+            <span id="rules-char-count" style="font-size:0.72rem;color:var(--text-muted,#64748b)">0 Zeichen</span>
+            <button class="btn btn-sm btn-outline" onclick="closeRulesModal()">Abbrechen</button>
+            <button class="btn btn-sm btn-primary" onclick="saveRules()">&#10003; Speichern</button>
+            <span id="rules-modal-status" class="imp-status"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="imp-modal" class="imp-modal" onclick="if(event.target===this)closeImpModal()">
+    <div class="imp-box">
+        <div class="imp-hd">
+            <span id="imp-modal-title"></span>
+            <button class="btn btn-sm btn-outline" onclick="closeImpModal()" style="padding:0.15rem 0.5rem">&#10005;</button>
+        </div>
+        <div id="imp-modal-hint" class="imp-hint"></div>
+        <label style="font-size:0.72rem;font-weight:600;color:var(--text-muted,#94a3b8);margin-bottom:0.3rem;display:block">
+            CSV-Text einfügen oder Datei laden:
+        </label>
+        <textarea id="imp-modal-ta" class="imp-ta"></textarea>
+        <div class="imp-footer">
+            <label class="btn btn-sm btn-outline" style="cursor:pointer">
+                &#128194; Datei laden
+                <input type="file" accept=".csv,.txt" style="display:none" onchange="impModalFileLoad(this)">
+            </label>
+            <button class="btn btn-sm btn-outline" onclick="closeImpModal()">Abbrechen</button>
+            <button class="btn btn-sm btn-primary" onclick="runImport()">&#8593; Importieren</button>
+            <span id="imp-modal-status" class="imp-status"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Simulation Modal -->
+<div id="sim-modal" class="modal-overlay" onclick="if(event.target===this)closeSimModal()">
+    <div class="modal-box" style="max-width:340px">
+        <div class="modal-hd">&#127922; Gruppenspiele simulieren</div>
+        <div style="font-size:0.82rem;color:var(--text-muted,#9ca3af);margin-bottom:0.8rem">
+            Alle offenen Gruppenspiele erhalten zufällige Ergebnisse und werden auf <strong>beendet</strong> gesetzt.
+        </div>
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.3rem">Passwort zur Bestätigung</label>
+        <input id="sim-password" type="password" class="form-control form-control-sm" placeholder="Dein Login-Passwort" style="margin-bottom:0.5rem">
+        <div id="sim-error" style="color:#f87171;font-size:0.78rem;min-height:1.2em;margin-bottom:0.5rem"></div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+            <button class="btn btn-sm btn-outline" onclick="closeSimModal()">Abbrechen</button>
+            <button class="btn btn-sm" style="background:rgba(139,92,246,0.8);color:#fff" onclick="runSimulation()">&#127922; Simulieren</button>
+        </div>
+    </div>
+</div>
+<style>
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;display:none }
+/* ── Import Modal ── */
+.imp-modal { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:none;align-items:center;justify-content:center;padding:1rem }
+.imp-modal.open { display:flex }
+.imp-box { background:var(--bg-secondary,#1e293b);border:1px solid var(--border,#334155);border-radius:0.8rem;padding:1.25rem 1.4rem;width:100%;max-width:660px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.55) }
+.imp-hd { font-size:0.95rem;font-weight:700;color:var(--text,#f1f5f9);margin-bottom:0.65rem;display:flex;align-items:center;justify-content:space-between }
+.imp-hint { font-size:0.73rem;color:var(--text-muted,#94a3b8);background:rgba(0,0,0,0.25);border-radius:6px;padding:0.55rem 0.8rem;margin-bottom:0.7rem;font-family:monospace;white-space:pre-line;line-height:1.7 }
+.imp-ta { flex:1;min-height:280px;font-family:monospace;font-size:0.82rem;resize:none;background:var(--bg,#050a10);color:var(--text,#f1f5f9);border:1px solid var(--border,#1e293b);border-radius:6px;padding:0.6rem 0.75rem }
+.imp-footer { display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;flex-wrap:wrap }
+.imp-status { font-size:0.72rem;color:var(--text-muted,#64748b);margin-left:auto }
+.modal-overlay.open { display:flex }
+.modal-box { background:var(--bg-secondary,#1e293b);border:1px solid var(--border,#334155);border-radius:0.6rem;padding:1.2rem 1.4rem;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4) }
+.modal-hd { font-size:0.95rem;font-weight:700;margin-bottom:0.8rem;color:var(--text,#f1f5f9) }
+</style>
+
+{% endblock %}

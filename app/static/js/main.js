@@ -97,6 +97,7 @@ function renderAnnouncement(text) {
 
 function render(state) {
     const phase = (state.settings && state.settings.tournament_phase) || 'GROUP_STAGE';
+    const hideResults = (state.settings && state.settings.hide_results === '1');
     const layout = document.querySelector('.layout');
 
     // Toggle layout class for finals
@@ -104,17 +105,60 @@ function render(state) {
         layout.classList.toggle('layout-finals', phase === 'FINAL_ROUND' || phase === 'FINISHED');
     }
 
-    renderLiveMatch(state.live_match);
-    renderPastMatches(state.past_matches);
+    renderLiveMatch(state.live_matches && state.live_matches.length ? state.live_matches : (state.live_match ? [state.live_match] : []), hideResults);
+    renderPastMatches(state.past_matches, hideResults);
     renderUpcomingMatches(state.upcoming_matches);
-    renderStandings(state.standings_by_group, state.groups);
-    renderBracket(state.final_matches || [], phase);
-    renderWinner(state.final_matches || [], phase);
+    renderStandings(state.standings_by_group, state.groups, hideResults);
+    renderBracket(state.final_matches || [], phase, hideResults);
+    renderWinner(state.final_matches || [], phase, hideResults);
 }
 
-function renderLiveMatch(match) {
+function buildLiveCard(match, hideResults, showFieldLabel, timerId, compact) {
+    const labelTag = match.final_label
+        ? `<span class="live-final-label">${esc(match.final_label)}</span>`
+        : '';
+    const fieldTag = showFieldLabel
+        ? `<span class="live-field-label">Spielfeld ${match.field || 1}</span>`
+        : '';
+    const groupTag = match.group_name
+        ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;display:block">${esc(match.group_name)}</span>`
+        : '';
+    const extraTimeTag = match.is_extra_time
+        ? `<span class="extra-time-badge">&#9201; Verlaengerung</span>`
+        : match.is_penalty
+        ? `<span class="extra-time-badge" style="background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444">&#9917; Elfmeterschiessen</span>`
+        : '';
+    const scoreHtml = hideResults
+        ? `<div class="live-score"><span class="divider">vs</span></div>`
+        : `<div class="live-score">
+                <span>${match.score_team1}</span>
+                <span class="divider">:</span>
+                <span>${match.score_team2}</span>
+           </div>`;
+    const cardClass = compact ? 'live-card live-card-compact' : 'live-card';
+    return `
+        <div class="${cardClass}">
+            <span class="live-badge">LIVE</span>
+            ${fieldTag}${extraTimeTag}${labelTag}
+            <div class="live-teams">
+                <div class="live-team">
+                    ${teamLogo(match.team1, compact ? 'sm' : 'lg')}
+                    <span class="live-team-name">${match.team1 ? esc(match.team1.name) : 'TBD'}</span>
+                </div>
+                ${scoreHtml}
+                <div class="live-team">
+                    ${teamLogo(match.team2, compact ? 'sm' : 'lg')}
+                    <span class="live-team-name">${match.team2 ? esc(match.team2.name) : 'TBD'}</span>
+                </div>
+            </div>
+            <div id="${timerId}" class="live-timer">${formatTime(match.timer_remaining)}</div>
+            ${groupTag}
+        </div>`;
+}
+
+function renderLiveMatch(matches, hideResults) {
     const container = document.getElementById('live-match');
-    if (!match) {
+    if (!matches || matches.length === 0) {
         container.innerHTML = `
             <div class="no-live-match">
                 <div class="no-live-icon">&#9917;</div>
@@ -126,54 +170,29 @@ function renderLiveMatch(match) {
         return;
     }
 
-    // Sync timer state from server
-    localTimerRemaining = match.timer_remaining;
-    localTimerRunning = match.timer_running;
+    const showFieldLabel = matches.length > 1;
+
+    // Sync primary timer from first match (field 1)
+    const primary = matches[0];
+    localTimerRemaining = primary.timer_remaining;
+    localTimerRunning = primary.timer_running;
     localTimerServerSync = Date.now();
-    if (localTimerRunning) {
-        startLocalTimer();
+    if (localTimerRunning) startLocalTimer(); else stopLocalTimer();
+
+    if (matches.length === 1) {
+        container.style.cssText = '';
+        container.innerHTML = buildLiveCard(primary, hideResults, false, 'live-timer', false);
     } else {
-        stopLocalTimer();
+        container.style.cssText = 'display:grid;grid-template-columns:repeat(' + matches.length + ',1fr);gap:1rem';
+        container.innerHTML = matches.map((m, i) =>
+            buildLiveCard(m, hideResults, true, 'live-timer-' + i, true)
+        ).join('');
     }
-
-    const labelTag = match.final_label
-        ? `<span class="live-final-label">${esc(match.final_label)}</span>`
-        : '';
-    const groupTag = match.group_name
-        ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;display:block">${esc(match.group_name)}</span>`
-        : '';
-    const extraTimeTag = match.is_extra_time
-        ? `<span class="extra-time-badge">&#9201; Verlaengerung</span>`
-        : '';
-
-    container.innerHTML = `
-        <div class="live-card">
-            <span class="live-badge">LIVE</span>
-            ${extraTimeTag}
-            ${labelTag}
-            <div class="live-teams">
-                <div class="live-team">
-                    ${teamLogo(match.team1, 'lg')}
-                    <span class="live-team-name">${match.team1 ? esc(match.team1.name) : 'TBD'}</span>
-                </div>
-                <div class="live-score">
-                    <span>${match.score_team1}</span>
-                    <span class="divider">:</span>
-                    <span>${match.score_team2}</span>
-                </div>
-                <div class="live-team">
-                    ${teamLogo(match.team2, 'lg')}
-                    <span class="live-team-name">${match.team2 ? esc(match.team2.name) : 'TBD'}</span>
-                </div>
-            </div>
-            <div id="live-timer" class="live-timer">${formatTime(localTimerRemaining)}</div>
-            ${groupTag}
-        </div>`;
     updateTimerClass();
     renderNextMatchPrep(localTimerRemaining);
 }
 
-function renderPastMatches(matches) {
+function renderPastMatches(matches, hideResults) {
     const container = document.getElementById('past-matches');
     if (!matches || matches.length === 0) {
         container.innerHTML = '<p class="empty-state">Noch keine Spiele beendet</p>';
@@ -182,7 +201,7 @@ function renderPastMatches(matches) {
     container.innerHTML = matches.map(m => `
         <div class="match-item finished">
             <span class="team-name">${teamLogo(m.team1, 'sm')}${m.team1 ? esc(m.team1.name) : 'TBD'}</span>
-            <span class="match-score">${m.score_team1} : ${m.score_team2}</span>
+            <span class="match-score">${hideResults ? '&#10003;' : m.score_team1 + ' : ' + m.score_team2}</span>
             <span class="team-name">${teamLogo(m.team2, 'sm')}${m.team2 ? esc(m.team2.name) : 'TBD'}</span>
         </div>
     `).join('');
@@ -239,8 +258,14 @@ function renderNextMatchPrep(remaining) {
         </div>`;
 }
 
-function renderStandings(standingsByGroup, groups) {
+function renderStandings(standingsByGroup, groups, hideResults) {
     const container = document.getElementById('standings');
+    if (hideResults) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = '';
     if (!standingsByGroup || !groups || groups.length === 0) {
         container.innerHTML = '<p class="empty-state">Keine Teams registriert</p>';
         return;
@@ -299,7 +324,7 @@ function renderStandings(standingsByGroup, groups) {
 // Bracket rendering
 // ──────────────────────────────────────
 
-function renderBracket(finalMatches, phase) {
+function renderBracket(finalMatches, phase, hideResults) {
     const container = document.getElementById('bracket-container');
     if (!container) return;
 
@@ -332,7 +357,7 @@ function renderBracket(finalMatches, phase) {
         html += `<div class="bracket-round">`;
         html += `<div class="bracket-round-title">${ROUND_NAMES[rk] || 'Runde ' + rk}</div>`;
         matches.forEach(m => {
-            html += renderBracketMatch(m);
+            html += renderBracketMatch(m, hideResults);
         });
         html += `</div>`;
     });
@@ -344,7 +369,7 @@ function renderBracket(finalMatches, phase) {
         html += '<div class="bracket-platz3">';
         html += '<div class="bracket-round-title">Spiel um Platz 3</div>';
         loserMatches.forEach(m => {
-            html += renderBracketMatch(m);
+            html += renderBracketMatch(m, hideResults);
         });
         html += '</div>';
     }
@@ -352,7 +377,7 @@ function renderBracket(finalMatches, phase) {
     container.innerHTML = html;
 }
 
-function renderBracketMatch(m) {
+function renderBracketMatch(m, hideResults) {
     const t1Name = m.team1 ? esc(m.team1.name) : 'TBD';
     const t2Name = m.team2 ? esc(m.team2.name) : 'TBD';
     const isFinished = m.status === 'finished';
@@ -361,7 +386,7 @@ function renderBracketMatch(m) {
     let t1Class = 'bracket-team';
     let t2Class = 'bracket-team';
 
-    if (isFinished) {
+    if (!hideResults && isFinished) {
         if (m.score_team1 > m.score_team2) t1Class += ' bracket-winner';
         else if (m.score_team2 > m.score_team1) t2Class += ' bracket-winner';
     }
@@ -372,16 +397,18 @@ function renderBracketMatch(m) {
     const t1Logo = m.team1 ? teamLogo(m.team1, 'xs') : '';
     const t2Logo = m.team2 ? teamLogo(m.team2, 'xs') : '';
 
+    const showScore = !hideResults && (isFinished || isLive);
+
     return `
         <div class="bracket-match${statusClass}">
             ${liveIndicator}
             <div class="${t1Class}">
                 ${t1Logo}<span class="bracket-team-name">${t1Name}</span>
-                <span class="bracket-team-score">${isFinished || isLive ? m.score_team1 : ''}</span>
+                <span class="bracket-team-score">${showScore ? m.score_team1 : ''}</span>
             </div>
             <div class="${t2Class}">
                 ${t2Logo}<span class="bracket-team-name">${t2Name}</span>
-                <span class="bracket-team-score">${isFinished || isLive ? m.score_team2 : ''}</span>
+                <span class="bracket-team-score">${showScore ? m.score_team2 : ''}</span>
             </div>
         </div>`;
 }
@@ -390,11 +417,11 @@ function renderBracketMatch(m) {
 // Winner display
 // ──────────────────────────────────────
 
-function renderWinner(finalMatches, phase) {
+function renderWinner(finalMatches, phase, hideResults) {
     const container = document.getElementById('winner-display');
     if (!container) return;
 
-    if (phase !== 'FINISHED' || !finalMatches || finalMatches.length === 0) {
+    if (hideResults || phase !== 'FINISHED' || !finalMatches || finalMatches.length === 0) {
         container.innerHTML = '';
         return;
     }

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="{{ site_settings.theme or 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_settings.tournament_name }} – TV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: {{ site_settings.color_primary }};
+            --title:   {{ site_settings.color_title }};
+            --bg:      #050a10;
+            --bg2:     #0b1420;
+            --bg3:     #111c2e;
+            --text:    #f1f5f9;
+            --muted:   #64748b;
+            --border:  rgba(255,255,255,0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; hyphens: none; }
+        html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+
+        /* ── Wrapper: full viewport as flex column ── */
+        #tv-wrap { display: flex; flex-direction: column; height: 100vh; }
+
+        /* ── Header ── */
+        #tv-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.6rem 1.5rem;
+            background: var(--bg2); border-bottom: 2px solid var(--primary);
+            flex-shrink: 0;
+        }
+        #tv-title { font-size: 1.4rem; font-weight: 800; color: var(--title); letter-spacing: 0.04em; }
+        #tv-clock { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        #fullscreen-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 1.1rem; cursor: pointer; }
+        #fullscreen-btn:hover { color: var(--text); }
+
+        /* ── Announcement ── */
+        #tv-announcement {
+            display: none; flex-shrink: 0;
+            background: rgba(234,179,8,0.13); border-bottom: 2px solid #eab308;
+            color: #fde68a; text-align: center; padding: 0.5rem 1.5rem;
+            font-size: 1.1rem; font-weight: 700; letter-spacing: 0.02em;
+        }
+
+        /* ── 3-column grid — fills all remaining height ── */
+        #tv-main {
+            display: grid;
+            grid-template-columns: 30% 1fr 30%;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* ── Column base ── */
+        .tv-col { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+        .tv-col:last-child { border-right: none; }
+
+        .tv-col-header {
+            flex-shrink: 0;
+            padding: 0.55rem 1rem;
+            font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--muted); background: var(--bg2); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .tv-col-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0.9rem 1rem; }
+        .tv-col-body::-webkit-scrollbar { width: 4px; }
+        .tv-col-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+        /* ── LEFT: Standings ── */
+        .tv-group-title { font-size: 0.78rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; margin-top: 1rem; }
+        .tv-group-title:first-child { margin-top: 0; }
+        .tv-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed; }
+        .tv-table th { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); text-align: left; }
+        .tv-table td { font-size: 0.95rem; font-weight: 600; padding: 0.5rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+        .tv-table tr:first-child td { color: var(--primary); }
+        .tv-table .rank { color: var(--muted); font-weight: 400; font-size: 0.78rem; width: 1.6rem; white-space: nowrap; }
+        .tv-table .pts  { color: var(--primary); font-weight: 800; width: 2.4rem; text-align: center; white-space: nowrap; }
+        /* team name column: gets remaining width, wraps naturally */
+        .tv-table .tname { word-break: break-word; overflow-wrap: break-word; hyphens: none; line-height: 1.25; }
+
+        /* ── CENTER: Live area fills column vertically ── */
+        #col-live { display: flex; flex-direction: column; min-height: 0; }
+        #live-area {
+            flex: 1; min-height: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1.25rem 1.5rem; gap: 1rem; overflow-y: auto;
+        }
+        .no-live { text-align: center; color: var(--muted); }
+        .no-live-icon { font-size: 4rem; margin-bottom: 0.75rem; }
+        .no-live-text { font-size: clamp(1.2rem, 2vw, 2rem); font-weight: 700; }
+        .no-live-sub { font-size: 0.95rem; margin-top: 0.4rem; }
+
+        /* Live card */
+        .tv-live-card {
+            background: var(--bg2); border: 1px solid rgba(34,197,94,0.22);
+            border-radius: 16px; padding: clamp(1rem, 2.5vw, 2rem) clamp(1rem, 3vw, 2.5rem);
+            text-align: center; width: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .tv-live-badge { display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; letter-spacing: 0.22em; color: var(--primary); margin-bottom: 0.5rem; }
+        .tv-live-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--primary); }
+        .tv-phase-tag { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.35rem; }
+        .tv-meta-tag { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; }
+        /* Vertical live layout: name – score – name */
+        .tv-matchup { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 0.1rem; margin: 0.4rem 0; }
+        .tv-team-name { font-size: clamp(1.2rem, 2.8vw, 2.6rem); font-weight: 900; line-height: 1.2; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.5rem; }
+        .tv-score-box { display: flex; align-items: center; gap: 0.3rem; margin: 0.35rem 0; }
+        .tv-score { font-size: clamp(3rem, 7vw, 9rem); font-weight: 900; font-variant-numeric: tabular-nums; color: var(--primary); line-height: 1; }
+        .tv-score-divider { font-size: clamp(2.2rem, 5vw, 7rem); font-weight: 300; color: var(--muted); }
+        .tv-timer { font-size: clamp(1.3rem, 2.2vw, 2.8rem); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); margin-top: 0.5rem; }
+        .tv-timer.urgent { color: #ef4444; }
+
+        /* Next match preview */
+        #next-match-area { flex-shrink: 0; padding: 0 1rem 0.9rem; }
+        #next-match-card {
+            background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+            padding: 0.65rem 1.1rem; text-align: center; display: none;
+        }
+        .nxt-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.25rem; }
+        .nxt-teams { font-size: clamp(0.95rem, 1.5vw, 1.3rem); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; hyphens: none; }
+        .nxt-vs { color: var(--muted); font-weight: 400; margin: 0 0.4rem; }
+        .nxt-badge { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+
+        /* ── RIGHT: Spiele ── */
+        .tv-section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; margin-top: 0.9rem; }
+        .tv-section-title:first-child { margin-top: 0; }
+        .tv-match-item {
+            background: var(--bg3); border-radius: 8px; padding: 0.5rem 0.7rem;
+            margin-bottom: 0.4rem; border: 1px solid var(--border);
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .tv-match-teams { flex: 1; min-width: 0; }
+        .tv-match-team { font-size: 0.95rem; font-weight: 600; line-height: 1.3; word-break: break-word; overflow-wrap: break-word; hyphens: none; }
+        .tv-match-team.winner { color: var(--primary); }
+        .tv-match-score { font-size: 1rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; text-align: center; line-height: 1; }
+        .tv-match-score-sub { font-size: 0.65rem; color: var(--muted); font-weight: 400; }
+        .tv-match-badge { font-size: 0.62rem; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.05); border-radius: 4px; padding: 0.12em 0.4em; white-space: nowrap; flex-shrink: 0; }
+
+        /* ── Tab bar (mobile/tablet) ── */
+        #tv-tabs { display: none; flex-shrink: 0; background: var(--bg2); border-bottom: 1px solid var(--border); }
+        .tv-tab { flex: 1; padding: 0.55rem; font-size: 0.8rem; font-weight: 700; text-align: center; cursor: pointer; color: var(--muted); border: none; background: none; letter-spacing: 0.05em; }
+        .tv-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+        /* ── Responsive breakpoints ── */
+        @media (max-width: 1300px) {
+            #tv-main { grid-template-columns: 1fr 1.2fr 1fr; }
+        }
+        @media (max-width: 1050px) {
+            #tv-main { grid-template-columns: 1fr 1fr 1fr; }
+            .tv-table td { font-size: 0.84rem; }
+            .tv-col-body { padding: 0.7rem 0.8rem; }
+        }
+        @media (max-width: 860px) {
+            #tv-main { grid-template-columns: 1.1fr 1fr 1.1fr; }
+            .tv-table td { font-size: 0.8rem; padding: 0.35rem 0.3rem; }
+            .tv-col-body { padding: 0.5rem 0.6rem; }
+            .tv-match-team { font-size: 0.82rem; }
+        }
+        /* Tablet/Mobile: switch to tabs */
+        @media (max-width: 680px) {
+            #tv-tabs { display: flex; }
+            #tv-main { grid-template-columns: 1fr; }
+            .tv-col { display: none; }
+            .tv-col.tab-active { display: flex; }
+            #col-live { display: flex; }
+        }
+        @media (max-width: 480px) {
+            #tv-header { padding: 0.45rem 0.75rem; }
+            #tv-title { font-size: 1.1rem; }
+            #tv-clock { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+<div id="tv-wrap">
+
+    <div id="tv-header">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+            {% if site_settings.org_logo_url %}
+            <img id="tv-logo" src="{{ site_settings.org_logo_url }}" alt="Logo"
+                 style="height:40px;width:auto;max-width:80px;object-fit:contain;flex-shrink:0;border-radius:5px">
+            {% endif %}
+            <div id="tv-title">&#9917; {{ site_settings.tournament_name }}</div>
+        </div>
+        <div id="tv-clock">--:--</div>
+        <div style="display:flex;align-items:center;gap:0.6rem">
+            <a href="{{ url_for('main.tv_landing') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem" title="Turnierübersicht">&#127942; Übersicht</a>
+            <a href="{{ url_for('main.tv_speisekarte') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem" title="Speisekarte">&#127860; Speisekarte</a>
+            <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Vollbild">&#x26F6;</button>
+        </div>
+    </div>
+
+    <div id="tv-announcement"></div>
+
+    <!-- Tab bar (visible on tablet/mobile) -->
+    <div id="tv-tabs">
+        <button class="tv-tab" onclick="showTab('table')">&#128202; Tabelle</button>
+        <button class="tv-tab active" onclick="showTab('live')">&#9654; Live</button>
+        <button class="tv-tab" onclick="showTab('matches')">&#128203; Spiele</button>
+    </div>
+
+    <div id="tv-main">
+
+        <!-- LEFT: Tabelle / Mannschaften -->
+        <div class="tv-col tab-col" id="tab-table">
+            <div class="tv-col-header" id="col-table-header">&#128202; Tabelle</div>
+            <div class="tv-col-body" id="col-table-body"></div>
+        </div>
+
+        <!-- CENTER: Live + Next match -->
+        <div id="col-live" style="display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border);overflow:hidden">
+            <div id="live-area"></div>
+            <div id="next-match-area">
+                <div id="next-match-card">
+                    <div class="nxt-label">&#9197; Nächstes Spiel</div>
+                    <div class="nxt-teams" id="nxt-teams"></div>
+                    <div class="nxt-badge" id="nxt-badge"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Spiele -->
+        <div class="tv-col tab-col" id="tab-matches">
+            <div class="tv-col-header">&#128203; Spiele</div>
+            <div class="tv-col-body" id="col-matches-body"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const TOURNAMENT_ID   = {{ tournament.id }};
+const TOURNAMENT_SLUG = '{{ tournament.slug }}';
+
+let liveTimerInterval = null;
+let liveTimerRemaining = 0;
+let liveTimerRunning = false;
+let liveTimerSync = 0;
+
+// ── Socket ──
+const socket = io();
+socket.on('connect', () => socket.emit('join_tournament', {tournament_id: TOURNAMENT_ID}));
+socket.on('state_update', (s) => applyState(s));
+setInterval(() => {
+    if (!socket.connected) {
+        fetch(`/t/${TOURNAMENT_SLUG}/api/state`).then(r=>r.json()).then(s=>applyState(s)).catch(()=>{});
+    }
+}, 15000);
+fetch(`/t/${TOURNAMENT_SLUG}/api/state`).then(r=>r.json()).then(s=>applyState(s)).catch(()=>{});
+
+// ── Clock ──
+function updateClock() {
+    const now = new Date();
+    document.getElementById('tv-clock').textContent =
+        String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── Tab navigation (mobile/tablet) ──
+function showTab(name) {
+    // Update tab buttons
+    document.querySelectorAll('.tv-tab').forEach((btn, i) => {
+        btn.classList.toggle('active', ['table','live','matches'][i] === name);
+    });
+    if (name === 'live') {
+        document.getElementById('col-live').style.display = 'flex';
+        document.querySelectorAll('.tab-col').forEach(el => el.classList.remove('tab-active'));
+    } else {
+        document.getElementById('col-live').style.display = 'none';
+        document.querySelectorAll('.tab-col').forEach(el => el.classList.remove('tab-active'));
+        const target = name === 'table' ? 'tab-table' : 'tab-matches';
+        const el = document.getElementById(target);
+        if (el) el.classList.add('tab-active');
+    }
+}
+
+// ── Fullscreen ──
+function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
+
+// ── Helpers ──
+function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+
+// ── Live timer ──
+function startLiveTimer() {
+    clearInterval(liveTimerInterval);
+    liveTimerInterval = setInterval(() => {
+        if (!liveTimerRunning) return;
+        const elapsed = (Date.now() - liveTimerSync) / 1000;
+        const rem = Math.max(0, liveTimerRemaining - elapsed);
+        document.querySelectorAll('.tv-live-timer').forEach(el => {
+            el.textContent = fmt(Math.round(rem));
+            el.classList.toggle('urgent', rem <= 60 && rem > 0);
+        });
+    }, 500);
+}
+
+// ── Apply state ──
+function applyState(s) {
+    if (!s) return;
+    const settings = s.settings || {};
+    const legacyHide = settings.hide_results === '1' && settings.hide_table !== '1' && settings.hide_scores !== '1';
+    const hideTable  = settings.hide_table  === '1' || legacyHide;
+    const hideScores = settings.hide_scores === '1' || legacyHide;
+
+    if (settings.tournament_name) {
+        document.getElementById('tv-title').textContent = '⚽ ' + settings.tournament_name;
+        document.title = settings.tournament_name + ' – TV';
+    }
+    if (settings.org_logo_url !== undefined) {
+        let logo = document.getElementById('tv-logo');
+        if (settings.org_logo_url) {
+            if (!logo) {
+                logo = document.createElement('img');
+                logo.id = 'tv-logo';
+                logo.alt = 'Logo';
+                logo.style.cssText = 'height:40px;width:auto;max-width:80px;object-fit:contain;flex-shrink:0;border-radius:5px';
+                document.getElementById('tv-title').parentNode.prepend(logo);
+            }
+            logo.src = settings.org_logo_url;
+        } else if (logo) {
+            logo.remove();
+        }
+    }
+    if (settings.color_primary) document.documentElement.style.setProperty('--primary', settings.color_primary);
+    if (settings.color_title)   document.documentElement.style.setProperty('--title',   settings.color_title);
+
+    // Announcement
+    const ann = document.getElementById('tv-announcement');
+    if (settings.announcement && settings.announcement.trim()) {
+        ann.textContent = '📢 ' + settings.announcement;
+        ann.style.display = 'block';
+    } else {
+        ann.style.display = 'none';
+    }
+
+    const liveMatches = s.live_matches && s.live_matches.length ? s.live_matches : (s.live_match ? [s.live_match] : []);
+    renderLive(liveMatches, s.upcoming_matches || [], hideScores);
+    renderTable(s.standings_by_group, s.groups, hideTable);
+    renderMatches(s.upcoming_matches || [], s.past_matches || [], hideScores);
+}
+
+// ── CENTER: Live ──
+function renderLive(matches, upcoming, hideResults) {
+    const el = document.getElementById('live-area');
+    const nextCard = document.getElementById('next-match-card');
+
+    if (!matches || matches.length === 0) {
+        el.innerHTML = `<div class="no-live">
+            <div class="no-live-icon">⚽</div>
+            <div class="no-live-text">Kein Spiel aktiv</div>
+            <div class="no-live-sub">Warte auf den Anpfiff&hellip;</div>
+        </div>`;
+        clearInterval(liveTimerInterval);
+        nextCard.style.display = 'none';
+    } else {
+        el.innerHTML = matches.map(m => liveCard(m, hideResults, matches.length > 1)).join('');
+        const m = matches[0];
+        liveTimerRemaining = m.timer_remaining;
+        liveTimerRunning   = m.timer_running;
+        liveTimerSync      = Date.now();
+        startLiveTimer();
+    }
+
+    // Next match below live area
+    const next = upcoming[0];
+    if (next) {
+        const t1 = next.team1 ? esc(next.team1.name) : 'TBD';
+        const t2 = next.team2 ? esc(next.team2.name) : 'TBD';
+        document.getElementById('nxt-teams').innerHTML = `${t1}<span class="nxt-vs">vs</span>${t2}`;
+        document.getElementById('nxt-badge').textContent = next.group_name || next.final_label || '';
+        nextCard.style.display = 'block';
+    } else {
+        nextCard.style.display = 'none';
+    }
+}
+
+function liveCard(m, hideResults, showField) {
+    const phaseTag = m.is_penalty
+        ? `<div class="tv-phase-tag" style="color:#ef4444">⚽ Elfmeterschiessen</div>`
+        : m.is_extra_time ? `<div class="tv-phase-tag" style="color:var(--primary)">⏱ Verlaengerung</div>` : '';
+    const metaTag = (showField ? `Spielfeld ${m.field || 1}` : '') + (m.group_name ? (showField ? ' · ' : '') + esc(m.group_name) : '') + (m.final_label ? esc(m.final_label) : '');
+    const scoreHtml = hideResults
+        ? `<div class="tv-score-box"><span class="tv-score" style="font-size:2.5rem;color:var(--muted)">vs</span></div>`
+        : `<div class="tv-score-box">
+               <span class="tv-score">${m.score_team1}</span>
+               <span class="tv-score-divider">:</span>
+               <span class="tv-score">${m.score_team2}</span>
+           </div>`;
+    return `<div class="tv-live-card">
+        <div class="tv-live-badge"><div class="tv-live-dot"></div>LIVE</div>
+        ${phaseTag}
+        ${metaTag ? `<div class="tv-meta-tag">${metaTag}</div>` : ''}
+        <div class="tv-matchup">
+            <div class="tv-team-name">${m.team1 ? esc(m.team1.name) : 'TBD'}</div>
+            ${scoreHtml}
+            <div class="tv-team-name">${m.team2 ? esc(m.team2.name) : 'TBD'}</div>
+        </div>
+        <div class="tv-timer tv-live-timer">${fmt(m.timer_remaining)}</div>
+    </div>`;
+}
+
+// ── LEFT: Tabelle oder Mannschaftsliste ──
+function renderTable(standingsMap, groups, hideTable) {
+    const col = document.getElementById('tab-table');
+    const el = document.getElementById('col-table-body');
+    const hd = document.getElementById('col-table-header');
+    if (!groups || groups.length === 0) { el.innerHTML = '<div style="color:var(--muted);font-size:0.9rem;padding:1rem 0">Keine Gruppen</div>'; return; }
+
+    if (hideTable) {
+        // Show teams list as fallback — column stays visible
+        if (col) col.style.display = '';
+        if (hd) hd.textContent = '👥 Mannschaften';
+        el.innerHTML = groups.map(g => {
+            const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
+            const rows = data.map(s =>
+                `<div style="padding:0.45rem 0.3rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.9rem;font-weight:600">${esc(s.team.name)}</div>`
+            ).join('') || `<div style="color:var(--muted);font-size:0.82rem;padding:0.3rem">–</div>`;
+            return `<div class="tv-group-title">${esc(g.name)}</div>${rows}`;
+        }).join('');
+        return;
+    }
+
+    if (hd) hd.textContent = '📊 Tabelle';
+    if (col) col.style.display = '';
+    el.innerHTML = groups.map(g => {
+        const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
+        const rows = data.map(s => {
+            const td = `<td class="pts" style="font-size:0.75rem;color:var(--muted);font-weight:500">${s.goal_diff > 0 ? '+' : ''}${s.goal_diff}</td>`;
+            return `<tr>
+                <td class="rank">${s.rank}</td>
+                <td class="tname">${esc(s.team.name)}</td>
+                ${td}
+                <td class="pts">${s.points}</td>
+            </tr>`;
+        }).join('') || `<tr><td colspan="4" style="color:var(--muted);font-size:0.82rem;padding:0.4rem">–</td></tr>`;
+        const headers = `<tr><th class="rank">#</th><th>Team</th><th class="pts" style="font-size:0.62rem;color:var(--muted)">TD</th><th class="pts">Pkt</th></tr>`;
+        return `<div class="tv-group-title">${esc(g.name)}</div>
+            <table class="tv-table"><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
+    }).join('');
+}
+
+// ── RIGHT: Spiele ──
+function matchItem(m, hideResults, isResult) {
+    const t1 = m.team1 ? esc(m.team1.name) : (isResult ? '?' : 'TBD');
+    const t2 = m.team2 ? esc(m.team2.name) : (isResult ? '?' : 'TBD');
+    const w1 = isResult && !hideResults && m.score_team1 > m.score_team2;
+    const w2 = isResult && !hideResults && m.score_team2 > m.score_team1;
+    const badge = (m.group_name || m.final_label)
+        ? `<div class="tv-match-badge">${esc(m.group_name || m.final_label)}</div>` : '';
+    let scoreHtml = '';
+    if (isResult) {
+        scoreHtml = hideResults
+            ? `<div class="tv-match-score">&#10003;</div>`
+            : `<div class="tv-match-score">${m.score_team1}<br><span class="tv-match-score-sub">:</span><br>${m.score_team2}</div>`;
+    }
+    return `<div class="tv-match-item">
+        <div class="tv-match-teams">
+            <div class="tv-match-team${w1?' winner':''}">${t1}</div>
+            <div class="tv-match-team${w2?' winner':''}">${t2}</div>
+        </div>
+        ${scoreHtml}${badge}
+    </div>`;
+}
+
+function renderMatches(upcoming, past, hideResults) {
+    const el = document.getElementById('col-matches-body');
+    let html = '';
+    if (upcoming.length > 0) {
+        html += `<div class="tv-section-title">&#9200; Kommende Spiele</div>`;
+        upcoming.slice(0, 8).forEach(m => { html += matchItem(m, hideResults, false); });
+    }
+    if (past.length > 0) {
+        html += `<div class="tv-section-title" style="margin-top:${upcoming.length ? '1rem' : '0'}">&#9989; Ergebnisse</div>`;
+        past.slice(0, 14).forEach(m => { html += matchItem(m, hideResults, true); });
+    }
+    el.innerHTML = html || '<div style="color:var(--muted);font-size:0.9rem;padding:1rem 0">Keine Spiele</div>';
+}
+</script>
+</body>
+</html>
