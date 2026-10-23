@@ -5,7 +5,7 @@ import math
 import random
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import date, datetime, time as dtime, timedelta, timezone
 from itertools import combinations
 from flask import (
     Blueprint, render_template, request, redirect,
@@ -22,6 +22,7 @@ from app.models import (
 )
 from app.auth import editor_required, superadmin_required, tournament_required
 from app.security import anmeldebremse
+from app.spielplan import Begegnung, erstelle_spielplan, finde_konflikte
 from app.socket_events import broadcast_state
 
 admin_bp = Blueprint("admin", __name__, template_folder="templates")
@@ -66,6 +67,9 @@ def euros_to_words(amount):
 
 # Simple hex color validation
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+# Erlaubte Anzahl Spielfelder je Turnier
+FELD_OPTIONEN = tuple(str(n) for n in range(1, 7))
 
 # JSON-Backup: aktuelle Exportversion und die, die wir lesen koennen
 EXPORT_VERSION = "2"
@@ -242,7 +246,7 @@ def create_tournament():
     if final_mode:
         set_setting(t.id, "final_mode", final_mode)
     num_fields = request.form.get("num_fields", "1").strip()
-    if num_fields in ("1", "2"):
+    if num_fields in FELD_OPTIONEN:
         set_setting(t.id, "num_fields", num_fields)
     hide_table = "1" if request.form.get("hide_table") == "1" else "0"
     set_setting(t.id, "hide_table", hide_table)
@@ -292,7 +296,7 @@ def edit_tournament(tid):
     final_mode = request.form.get("final_mode", "").strip()
     set_setting(t.id, "final_mode", final_mode)
     num_fields = request.form.get("num_fields", "").strip()
-    if num_fields in ("1", "2"):
+    if num_fields in FELD_OPTIONEN:
         set_setting(t.id, "num_fields", num_fields)
     hide_table = "1" if request.form.get("hide_table") == "1" else "0"
     set_setting(t.id, "hide_table", hide_table)
@@ -734,8 +738,8 @@ def update_settings():
         _valid_final_modes = {"", "semi_final", "direct_final", "classic_ko", "free_ko", "custom"}
         if key == "final_mode" and value not in _valid_final_modes:
             return jsonify({"error": "Ungueltiger Finalrundentyp"}), 400
-        if key == "num_fields" and value not in ("1", "2"):
-            return jsonify({"error": "num_fields muss 1 oder 2 sein"}), 400
+        if key == "num_fields" and value not in FELD_OPTIONEN:
+            return jsonify({"error": "num_fields muss zwischen 1 und 6 liegen"}), 400
         set_setting(t.id, key, value)
         if key in ("hide_table", "hide_scores"):
             set_setting(t.id, "hide_results", "0")
@@ -1718,62 +1722,197 @@ def reorder_matches():
     return jsonify({"ok": True})
 
 
+def _zahl(daten, schluessel, standard, minimum=None, maximum=None):
+    """Zahl aus JSON/Formular lesen, mit Grenzen und Rueckfall."""
+    rohwert = daten.get(schluessel)
+    if rohwert in (None, ""):
+        return standard
+    try:
+        wert = int(rohwert)
+    except (TypeError, ValueError):
+        return standard
+    if minimum is not None:
+        wert = max(minimum, wert)
+    if maximum is not None:
+        wert = min(maximum, wert)
+    return wert
+
+
+def _startzeitpunkt(t, daten, spielzeit_min, pause_min):
+    """Ersten Anstoss bestimmen.
+
+    Reihenfolge: ausdrueckliche Angabe > hinter dem letzten geplanten Spiel
+    > Turnierdatum und -uhrzeit > heute 09:00.
+    """
+    datum_text = (daten.get("startdatum") or "").strip()
+    zeit_text = (daten.get("startzeit") or "").strip()
+
+    if datum_text or zeit_text:
+        try:
+            datum = (datetime.strptime(datum_text, "%Y-%m-%d").date()
+                     if datum_text else (t.event_date or date.today()))
+            stunde, minute = (zeit_text or "09:00").split(":")[:2]
+            return datetime.combine(datum, dtime(int(stunde), int(minute))), None
+        except (ValueError, TypeError):
+            return None, "Startdatum oder Startzeit sind nicht lesbar."
+
+    # An einen bestehenden Spielplan anschliessen
+    letztes = (
+        Match.query.filter(
+            Match.tournament_id == t.id,
+            Match.is_final.is_(False),
+            Match.scheduled_time.isnot(None),
+        ).order_by(Match.scheduled_time.desc()).first()
+    )
+    if letztes:
+        return (letztes.scheduled_time
+                + timedelta(minutes=spielzeit_min + pause_min)), None
+
+    datum = t.event_date or date.today()
+    zeit_text = t.event_time or "09:00"
+    try:
+        stunde, minute = zeit_text.split(":")[:2]
+        return datetime.combine(datum, dtime(int(stunde), int(minute))), None
+    except (ValueError, TypeError):
+        return datetime.combine(datum, dtime(9, 0)), None
+
+
 @admin_bp.route("/t/<slug>/api/matches/generate-round-robin", methods=["POST"])
 @login_required
 @editor_required
 @tournament_required
 def generate_round_robin():
+    """Gruppenspiele erzeugen – mit Anstosszeiten und ohne Doppelbelegung.
+
+    Optionen (JSON, alle optional):
+        felder, spielzeit_min, pause_min, mindestpause,
+        startdatum ("JJJJ-MM-TT"), startzeit ("HH:MM"),
+        lange_pause_nach, lange_pause_min, vorhandene_loeschen
+    Ohne Optionen verhaelt sich der Aufruf wie bisher, nur dass die Spiele
+    jetzt Anstosszeiten bekommen und keine Mannschaft mehr zweimal
+    gleichzeitig angesetzt wird.
+    """
     t = g.tournament
     phase = get_setting(t.id, "tournament_phase", "GROUP_STAGE")
     if phase != "GROUP_STAGE":
         return jsonify({"error": "Nur in der Gruppenphase moeglich"}), 400
 
-    groups = Group.query.filter_by(tournament_id=t.id).all()
+    groups = Group.query.filter_by(tournament_id=t.id).order_by(
+        Group.display_order, Group.name).all()
     if not groups:
         return jsonify({"error": "Keine Gruppen vorhanden"}), 400
 
-    existing = set()
+    daten = request.get_json(silent=True) or {}
+
+    if daten.get("vorhandene_loeschen"):
+        geloescht = Match.query.filter_by(
+            tournament_id=t.id, is_final=False).delete()
+        db.session.commit()
+    else:
+        geloescht = 0
+
+    # Schon angesetzte Paarungen nicht doppelt erzeugen
+    vorhanden = set()
     for m in Match.query.filter_by(is_final=False, tournament_id=t.id).all():
         if m.team1_id and m.team2_id:
-            existing.add((min(m.team1_id, m.team2_id), max(m.team1_id, m.team2_id)))
+            vorhanden.add((min(m.team1_id, m.team2_id),
+                           max(m.team1_id, m.team2_id)))
+
+    offene_begegnungen = []
+    nummer = 0
+    for group in groups:
+        team_ids = sorted(te.id for te in group.teams)
+        if len(team_ids) < 2:
+            continue
+        for t1_id, t2_id in combinations(team_ids, 2):
+            paar = (min(t1_id, t2_id), max(t1_id, t2_id))
+            if paar in vorhanden:
+                continue
+            vorhanden.add(paar)
+            nummer += 1
+            offene_begegnungen.append(
+                Begegnung(t1_id, t2_id, group.id, nummer))
+
+    if not offene_begegnungen:
+        return jsonify({"ok": True, "created": 0, "deleted": geloescht,
+                        "hinweis": "Alle Paarungen sind schon angesetzt."})
+
+    standard_spielzeit = max(1, int(
+        get_setting(t.id, "default_timer_regular", "600") or 600) // 60)
+    felder = _zahl(daten, "felder",
+                   int(get_setting(t.id, "num_fields") or 1), 1, 6)
+    spielzeit_min = _zahl(daten, "spielzeit_min", standard_spielzeit, 1, 90)
+    pause_min = _zahl(daten, "pause_min", 5, 0, 120)
+    mindestpause = _zahl(daten, "mindestpause", 1, 0, 10)
+    lange_pause_nach = _zahl(daten, "lange_pause_nach", None, 1, 99)
+    lange_pause_min = _zahl(daten, "lange_pause_min", 0, 0, 300)
+
+    start, fehler = _startzeitpunkt(t, daten, spielzeit_min, pause_min)
+    if fehler:
+        return jsonify({"error": fehler}), 400
 
     max_order = db.session.query(db.func.max(Match.match_order)).filter(
         Match.tournament_id == t.id
     ).scalar() or 0
-    dur = int(get_setting(t.id, "default_timer_regular", "600"))
-    num_fields = int(get_setting(t.id, "num_fields") or 1)
-    created = 0
-    new_matches = []
 
-    for group in groups:
-        team_ids = [te.id for te in group.teams]
-        if len(team_ids) < 2:
-            continue
-        for t1_id, t2_id in combinations(team_ids, 2):
-            pair = (min(t1_id, t2_id), max(t1_id, t2_id))
-            if pair in existing:
-                continue
-            new_matches.append((t1_id, t2_id, group.id))
-            existing.add(pair)
+    plan = erstelle_spielplan(
+        offene_begegnungen, felder=felder, mindestpause=mindestpause,
+        start=start, spielzeit_min=spielzeit_min, pause_min=pause_min,
+        lange_pause_nach=lange_pause_nach, lange_pause_min=lange_pause_min,
+        startnummer=max_order + 1,
+    )
 
-    random.shuffle(new_matches)
-
-    for t1_id, t2_id, gid in new_matches:
-        max_order += 1
-        field = ((max_order - 1) % num_fields) + 1
+    dauer_sekunden = spielzeit_min * 60
+    for eintrag in plan:
+        begegnung = eintrag["begegnung"]
         db.session.add(Match(
             tournament_id=t.id,
-            team1_id=t1_id, team2_id=t2_id,
-            group_id=gid,
-            timer_duration=dur, timer_remaining=dur,
-            match_order=max_order,
-            field=field,
+            team1_id=begegnung.team1, team2_id=begegnung.team2,
+            group_id=begegnung.gruppe,
+            timer_duration=dauer_sekunden, timer_remaining=dauer_sekunden,
+            match_order=eintrag["nummer"],
+            field=eintrag["feld"],
+            scheduled_time=eintrag["anstoss"],
         ))
-        created += 1
+
+    # Mehr Felder verplant als eingestellt? Einstellung mitziehen, sonst
+    # blendet die Oberflaeche die Feldspalte aus.
+    if felder > int(get_setting(t.id, "num_fields") or 1):
+        set_setting(t.id, "num_fields", str(felder))
 
     db.session.commit()
     broadcast_state(t.id)
-    return jsonify({"ok": True, "created": created})
+
+    letzter = plan[-1]["anstoss"]
+    return jsonify({
+        "ok": True,
+        "created": len(plan),
+        "deleted": geloescht,
+        "slots": plan[-1]["slot"],
+        "felder": felder,
+        "beginn": start.strftime("%d.%m.%Y %H:%M"),
+        "ende": (letzter + timedelta(minutes=spielzeit_min)).strftime("%H:%M"),
+    })
+
+
+@admin_bp.route("/t/<slug>/api/matches/konflikte")
+@login_required
+@tournament_required
+def spielplan_konflikte():
+    """Doppelbelegungen im bestehenden Spielplan melden."""
+    t = g.tournament
+    spiele = Match.query.filter_by(tournament_id=t.id).order_by(
+        Match.match_order).all()
+    konflikte = finde_konflikte([
+        {
+            "nummer": m.match_order,
+            "anstoss": m.scheduled_time,
+            "feld": m.field or 1,
+            "teams": (m.team1_id, m.team2_id),
+        }
+        for m in spiele
+    ])
+    return jsonify({"konflikte": konflikte, "anzahl": len(konflikte)})
 
 
 # ──────────────────────────────────────

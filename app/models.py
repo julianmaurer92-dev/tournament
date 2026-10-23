@@ -150,7 +150,12 @@ class TournamentSettings(db.Model):
     key = db.Column(db.String(100), primary_key=True)
     value = db.Column(db.Text, nullable=False)
 
-    tournament_rel = db.relationship("Tournament", backref="settings")
+    # Gleiche Falle wie bei TeamPayment: tournament_id ist Teil des
+    # Primaerschluessels. Ohne delete-orphan bricht db.session.delete(turnier)
+    # ab. Die Loeschroute umgeht das bisher, indem sie die Einstellungen
+    # vorher von Hand wegraeumt – jedes andere Loeschen lief auf einen Fehler.
+    tournament_rel = db.relationship("Tournament", backref=db.backref(
+        "settings", cascade="all, delete-orphan"))
 
 
 def get_setting(tournament_id, key, default=None):
@@ -259,7 +264,13 @@ class TeamPayment(db.Model):
     amount = db.Column(db.Float, nullable=True)   # actual paid amount (may differ from default)
     receipt_number = db.Column(db.String(50), nullable=True)
 
-    team = db.relationship("Team", backref=db.backref("payment", uselist=False))
+    # cascade ist hier nicht Kosmetik: ohne delete-orphan versucht SQLAlchemy
+    # beim Loeschen eines Teams, team_payment.team_id auf NULL zu setzen –
+    # und das ist der Primaerschluessel. Ergebnis war ein harter Abbruch
+    # ("tried to blank-out primary key column"), d. h. ein Turnier mit
+    # erfassten Startgebuehren liess sich nicht loeschen.
+    team = db.relationship("Team", backref=db.backref(
+        "payment", uselist=False, cascade="all, delete-orphan"))
 
 
 # ──────────────────────────────────────
@@ -326,7 +337,11 @@ class Registration(db.Model):
 
     tournament = db.relationship("Tournament", backref=db.backref(
         "registrations", lazy="dynamic", cascade="all, delete-orphan"))
-    team = db.relationship("Team", foreign_keys=[team_id])
+    # Rueckverweis auf Team: Wird ein Team geloescht, setzt die ORM
+    # registration.team_id auf NULL, statt einen Fremdschluessel ins Leere
+    # zeigen zu lassen. Die Anmeldung bleibt als Historie erhalten.
+    team = db.relationship("Team", foreign_keys=[team_id],
+                           backref=db.backref("registrations", lazy="dynamic"))
     entscheider = db.relationship("Admin", foreign_keys=[decided_by])
 
     @property

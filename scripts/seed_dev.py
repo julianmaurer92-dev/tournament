@@ -25,6 +25,7 @@ from app.models import (  # noqa: E402
     Admin, Group, Match, MenuItem, Team, Tournament, TeamPayment,
     ensure_default_settings, set_setting, slugify,
 )
+from app.spielplan import Begegnung, erstelle_spielplan  # noqa: E402
 
 random.seed(20261024)   # reproduzierbare Testdaten
 
@@ -112,25 +113,31 @@ def build_tournament(name, tag, startzeit, gruppen_namen, teams_pro_gruppe,
             alle_teams.append(tm)
     db.session.commit()
 
-    # Spielplan: Gruppenspiele abwechselnd auf Feld 1 und 2
+    # Spielplan ueber den echten Planer – so sind die Testdaten frei von
+    # Doppelbelegungen und sehen aus wie ein echter Turniertag.
     begegnungen = []
+    nummer = 0
     for gr in gruppen:
-        gruppen_teams = [tm for tm in alle_teams if tm.group_id == gr.id]
-        for a, b in _round_robin(gruppen_teams):
-            begegnungen.append((gr, a, b))
-    random.shuffle(begegnungen)
+        gruppen_team_ids = [tm.id for tm in alle_teams if tm.group_id == gr.id]
+        for a_id, b_id in _round_robin(gruppen_team_ids):
+            nummer += 1
+            begegnungen.append(Begegnung(a_id, b_id, gr.id, nummer))
 
-    anstoss = datetime.combine(tag, startzeit)
-    slot_laenge = timedelta(minutes=spielzeit_min + 5)
+    plan = erstelle_spielplan(
+        begegnungen, felder=2, mindestpause=1,
+        start=datetime.combine(tag, startzeit),
+        spielzeit_min=spielzeit_min, pause_min=5,
+    )
+
     matches = []
-    for idx, (gr, a, b) in enumerate(begegnungen):
-        feld = (idx % 2) + 1
-        # Zwei Felder spielen parallel -> nach je zwei Spielen neuer Slot
-        slot = idx // 2
+    for eintrag in plan:
+        begegnung = eintrag["begegnung"]
         m = Match(
-            tournament_id=t.id, team1_id=a.id, team2_id=b.id,
-            group_id=gr.id, match_order=idx + 1, field=feld,
-            scheduled_time=anstoss + slot * slot_laenge,
+            tournament_id=t.id,
+            team1_id=begegnung.team1, team2_id=begegnung.team2,
+            group_id=begegnung.gruppe,
+            match_order=eintrag["nummer"], field=eintrag["feld"],
+            scheduled_time=eintrag["anstoss"],
             timer_duration=spielzeit_min * 60,
             timer_remaining=spielzeit_min * 60,
         )

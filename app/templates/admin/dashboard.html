@@ -270,7 +270,7 @@
     <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:.55">&#10005;</button>
     {% endif %}
 
-    {% if settings.num_fields == '2' and current_user.can_edit() %}
+    {% if settings.num_fields|int > 1 and current_user.can_edit() %}
     <span class="cb-sep"></span>
     <button class="btn btn-xs btn-success" onclick="startNextMatches()">&#9654;&#9654; Beide starten</button>
     {% endif %}
@@ -301,7 +301,7 @@
                     <th style="width:24px">#</th>
                     <th>Begegnung</th>
                     <th>Gruppe</th>
-                    {% if settings.num_fields == '2' %}<th>Feld</th>{% endif %}
+                    {% if settings.num_fields|int > 1 %}<th>Feld</th>{% endif %}
                     <th>Ergebnis</th>
                     <th>Status</th>
                     <th style="width:110px">Aktion</th>
@@ -318,7 +318,7 @@
                         {{ match.team2.name }}
                     </td>
                     <td>{% if match.group %}<span class="badge badge-blue-lt" style="font-size:0.67rem">{{ match.group.name }}</span>{% endif %}</td>
-                    {% if settings.num_fields == '2' %}
+                    {% if settings.num_fields|int > 1 %}
                     <td>
                         {% if current_user.can_edit() %}
                         <button class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="border:none;cursor:pointer;background:none;padding:0;font-size:0.72rem" onclick="toggleField({{ match.id }},this)">F{{ match.field or 1 }}</button>
@@ -369,7 +369,7 @@
                     <th style="width:24px"></th>
                     <th>Runde</th>
                     <th>Begegnung</th>
-                    {% if settings.num_fields == '2' %}<th>Feld</th>{% endif %}
+                    {% if settings.num_fields|int > 1 %}<th>Feld</th>{% endif %}
                     <th>Ergebnis</th>
                     <th>Status</th>
                     <th style="width:110px">Aktion</th>
@@ -385,7 +385,7 @@
                         <span style="color:var(--text-muted,#6b7280);font-weight:400;margin:0 0.2rem">vs</span>
                         {{ match.team2.name if match.team2 else 'TBD' }}
                     </td>
-                    {% if settings.num_fields == '2' %}
+                    {% if settings.num_fields|int > 1 %}
                     <td>
                         {% if current_user.can_edit() %}
                         <button class="badge badge-{{ 'green' if match.field==1 else 'yellow' }}-lt" style="border:none;cursor:pointer;background:none;padding:0;font-size:0.72rem" onclick="toggleField({{ match.id }},this)">F{{ match.field or 1 }}</button>

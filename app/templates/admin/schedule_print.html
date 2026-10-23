@@ -450,7 +450,7 @@ body {
                     <th class="center">#</th>
                     <th>Begegnung</th>
                     <th>Gruppe</th>
-                    {% if settings.num_fields == '2' %}<th class="center">Feld</th>{% endif %}
+                    {% if settings.num_fields|int > 1 %}<th class="center">Feld</th>{% endif %}
                     <th class="center">Ergebnis</th>
                     {% if not hide_results %}<th class="center">Status</th>{% endif %}
                 </tr>
@@ -469,7 +469,7 @@ body {
                         <span class="group-badge">{{ match.group.name }}</span>
                         {% endif %}
                     </td>
-                    {% if settings.num_fields == '2' %}
+                    {% if settings.num_fields|int > 1 %}
                     <td class="center">
                         <span class="field-badge-{{ match.field or 1 }}">F{{ match.field or 1 }}</span>
                     </td>
