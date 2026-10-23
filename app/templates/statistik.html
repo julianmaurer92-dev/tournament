@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik – {{ tournament.name }}{% endblock %}
+{% block body_class %}public{% endblock %}
+
+{% block head %}
+<style>
+    .st-wrap { max-width: 900px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+    .st-card {
+        background: var(--color-secondary, #1a2332);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .st-card h2 { margin: 0 0 .9rem; font-size: 1.05rem; }
+    .st-tbl { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    .st-tbl th {
+        text-align: left; font-size: .72rem; text-transform: uppercase;
+        letter-spacing: .06em; opacity: .6; padding: 0 .5rem .4rem;
+        font-weight: 700;
+    }
+    .st-tbl td { padding: .5rem; border-top: 1px solid rgba(255,255,255,.07); }
+    .st-tbl td.platz { width: 2.5rem; opacity: .55; }
+    .st-tbl td.zahl  { width: 3.5rem; text-align: right; font-weight: 700;
+                       font-variant-numeric: tabular-nums; }
+    .st-tbl td.name  { font-weight: 600; }
+    .st-tbl td.team  { opacity: .7; }
+    .st-leer { text-align: center; opacity: .6; padding: 1.5rem 0; }
+    .st-karten { white-space: nowrap; letter-spacing: .1em; }
+    .st-hinweis { font-size: .82rem; opacity: .6; margin: .6rem 0 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
+        <div class="header-logo">&#128202;</div>
+        <div class="header-text">
+            <h1 id="tournament-name">Statistik</h1>
+            <p>{{ tournament.name }}</p>
+        </div>
+    </div>
+</header>
+
+<div class="st-wrap">
+    {% if verborgen %}
+    <div class="st-card st-leer">
+        Die Ergebnisse dieses Turniers sind noch nicht öffentlich.
+    </div>
+    {% elif not anzahl_ereignisse %}
+    <div class="st-card st-leer">
+        <div style="font-size:2rem">&#9917;</div>
+        <p>Noch keine Tore oder Karten erfasst.</p>
+    </div>
+    {% else %}
+
+    <div class="st-card">
+        <h2>&#9917; Torschützenliste</h2>
+        {% if torschuetzen %}
+        <table class="st-tbl">
+            <thead>
+                <tr><th></th><th>Spieler</th><th>Mannschaft</th><th style="text-align:right">Tore</th></tr>
+            </thead>
+            <tbody>
+                {% for e in torschuetzen %}
+                <tr>
+                    <td class="platz">{{ e.platz }}.</td>
+                    <td class="name">{{ e.player_name }}</td>
+                    <td class="team">{{ e.team_name or '' }}</td>
+                    <td class="zahl">{{ e.tore }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="st-leer">Noch keine Tore mit Schützen erfasst.</div>
+        {% endif %}
+        {% if tore_ohne_schuetzen %}
+        <p class="st-hinweis">
+            {{ tore_ohne_schuetzen }} Treffer ohne namentlichen Schützen sind
+            hier nicht aufgeführt.
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="st-card">
+        <h2>&#129309; Fair-Play-Wertung</h2>
+        <table class="st-tbl">
+            <thead>
+                <tr><th></th><th>Mannschaft</th><th>Karten</th><th style="text-align:right">Punkte</th></tr>
+            </thead>
+            <tbody>
+                {% for e in fairplay %}
+                <tr>
+                    <td class="platz">{{ e.platz }}.</td>
+                    <td class="name">{{ e.team_name }}</td>
+                    <td class="st-karten">{{ '🟨' * e.gelb }}{{ '🟨🟥' * e.gelb_rot }}{{ '🟥' * e.rot }}</td>
+                    <td class="zahl">{{ e.strafpunkte }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="st-hinweis">
+            Gelbe Karte 1 Punkt, Gelb-Rot 3, Rot 5 – wer weniger hat, steht
+            weiter oben.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

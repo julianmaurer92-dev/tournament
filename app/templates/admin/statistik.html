@@ -1,0 +1,130 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Statistik – {{ tournament.name }}{% endblock %}
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('ereignisse_admin.torschuetzen_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
+<a href="{{ url_for('ereignisse.statistik_seite', slug=tournament.slug) }}" target="_blank" class="btn btn-outline btn-sm">Öffentliche Ansicht &#8599;</a>
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+{% endblock %}
+
+{% block page_content %}
+{% if not anzahl_ereignisse %}
+<div class="card">
+    <div class="card-body text-center text-muted py-5">
+        <div style="font-size:2rem">&#9917;</div>
+        <p class="mt-2 mb-1">Noch keine Spielereignisse erfasst.</p>
+        <p class="small mb-0">
+            Tore und Karten trägst du je Spiel ein – über die Spielsteuerung
+            oder im Dashboard beim jeweiligen Spiel unter „Ereignisse“.
+        </p>
+    </div>
+</div>
+{% else %}
+
+{% if tore_ohne_schuetzen %}
+<div class="alert alert-warning" role="alert">
+    {{ tore_ohne_schuetzen }} erfasste{% if tore_ohne_schuetzen == 1 %}s Tor hat{% else %} Tore haben{% endif %}
+    keinen Schützen. Diese Treffer fehlen in der Torschützenliste.
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">&#9917; Torschützenliste</h3>
+                <span class="ms-2 text-muted small">{{ torschuetzen | length }} Spieler</span>
+            </div>
+            {% if not torschuetzen %}
+            <div class="card-body text-muted text-center py-4">
+                Keine Tore mit Schützen erfasst.
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr><th class="w-1">#</th><th>Spieler</th><th>Mannschaft</th><th class="w-1">Tore</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for e in torschuetzen %}
+                        <tr>
+                            <td class="text-muted">{{ e.platz }}.</td>
+                            <td class="fw-semibold">{{ e.player_name }}</td>
+                            <td class="text-muted">{{ e.team_name or '–' }}</td>
+                            <td><span class="badge badge-green-lt">{{ e.tore }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">&#129309; Fair-Play-Wertung</h3>
+                <span class="ms-2 text-muted small">wenige Strafpunkte = besser</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th class="w-1">#</th><th>Mannschaft</th>
+                            <th class="w-1">&#128993;</th><th class="w-1">&#128993;&#128997;</th>
+                            <th class="w-1">&#128997;</th><th class="w-1">Punkte</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in fairplay %}
+                        <tr>
+                            <td class="text-muted">{{ e.platz }}.</td>
+                            <td class="fw-semibold">{{ e.team_name }}</td>
+                            <td>{{ e.gelb or '' }}</td>
+                            <td>{{ e.gelb_rot or '' }}</td>
+                            <td>{{ e.rot or '' }}</td>
+                            <td>
+                                <span class="badge {% if e.strafpunkte == 0 %}badge-green-lt{% elif e.strafpunkte < 4 %}badge-yellow-lt{% else %}badge-red-lt{% endif %}">
+                                    {{ e.strafpunkte }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if karten_spieler %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Karten je Spieler</h3>
+                <span class="ms-2 text-muted small">für Sperren und Rückfragen</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr><th>Spieler</th><th>Mannschaft</th><th class="w-1">Karten</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for e in karten_spieler %}
+                        <tr>
+                            <td class="fw-semibold">{{ e.player_name }}</td>
+                            <td class="text-muted">{{ e.team_name or '–' }}</td>
+                            <td style="white-space:nowrap">
+                                {{ '🟨' * e.gelb }}{{ '🟨🟥' * e.gelb_rot }}{{ '🟥' * e.rot }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

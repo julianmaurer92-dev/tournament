@@ -264,3 +264,150 @@ def test_import_speisekarte_ueberspringt_doppelte(admin_client, menu_items):
         "Bratwurst darf nicht doppelt angelegt werden"
     assert MenuItem.query.filter_by(name="Bratwurst").first().price == "3,00", \
         "bestehender Preis darf nicht ueberschrieben werden"
+
+
+# ──────────────────────────────────────
+# Neue Daten im Backup: Anmeldungen und Spielereignisse
+# ──────────────────────────────────────
+
+def test_export_enthaelt_spielereignisse(app, admin_client):
+    from app.models import MatchEvent
+    t = make_tournament("Ereignis Backup Cup")
+    gr = make_group(t)
+    a = make_team(t, "Alpha", gr)
+    b = make_team(t, "Bravo", gr)
+    m = make_match(t, a, b, gr, 1)
+    db.session.add_all([
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=a.id,
+                   art="tor", player_name="Lena Klein", minute=7),
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=b.id,
+                   art="gelb", player_name="Tim Kurz", minute=12),
+    ])
+    db.session.commit()
+
+    m_data = _export(admin_client, [t.id])["tournaments"][0]["matches"][0]
+    arten = {e["art"]: e for e in m_data["events"]}
+    assert arten["tor"]["player_name"] == "Lena Klein"
+    assert arten["tor"]["team_name"] == "Alpha"
+    assert arten["tor"]["minute"] == 7
+    assert arten["gelb"]["team_name"] == "Bravo"
+
+
+def test_export_enthaelt_anmeldungen(app, admin_client):
+    from app.models import Registration
+    t = make_tournament("Anmelde Backup Cup")
+    gr = make_group(t)
+    team = make_team(t, "Alpha", gr)
+    db.session.add(Registration(
+        tournament_id=t.id, club_name="SV Winkel", team_name="Alpha",
+        contact_name="Maria", contact_email="maria@sv.de",
+        contact_phone="0171", player_count=12, notes="Zwei Busse",
+        status="bestaetigt", token="tok-export", team_id=team.id,
+        decision_note="passt",
+    ))
+    db.session.commit()
+
+    r_data = _export(admin_client, [t.id])["tournaments"][0]["registrations"][0]
+    assert r_data["club_name"] == "SV Winkel"
+    assert r_data["contact_email"] == "maria@sv.de"
+    assert r_data["player_count"] == 12
+    assert r_data["status"] == "bestaetigt"
+    assert r_data["team_name_ref"] == "Alpha"
+    assert r_data["decision_note"] == "passt"
+
+
+def test_roundtrip_mit_ereignissen_und_anmeldungen(app, admin_client):
+    from app.models import MatchEvent, Registration
+    t = make_tournament("Voller Roundtrip Cup")
+    gr = make_group(t)
+    a = make_team(t, "Alpha", gr)
+    b = make_team(t, "Bravo", gr)
+    m = finish_match(make_match(t, a, b, gr, 1), 2, 1)
+    db.session.add_all([
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=a.id,
+                   art="tor", player_name="Lena Klein", minute=3),
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=a.id,
+                   art="tor", player_name="Lena Klein", minute=8),
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=b.id,
+                   art="tor", player_name="Tim Kurz", minute=15),
+        MatchEvent(match_id=m.id, tournament_id=t.id, team_id=b.id,
+                   art="rot", player_name="Jan Lang", minute=19),
+    ])
+    db.session.add(Registration(
+        tournament_id=t.id, club_name="SV Winkel", team_name="Alpha",
+        contact_name="Maria", contact_email="maria@sv.de",
+        status="bestaetigt", token="tok-rt", team_id=a.id,
+    ))
+    db.session.commit()
+
+    payload = _export(admin_client, [t.id])
+    resp = _import(admin_client, payload, ["Voller Roundtrip Cup"])
+    assert "erfolgreich importiert".encode() in resp.data
+
+    neu = [k for k in Tournament.query.filter_by(name="Voller Roundtrip Cup").all()
+           if k.id != t.id][0]
+
+    # Ereignisse
+    assert neu.events.count() == 4
+    neu_m = neu.matches.first()
+    tore = [e for e in neu_m.events if e.art == "tor"]
+    assert len(tore) == 3
+    lena = [e for e in tore if e.player_name == "Lena Klein"]
+    assert len(lena) == 2
+    assert {e.minute for e in lena} == {3, 8}
+    neu_alpha = Team.query.filter_by(tournament_id=neu.id, name="Alpha").first()
+    assert all(e.team_id == neu_alpha.id for e in lena), \
+        "Ereignis muss am Team der Kopie haengen, nicht am Original"
+
+    # Torschuetzenliste der Kopie stimmt
+    from app.ereignisse import turnier_statistik
+    statistik = turnier_statistik(neu.id)
+    assert statistik["torschuetzen"][0]["player_name"] == "Lena Klein"
+    assert statistik["torschuetzen"][0]["tore"] == 2
+
+    # Anmeldung
+    neu_anmeldung = neu.registrations.one()
+    assert neu_anmeldung.club_name == "SV Winkel"
+    assert neu_anmeldung.status == "bestaetigt"
+    assert neu_anmeldung.team_id == neu_alpha.id
+    assert neu_anmeldung.token != "tok-rt", \
+        "Token darf nicht doppelt vergeben werden"
+
+
+def test_import_ignoriert_unbekannte_ereignisart(app, admin_client):
+    payload = {
+        "version": "2", "tournaments": [{
+            "name": "Kaputt Cup", "slug": "kaputt-cup",
+            "settings": {}, "groups": [{"name": "A", "display_order": 0}],
+            "teams": [{"name": "T1", "group_name": "A"},
+                      {"name": "T2", "group_name": "A"}],
+            "matches": [{
+                "_index": 0, "team1_name": "T1", "team2_name": "T2",
+                "group_name": "A", "status": "finished",
+                "score_team1": 1, "score_team2": 0, "match_order": 1,
+                "events": [
+                    {"art": "elfmeter", "team_name": "T1", "player_name": "X"},
+                    {"art": "tor", "team_name": "T1", "player_name": "Echt"},
+                ],
+            }],
+        }],
+    }
+    resp = _import(admin_client, payload, ["Kaputt Cup"])
+    assert "erfolgreich importiert".encode() in resp.data
+    t = Tournament.query.filter_by(name="Kaputt Cup").first()
+    assert t.events.count() == 1
+    assert t.events.first().player_name == "Echt"
+
+
+def test_import_ohne_registrations_schluessel(app, admin_client):
+    """Backups der Version 1 haben keine Anmeldungen – darf nicht scheitern."""
+    payload = {
+        "version": "1", "tournaments": [{
+            "name": "Alt ohne Anmeldungen", "slug": "alt-ohne",
+            "settings": {}, "groups": [], "teams": [], "matches": [],
+        }],
+    }
+    resp = _import(admin_client, payload, ["Alt ohne Anmeldungen"])
+    assert "erfolgreich importiert".encode() in resp.data
+    t = Tournament.query.filter_by(name="Alt ohne Anmeldungen").first()
+    assert t.registrations.count() == 0

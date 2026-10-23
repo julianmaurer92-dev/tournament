@@ -1,0 +1,185 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Ereignisse – Spiel {{ match.match_order }}{% endblock %}
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+
+{% block navbar_items %}
+<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-outline btn-sm">&#9654; Spielsteuerung</a>
+<a href="{{ url_for('ereignisse_admin.statistik_admin', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#128202; Statistik</a>
+<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">
+            Spiel {{ match.match_order }}:
+            {{ match.team1.name if match.team1 else '?' }}
+            {{ match.score_team1 }} : {{ match.score_team2 }}
+            {{ match.team2.name if match.team2 else '?' }}
+        </h3>
+        {% if match.scheduled_time %}
+        <span class="ms-2 text-muted small">
+            {{ match.scheduled_time.strftime('%d.%m.%Y %H:%M') }} · Feld {{ match.field or 1 }}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if not ergebnis_stimmt %}
+    <div class="card-body pb-0">
+        <div class="alert alert-warning mb-0" role="alert">
+            <strong>Hinweis:</strong> Die erfassten Tore ergeben
+            {{ tore_team1 }} : {{ tore_team2 }}, eingetragen ist aber
+            {{ match.score_team1 }} : {{ match.score_team2 }}.
+            Der eingetragene Spielstand gilt – die Torschützenliste kennt nur
+            die erfassten Tore. Fehlende Treffer unten nachtragen (ohne Häkchen
+            bei „Spielstand mitzählen“, wenn der Stand schon stimmt).
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.can_edit() %}
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label text-muted small">Ereignis</label>
+                <select id="ev-art" class="form-select form-select-sm">
+                    {% for wert, label in arten.items() %}
+                    <option value="{{ wert }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Mannschaft</label>
+                <select id="ev-team" class="form-select form-select-sm" onchange="setzeVorschlaege()">
+                    {% if match.team1 %}<option value="{{ match.team1_id }}">{{ match.team1.name }}</option>{% endif %}
+                    {% if match.team2 %}<option value="{{ match.team2_id }}">{{ match.team2.name }}</option>{% endif %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Spieler</label>
+                <input id="ev-spieler" class="form-control form-control-sm" list="spielerliste"
+                       placeholder="Name (optional)">
+                <datalist id="spielerliste"></datalist>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted small">Minute</label>
+                <input id="ev-minute" type="number" min="0" max="200"
+                       class="form-control form-control-sm" placeholder="z. B. 7">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-primary w-100" onclick="ereignisAnlegen()">&#43; Erfassen</button>
+            </div>
+            <div class="col-12">
+                <label class="form-check" style="font-size:0.82rem">
+                    <input id="ev-anpassen" class="form-check-input" type="checkbox" checked>
+                    <span class="form-check-label">Spielstand mitzählen (nur bei Toren)</span>
+                </label>
+            </div>
+        </div>
+        <div id="ev-status" style="font-size:0.82rem;min-height:1.3em;margin-top:0.4rem;color:var(--text-muted,#9ca3af)"></div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Erfasste Ereignisse</h3>
+        <span class="ms-2 text-muted small">{{ ereignisse | length }}</span>
+    </div>
+    {% if not ereignisse %}
+    <div class="card-body text-center text-muted py-4">
+        Noch keine Ereignisse erfasst.
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th class="w-1">Min.</th>
+                    <th class="w-1"></th>
+                    <th>Ereignis</th>
+                    <th>Mannschaft</th>
+                    <th>Spieler</th>
+                    {% if current_user.can_edit() %}<th class="w-1"></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in ereignisse %}
+                <tr>
+                    <td class="text-muted">{{ e.minute if e.minute is not none else '–' }}</td>
+                    <td>{{ e.symbol }}</td>
+                    <td>
+                        {{ e.label }}
+                        {% if e.note %}<div class="text-muted small">{{ e.note }}</div>{% endif %}
+                    </td>
+                    <td>{{ e.team.name if e.team else '–' }}</td>
+                    <td>{{ e.player_name or '–' }}</td>
+                    {% if current_user.can_edit() %}
+                    <td>
+                        <button class="btn btn-sm btn-danger"
+                                onclick="ereignisLoeschen({{ e.id }}, {{ 'true' if e.ist_tor else 'false' }})">
+                            Löschen
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+const SLUG = {{ tournament.slug | tojson }};
+const MID = {{ match.id }};
+const VORSCHLAEGE = {{ spieler_vorschlaege | tojson }};
+
+function setzeVorschlaege() {
+    const teamId = document.getElementById('ev-team').value;
+    const liste = document.getElementById('spielerliste');
+    liste.innerHTML = '';
+    (VORSCHLAEGE[teamId] || []).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        liste.appendChild(opt);
+    });
+}
+document.addEventListener('DOMContentLoaded', setzeVorschlaege);
+
+function ereignisAnlegen() {
+    const st = document.getElementById('ev-status');
+    const koerper = {
+        art: document.getElementById('ev-art').value,
+        team_id: document.getElementById('ev-team').value,
+        player_name: document.getElementById('ev-spieler').value,
+        minute: document.getElementById('ev-minute').value,
+        ergebnis_anpassen: document.getElementById('ev-anpassen').checked
+    };
+    st.textContent = 'Wird gespeichert …';
+    fetch(`/admin/t/${SLUG}/api/matches/${MID}/ereignisse`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(koerper)
+    }).then(r => r.json()).then(d => {
+        if (d.error) { st.textContent = 'Fehler: ' + d.error; return; }
+        location.reload();
+    }).catch(() => { st.textContent = 'Netzwerkfehler'; });
+}
+
+function ereignisLoeschen(eid, istTor) {
+    let anpassen = false;
+    if (istTor) {
+        anpassen = confirm('Soll der Spielstand um ein Tor verringert werden?\n'
+                         + 'OK = ja, Abbrechen = nur das Ereignis löschen.');
+    }
+    fetch(`/admin/t/${SLUG}/api/ereignisse/${eid}/loeschen`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ergebnis_anpassen: anpassen})
+    }).then(r => r.json()).then(d => {
+        if (d.error) { alert(d.error); return; }
+        location.reload();
+    }).catch(() => alert('Netzwerkfehler'));
+}
+</script>
+{% endblock %}

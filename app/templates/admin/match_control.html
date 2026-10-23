@@ -44,7 +44,8 @@
 
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
+{% block navbar_items %}<a href="{{ url_for('ereignisse_admin.spiel_ereignisse', slug=tournament.slug, mid=match.id) }}" class="btn btn-outline btn-sm">&#9917; Ereignisse</a>
+
 <a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
 {% if parallel_match %}
 <span class="badge badge-yellow-lt" style="font-size:0.75rem">&#9617; 2 Felder aktiv</span>

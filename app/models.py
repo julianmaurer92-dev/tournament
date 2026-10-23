@@ -470,6 +470,111 @@ class Match(db.Model):
 
 
 # ──────────────────────────────────────
+# Spielereignisse (Tore, Karten)
+# ──────────────────────────────────────
+
+EREIGNIS_TOR = "tor"
+EREIGNIS_EIGENTOR = "eigentor"
+EREIGNIS_GELB = "gelb"
+EREIGNIS_GELB_ROT = "gelb_rot"
+EREIGNIS_ROT = "rot"
+
+EREIGNIS_ARTEN = (EREIGNIS_TOR, EREIGNIS_EIGENTOR, EREIGNIS_GELB,
+                  EREIGNIS_GELB_ROT, EREIGNIS_ROT)
+
+EREIGNIS_LABEL = {
+    EREIGNIS_TOR: "Tor",
+    EREIGNIS_EIGENTOR: "Eigentor",
+    EREIGNIS_GELB: "Gelbe Karte",
+    EREIGNIS_GELB_ROT: "Gelb-Rote Karte",
+    EREIGNIS_ROT: "Rote Karte",
+}
+
+EREIGNIS_SYMBOL = {
+    EREIGNIS_TOR: "⚽",
+    EREIGNIS_EIGENTOR: "⚽",
+    EREIGNIS_GELB: "🟨",
+    EREIGNIS_GELB_ROT: "🟨🟥",
+    EREIGNIS_ROT: "🟥",
+}
+
+# Strafpunkte fuer die Fair-Play-Wertung (weniger ist besser)
+FAIRPLAY_PUNKTE = {
+    EREIGNIS_GELB: 1,
+    EREIGNIS_GELB_ROT: 3,
+    EREIGNIS_ROT: 5,
+}
+
+KARTEN_ARTEN = (EREIGNIS_GELB, EREIGNIS_GELB_ROT, EREIGNIS_ROT)
+TOR_ARTEN = (EREIGNIS_TOR, EREIGNIS_EIGENTOR)
+
+
+class MatchEvent(db.Model):
+    """Ein Ereignis in einem Spiel: Tor oder Karte.
+
+    tournament_id wird mitgefuehrt, damit Statistiken ueber ein ganzes
+    Turnier ohne Join ueber match laufen. Spielernamen sind Freitext –
+    Team.players ist im Bestand ein einfaches Textfeld, keine Spielertabelle.
+    Ein Tippfehler im Namen soll die Torschuetzenliste nicht sprengen,
+    deshalb wird beim Zusammenfassen auf Leerzeichen und Gross-/Kleinschreibung
+    normalisiert.
+    """
+    __tablename__ = "match_event"
+
+    id = db.Column(db.Integer, primary_key=True)
+    match_id = db.Column(db.Integer, db.ForeignKey("match.id"),
+                         nullable=False, index=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournament.id"),
+                              nullable=False, index=True)
+    team_id = db.Column(db.Integer, db.ForeignKey("team.id"), nullable=True)
+
+    art = db.Column(db.String(20), nullable=False)
+    player_name = db.Column(db.String(150), default="")
+    minute = db.Column(db.Integer, nullable=True)
+    note = db.Column(db.String(300), default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: datetime.now(timezone.utc))
+
+    match = db.relationship("Match", backref=db.backref(
+        "events", lazy="dynamic", cascade="all, delete-orphan",
+        order_by="MatchEvent.minute.nullslast(), MatchEvent.id"))
+    team = db.relationship("Team", backref=db.backref(
+        "events", lazy="dynamic"))
+    tournament = db.relationship("Tournament", backref=db.backref(
+        "events", lazy="dynamic", cascade="all, delete-orphan"))
+
+    @property
+    def label(self):
+        return EREIGNIS_LABEL.get(self.art, self.art)
+
+    @property
+    def symbol(self):
+        return EREIGNIS_SYMBOL.get(self.art, "")
+
+    @property
+    def ist_tor(self):
+        return self.art in TOR_ARTEN
+
+    @property
+    def ist_karte(self):
+        return self.art in KARTEN_ARTEN
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "match_id": self.match_id,
+            "team_id": self.team_id,
+            "team_name": self.team.name if self.team else None,
+            "art": self.art,
+            "label": self.label,
+            "symbol": self.symbol,
+            "player_name": self.player_name or "",
+            "minute": self.minute,
+            "note": self.note or "",
+        }
+
+
+# ──────────────────────────────────────
 # Standings calculation (per group)
 # ──────────────────────────────────────
 

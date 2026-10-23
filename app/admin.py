@@ -14,7 +14,9 @@ from flask import (
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, oauth
 from app.models import (
-    Admin, Tournament, Group, Team, Match, MenuItem,
+    ANMELDUNG_OFFEN, ANMELDUNG_STATUS, EREIGNIS_ARTEN,
+    Admin, Tournament, Group, Team, Match, MatchEvent, MenuItem, Registration,
+    neues_token,
     TournamentSettings, UserTournamentAccess, TeamPayment, slugify,
     get_all_settings, get_setting, set_setting, ensure_default_settings,
     calculate_overall_rankings, get_seeded_teams_cross_group,
@@ -2517,8 +2519,39 @@ def _export_tournament(t):
                 "loser_next_match_index": match_id_to_index.get(m.loser_next_match_id) if m.loser_next_match_id else None,
                 "loser_next_match_slot": m.loser_next_match_slot,
                 "is_loser_match": m.is_loser_match,
+                # Tore und Karten gehoeren zum Spiel (seit Exportversion 2)
+                "events": [
+                    {
+                        "art": e.art,
+                        "team_name": team_id_to_name.get(e.team_id) if e.team_id else None,
+                        "player_name": e.player_name or "",
+                        "minute": e.minute,
+                        "note": e.note or "",
+                    }
+                    for e in m.events
+                ],
             }
             for i, m in enumerate(matches)
+        ],
+        # Vereinsanmeldungen inkl. Entscheidungshistorie (seit Exportversion 2)
+        "registrations": [
+            {
+                "club_name": r.club_name,
+                "team_name": r.team_name or "",
+                "contact_name": r.contact_name,
+                "contact_email": r.contact_email,
+                "contact_phone": r.contact_phone or "",
+                "player_count": r.player_count,
+                "notes": r.notes or "",
+                "status": r.status,
+                "token": r.token,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "decided_at": r.decided_at.isoformat() if r.decided_at else None,
+                "decision_note": r.decision_note or "",
+                "team_name_ref": team_id_to_name.get(r.team_id) if r.team_id else None,
+            }
+            for r in Registration.query.filter_by(tournament_id=t.id)
+            .order_by(Registration.created_at).all()
         ],
     }
 
@@ -2555,6 +2588,16 @@ def export_tournaments():
     )
     response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+def _als_zeitpunkt(text):
+    """ISO-Text zu datetime, oder None bei leer/unlesbar."""
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text)
+    except (TypeError, ValueError):
+        return None
 
 
 def _import_tournament(data):
@@ -2673,6 +2716,21 @@ def _import_tournament(data):
         db.session.flush()
         created_matches.append((match, m_data))
 
+        # Tore und Karten (fehlen in Backups vor Version 2)
+        for e_data in m_data.get("events", []):
+            art = e_data.get("art")
+            if art not in EREIGNIS_ARTEN:
+                continue
+            db.session.add(MatchEvent(
+                match_id=match.id,
+                tournament_id=t.id,
+                team_id=team_name_to_id.get(e_data.get("team_name")),
+                art=art,
+                player_name=(e_data.get("player_name") or "")[:150],
+                minute=e_data.get("minute"),
+                note=(e_data.get("note") or "")[:300],
+            ))
+
     # Matches – second pass: resolve next_match_id / loser_next_match_id by index
     for match, m_data in created_matches:
         nmi = m_data.get("next_match_index")
@@ -2681,6 +2739,33 @@ def _import_tournament(data):
         lnmi = m_data.get("loser_next_match_index")
         if lnmi is not None and 0 <= lnmi < len(created_matches):
             match.loser_next_match_id = created_matches[lnmi][0].id
+
+    # Vereinsanmeldungen (fehlen in Backups vor Version 2)
+    for r_data in data.get("registrations", []):
+        if not r_data.get("club_name") or not r_data.get("contact_email"):
+            continue
+        # Token nicht uebernehmen, wenn es schon vergeben ist – sonst
+        # scheitert der Import eines Backups in dieselbe Instanz.
+        token = r_data.get("token") or neues_token()
+        if Registration.query.filter_by(token=token).first():
+            token = neues_token()
+        db.session.add(Registration(
+            tournament_id=t.id,
+            club_name=r_data["club_name"][:150],
+            team_name=(r_data.get("team_name") or "")[:150],
+            contact_name=(r_data.get("contact_name") or "")[:150],
+            contact_email=r_data["contact_email"][:254],
+            contact_phone=(r_data.get("contact_phone") or "")[:60],
+            player_count=r_data.get("player_count"),
+            notes=r_data.get("notes") or "",
+            status=(r_data.get("status") if r_data.get("status") in ANMELDUNG_STATUS
+                    else ANMELDUNG_OFFEN),
+            token=token,
+            created_at=_als_zeitpunkt(r_data.get("created_at")),
+            decided_at=_als_zeitpunkt(r_data.get("decided_at")),
+            decision_note=r_data.get("decision_note") or "",
+            team_id=team_name_to_id.get(r_data.get("team_name_ref")),
+        ))
 
     db.session.commit()
 
