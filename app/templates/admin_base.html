@@ -1,146 +1,25 @@
-{% from '_bausteine.html' import icon %}
-<!DOCTYPE html>
-<html lang="de"
-      data-bs-theme="{{ 'light' if cp_schema == 'hell' else 'dark' }}"
-      data-theme="{{ cp_theme }}"
-      data-schema="{{ cp_schema }}"
-      {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
-    <title>{% block title %}CupPlan{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabler.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/navigation.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/palette.css') }}">
-    {% if cp_vereinsfarbe %}
-    <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
-    {% endif %}
-    {% block head %}{% endblock %}
-</head>
-<body class="admin-page">
-<a class="cp-sprung" href="#inhalt">Zum Inhalt springen</a>
+{# ============================================================
+   admin_base.html – jetzt nur noch eine dünne Schicht über der
+   Anpfiff-Hülle.
+   ------------------------------------------------------------
+   Rund zwanzig Adminseiten erben von dieser Datei und benutzen
+   die Blöcke `page_content`, `navbar_items`, `scripts` und
+   `head`. Statt alle zwanzig anzufassen, bildet diese Datei die
+   alten Blocknamen auf die neuen ab.
 
-{# Seiten, die den vollen Bildschirm brauchen (Spielsteuerung,
-   Praesentation), setzen ohne_rahmen auf true. Alles andere bekommt
-   die gemeinsame Navigation. #}
-{% block vollbild %}
-<div class="nav-layout">
+   Damit bekommt JEDE Adminseite sofort die neue Hülle: die
+   Seitenleiste am Schreibtisch, die App-Leiste unten auf dem
+   Handy, den Turnier-Umschalter, die Suche.
 
-    {# ── Seitenleiste (Desktop) / Kopf (Handy) ─────────────── #}
-    <aside class="nav-leiste" id="nav-leiste">
-        <a class="nav-marke" href="{{ url_for('admin.tournament_list') }}">
-            {{ icon('ball-football', 'cp-icon--l') }}
-            <span>CupPlan</span>
-        </a>
+   Wer eine Seite überarbeitet, erbt direkt von
+   `anpfiff_huelle.html` und benutzt `inhalt` statt
+   `page_content`. Diese Datei verschwindet, sobald die letzte
+   Seite umgestellt ist.
+   ============================================================ #}
+{% extends "anpfiff_huelle.html" %}
 
-        {% if current_tournament %}
-        <div class="nav-turnier">
-            <div class="nav-turnier-name">{{ current_tournament.name }}</div>
-            {% if cp_turniere and cp_turniere|length > 1 %}
-            <select class="nav-turnier-wahl" aria-label="Turnier wechseln"
-                    onchange="if(this.value) location.href=this.value">
-                {% for t in cp_turniere %}
-                <option value="{{ url_for('admin.dashboard', slug=t.slug) }}"
-                        {% if t.id == current_tournament.id %}selected{% endif %}>{{ t.name }}</option>
-                {% endfor %}
-            </select>
-            {% endif %}
-        </div>
-        {% endif %}
+{% block kopf_aktionen %}{% block navbar_items %}{% endblock %}{% endblock %}
 
-        <nav class="nav-punkte" aria-label="Bereiche">
-            {% for punkt in cp_navigation %}
-            <a class="nav-punkt {% if punkt.aktiv %}ist-aktiv{% endif %}"
-               href="{{ punkt.ziel }}"
-               {% if punkt.aktiv %}aria-current="page"{% endif %}>
-                {{ icon(punkt.icon) }}
-                <span>{{ punkt.name }}</span>
-                {% if punkt.zahl %}<span class="nav-zahl">{{ punkt.zahl }}</span>{% endif %}
-            </a>
-            {% endfor %}
-        </nav>
+{% block inhalt %}{% block page_content %}{% endblock %}{% endblock %}
 
-        <div class="nav-fuss">
-            <button type="button" class="nav-punkt" onclick="cp.palette && cp.palette.oeffnen()">
-                {{ icon('search') }}
-                <span>Suchen</span>
-                <kbd class="nav-kbd">⌘K</kbd>
-            </button>
-            <a class="nav-punkt" href="{{ url_for('admin.logout') }}">
-                {{ icon('logout') }}
-                <span>Abmelden</span>
-            </a>
-            <div class="nav-version">v1.5</div>
-        </div>
-    </aside>
-
-    {# ── Inhalt ────────────────────────────────────────────── #}
-    <div class="nav-inhalt">
-        <header class="nav-kopf">
-            <button type="button" class="cp-knopf cp-knopf--still cp-knopf--icon nav-auf"
-                    aria-label="Menü" aria-expanded="false" id="nav-auf">
-                {{ icon('menu-2') }}
-            </button>
-            <div class="nav-kopf-titel">{% block kopf_titel %}{{ self.title() }}{% endblock %}</div>
-            <div class="nav-kopf-aktionen">{% block navbar_items %}{% endblock %}</div>
-        </header>
-
-        <main class="nav-haupt" id="inhalt">
-            {% if sicherheitswarnungen %}
-            <div class="alert alert-warning alert-dismissible mb-3" role="alert">
-                <div class="d-flex">
-                    <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">{{ icon('alert-triangle') }}</div>
-                    <div>
-                        <h4 class="alert-title">Sicherheitshinweis zur Konfiguration</h4>
-                        <ul class="mb-0" style="padding-left:1.1rem">
-                            {% for warnung in sicherheitswarnungen %}<li>{{ warnung }}</li>{% endfor %}
-                        </ul>
-                        <div class="text-muted mt-2" style="font-size:.85rem">
-                            Dieser Hinweis erscheint nur für Superadmins und verschwindet,
-                            sobald die Werte in der <code>.env</code> gesetzt sind.
-                        </div>
-                    </div>
-                </div>
-                <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
-            </div>
-            {% endif %}
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="mb-3">
-                {% for category, message in messages %}
-                <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible" role="alert">
-                    <div>{{ message }}</div>
-                    <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-
-            {% block page_content %}{% endblock %}
-        </main>
-    </div>
-</div>
-{% endblock %}
-
-<div class="cp-toasts" id="cp-toasts" role="status" aria-live="polite"></div>
-
-<script src="{{ url_for('static', filename='vendor/tabler.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/cp-basis.js') }}"></script>
-<script src="{{ url_for('static', filename='js/cp-navigation.js') }}"></script>
-{% if cp_palette %}
-<script>
-const CP_PALETTE = {{ cp_palette | tojson }};
-const CP_SPRITE = {{ url_for('static', filename='vendor/tabler-sprite.svg') | tojson }};
-</script>
-<script src="{{ url_for('static', filename='js/cp-palette.js') }}"></script>
-{% endif %}
-{% block scripts %}{% endblock %}
-</body>
-</html>
+{% block skripte %}{% block scripts %}{% endblock %}{% endblock %}

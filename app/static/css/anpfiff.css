@@ -575,6 +575,77 @@
 }
 
 /* ════════════════════════════════════════════════════════════
+   5 · ALTE VARIABLENNAMEN
+   ------------------------------------------------------------
+   Einzelne Stylesheets und Vorlagen aus dem vorherigen Stand
+   greifen noch auf die alten Rollennamen zu (--flaeche, --rand,
+   --text-leise …). Hier zeigen sie auf die Anpfiff-Rollen.
+
+   Ohne diese Zuordnung faellt nicht etwa die Farbe aus – es
+   faellt die ganze Angabe aus, und Flaechen werden durchsichtig
+   oder Text unsichtbar. Das ist eine Brücke, kein Dauerzustand.
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    --flaeche: var(--ap-tafel);
+    --flaeche-tief: var(--ap-grund);
+    --flaeche-erhoben: var(--ap-tafel);
+    --flaeche-gedrueckt: var(--ap-tafel-tief);
+    --rand: var(--ap-kante);
+    --rand-stark: var(--ap-kante-aktiv);
+    --rand-interaktiv: var(--ap-kante-aktiv);
+    --text: var(--ap-schrift-farbe);
+    --text-leise: var(--ap-leise);
+    --text-still: var(--ap-still);
+    --text-auf-akzent: var(--ap-auf-akzent);
+    --akzent: var(--ap-akzent);
+    --akzent-leise: var(--ap-akzent-leise);
+    --akzent-rand: var(--ap-akzent);
+    --akzent-hover: var(--ap-akzent-stark);
+    --live: var(--ap-live);
+    --warnung: var(--ap-warnung);
+    --gefahr: var(--ap-gefahr);
+    --erfolg: var(--ap-tor);
+    --info: var(--ap-akzent);
+    --schatten-s: var(--ap-schatten-s);
+    --schatten-m: var(--ap-schatten-m);
+    --schatten-l: var(--ap-schatten-l);
+    --fokus: 0 0 0 3px var(--ap-akzent-leise), 0 0 0 1px var(--ap-akzent);
+    --schrift: var(--ap-schrift);
+    --raum-1: var(--ap-raum-1); --raum-2: var(--ap-raum-2);
+    --raum-3: var(--ap-raum-3); --raum-4: var(--ap-raum-4);
+    --raum-5: var(--ap-raum-5); --raum-6: var(--ap-raum-6);
+    --raum-7: var(--ap-raum-7); --raum-8: var(--ap-raum-8);
+    --radius-s: var(--ap-rund-s); --radius-m: var(--ap-rund-m);
+    --radius-l: var(--ap-rund-l); --radius-rund: var(--ap-rund-voll);
+    --text-xs: var(--ap-text-xs); --text-s: var(--ap-text-s);
+    --text-m: var(--ap-text-m); --text-l: var(--ap-text-l);
+    --text-xl: var(--ap-text-xl); --text-2xl: var(--ap-text-2xl);
+    --gewicht-normal: var(--ap-fett-normal); --gewicht-mittel: var(--ap-fett-mittel);
+    --gewicht-fett: var(--ap-fett); --gewicht-schwer: var(--ap-fett-schwer);
+    --zeit-schnell: var(--ap-zeit-kurz); --zeit-normal: var(--ap-zeit);
+    --zeit-langsam: var(--ap-zeit-lang);
+    --kurve: var(--ap-kurve);
+    --ziel-min: var(--ap-ziel);
+    --primary: var(--ap-akzent);
+    --border: var(--ap-kante);
+    --muted: var(--ap-leise);
+    --bg: var(--ap-grund);
+    --bg2: var(--ap-tafel);
+    --card: var(--ap-tafel);
+    /* Namen aus der allerersten Fassung. Sie stehen in einzelnen
+       Vorlagen noch mit Ersatzwert (var(--bg-secondary, #111827))
+       drin – ohne Zuordnung schlägt der Ersatzwert durch, und
+       plötzlich ist eine Karte dunkelblau in einem grünen Theme. */
+    --bg-secondary: var(--ap-tafel);
+    --panel-bg: var(--ap-tafel);
+    --input-bg: var(--ap-tafel-tief);
+    --hover: var(--ap-tafel-tief);
+    --color-primary: var(--ap-akzent);
+    --text-muted: var(--ap-leise);
+}
+
+/* ════════════════════════════════════════════════════════════
    4 · VEREINSFARBE, DRUCK, RÜCKSICHT
    ════════════════════════════════════════════════════════════ */
 

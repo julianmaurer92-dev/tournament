@@ -251,3 +251,90 @@
     .ap-huelle { display: block; }
     .ap-inhalt { padding: 0; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   NICHTS SCHIEBT DIE SEITE ZUR SEITE
+   ------------------------------------------------------------
+   Waagerechtes Scrollen der ganzen Seite ist auf einem Handy
+   das Ärgerlichste, was passieren kann: Man wischt, und der
+   Inhalt springt weg. Breite Tabellen dürfen scrollen – aber
+   in ihrer eigenen Tafel, nicht im Dokument.
+   ════════════════════════════════════════════════════════════ */
+
+.ap-huelle, .ap-haupt-spalte, .ap-inhalt { min-width: 0; max-width: 100%; }
+.ap-inhalt > * { min-width: 0; max-width: 100%; }
+
+/* Rasterfelder weigern sich von Haus aus, unter ihre Inhaltsbreite
+   zu schrumpfen. Ein langer Mannschaftsname oder eine breite
+   Tabelle spannt dann die ganze Seite auf. min-width:0 erlaubt
+   das Schrumpfen – scrollen darf der Inhalt in seiner Tafel. */
+.ap-inhalt .admin-grid > *,
+.ap-inhalt .org-layout > *,
+.ap-inhalt .row > *,
+.ap-inhalt [style*="display:grid"] > *,
+.ap-inhalt [style*="display: grid"] > * { min-width: 0; }
+
+/* Alles, was eine Tabelle enthält, scrollt in sich selbst. */
+.ap-inhalt .card-body,
+.ap-inhalt .adm-card-bd,
+.ap-inhalt .table-responsive,
+.ap-inhalt .ap-tafel-inhalt { overflow-x: auto; }
+.ap-inhalt table { max-width: 100%; }
+
+/* Die Kopfzeilen-Aktionen dürfen nicht die Seite aufspannen.
+   Passen sie nicht, scrollen sie waagerecht in ihrer Zeile. */
+.ap-kopf { min-width: 0; }
+.ap-kopf-aktionen {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px;
+}
+.ap-kopf-aktionen::-webkit-scrollbar { display: none; }
+
+@media (max-width: 599px) {
+    /* Auf schmalen Geräten zählt der Platz: Die Kopfzeile behält
+       die Hauptaktion, der Rest wandert in die Seitenleiste. */
+    .ap-kopf-aktionen > *:not(.ap-knopf--haupt):not(.btn-primary):not(:only-child) {
+        display: none;
+    }
+    .ap-kopf-titel { font-size: var(--ap-text-l); }
+}
+
+/* Raster aus dem vorherigen Stand, deren kleinste Spalte breiter ist
+   als ein Handy. "auto-fit" statt fester Spaltenzahl heisst: so viele
+   Spalten, wie wirklich passen. */
+@media (max-width: 760px) {
+    .ap-inhalt .summary-grid,
+    .ap-inhalt .tlist-grid {
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)) !important;
+    }
+}
+
+/* Die Übersicht rechnete ihre Höhe früher gegen eine 56 px hohe
+   Kopfzeile und schnitt alles darüber hinaus ab (overflow:hidden).
+   In der Anpfiff-Hülle ist die Kopfzeile anders hoch – und auf dem
+   Handy war dadurch die halbe Seite unerreichbar. Hier darf sie
+   einfach so hoch werden, wie ihr Inhalt ist. */
+.ap-inhalt .dash-wrap {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 0;
+}
+/* Spielplan und Tabellen standen nebeneinander, auch auf 390 px.
+   Dort gehören sie untereinander – sonst bleibt für jede Spalte
+   eine Handbreit. */
+.ap-inhalt .content-row { flex-direction: column; }
+.ap-inhalt .standings-sidebar,
+.ap-inhalt .match-card { width: auto; max-width: 100%; min-width: 0; }
+
+@media (min-width: 900px) {
+    /* Am Schreibtisch bleibt die feste Höhe sinnvoll: Spielplan und
+       Tabellen sollen nebeneinander ins Bild passen. */
+    .ap-inhalt .dash-wrap {
+        height: calc(100dvh - 64px - 2 * var(--ap-raum-5));
+        overflow: hidden;
+    }
+    .ap-inhalt .content-row { flex-direction: row; }
+}

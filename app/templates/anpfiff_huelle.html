@@ -18,6 +18,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-bausteine.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-huelle.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-tabler.css') }}">
+    {# admin.css traegt die Layouts der noch nicht umgebauten
+       Adminseiten (Kartenraster, Spieltabellen, Ziehgriffe). Die
+       Farben darin kommen ueber den Aliasblock aus Anpfiff. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-palette.css') }}">
     {% if cp_vereinsfarbe %}
     <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>

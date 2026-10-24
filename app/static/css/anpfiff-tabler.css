@@ -179,3 +179,87 @@ code, pre, kbd {
     color: var(--ap-schrift-farbe);
     border-radius: var(--ap-rund-s);
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   ALTE KLASSENNAMEN
+   ------------------------------------------------------------
+   Einzelne Vorlagen tragen noch Klassen aus dem vorherigen Stand
+   (.cp-knopf, .cp-karte, .cp-abzeichen …). Sie bekommen hier das
+   Nötigste, damit nichts auseinanderfällt.
+
+   Wichtig ist vor allem .cp-icon: Ohne Größenangabe wächst ein
+   <svg> auf seinen Container – im Beamer füllte ein Fußball
+   einmal den ganzen Bildschirm.
+   ════════════════════════════════════════════════════════════ */
+
+.cp-icon {
+    width: 1.25em; height: 1.25em;
+    min-width: 1.25em; min-height: 1.25em;
+    max-width: none;
+    flex: none;
+    stroke: currentColor; fill: none; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round;
+    vertical-align: -0.22em;
+}
+.cp-icon--s { width: 1em; height: 1em; min-width: 1em; min-height: 1em; }
+.cp-icon--l { width: 1.7em; height: 1.7em; min-width: 1.7em; min-height: 1.7em; }
+.cp-icon--xl { width: 2.6em; height: 2.6em; min-width: 2.6em; min-height: 2.6em; }
+
+.cp-knopf {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--ap-raum-2);
+    min-height: var(--ap-ziel); padding: 0 var(--ap-raum-4);
+    font-family: var(--ap-schrift); font-weight: var(--ap-fett);
+    color: var(--ap-schrift-farbe); background: var(--ap-tafel);
+    border: 2px solid var(--ap-kante-aktiv); border-radius: var(--ap-rund-m);
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.cp-knopf--haupt {
+    color: var(--ap-auf-akzent); background: var(--ap-akzent);
+    border-color: var(--ap-akzent);
+    box-shadow: var(--ap-kante-unten) var(--ap-akzent-stark);
+}
+.cp-knopf--still { background: transparent; border-color: transparent; color: var(--ap-leise); }
+.cp-knopf--gefahr { color: var(--ap-gefahr); border-color: var(--ap-gefahr); }
+.cp-knopf--klein { min-height: 36px; font-size: var(--ap-text-s); padding: 0 var(--ap-raum-3); }
+.cp-knopf--gross { min-height: var(--ap-ziel-gross); font-size: var(--ap-text-l); }
+.cp-knopf--breit { width: 100%; }
+.cp-knopf--icon { width: var(--ap-ziel); padding: 0; }
+
+.cp-karte {
+    background: var(--ap-tafel); border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l); overflow: hidden;
+}
+.cp-abzeichen {
+    display: inline-flex; align-items: center; gap: var(--ap-raum-2);
+    padding: 3px var(--ap-raum-3);
+    font-size: var(--ap-text-xs); font-weight: var(--ap-fett-schwer);
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ap-leise); background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante); border-radius: var(--ap-rund-voll);
+}
+.cp-live-punkt {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--ap-live);
+    animation: ap-puls 1.8s ease-in-out infinite;
+}
+.cp-wappen {
+    width: 1.6em; height: 1.6em; flex: none;
+    object-fit: contain; border-radius: var(--ap-rund-s);
+    vertical-align: -0.35em;
+}
+.cp-sprung { position: absolute; left: -9999px; }
+.cp-sprung:focus { left: var(--ap-raum-3); top: var(--ap-raum-3); }
+.cp-eingabe, .cp-auswahl, .cp-textfeld {
+    width: 100%; min-height: var(--ap-ziel);
+    padding: var(--ap-raum-2) var(--ap-raum-3);
+    font-family: var(--ap-schrift); color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel-tief);
+    border: 2px solid var(--ap-kante-aktiv); border-radius: var(--ap-rund-m);
+}
+.cp-leer {
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--ap-raum-3); padding: var(--ap-raum-7) var(--ap-raum-4);
+    text-align: center; color: var(--ap-leise);
+}
