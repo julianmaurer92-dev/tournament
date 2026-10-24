@@ -173,7 +173,7 @@ def export_tournaments():
     try:
         ids = [int(x) for x in ids_param.split(",") if x.strip()] if ids_param else []
     except ValueError:
-        return jsonify({"error": "Ungueltige IDs"}), 400
+        return jsonify({"error": "Ungültige IDs"}), 400
     if not ids and not include_menu:
         return jsonify({"error": "Keine IDs angegeben"}), 400
     tournaments = Tournament.query.filter(
@@ -410,11 +410,11 @@ def import_tournaments():
     try:
         data = json.load(file)
     except Exception:
-        flash("Ungueltige JSON-Datei.", "error")
+        flash("Ungültige JSON-Datei.", "error")
         return redirect(url_for("admin.export_import_page"))
 
     if data.get("version") not in SUPPORTED_IMPORT_VERSIONS or "tournaments" not in data:
-        flash("Ungueltiges Exportformat (falsche Version oder fehlende Daten).", "error")
+        flash("Ungültiges Exportformat (falsche Version oder fehlende Daten).", "error")
         return redirect(url_for("admin.export_import_page"))
 
     selected_names = set(request.form.getlist("names"))

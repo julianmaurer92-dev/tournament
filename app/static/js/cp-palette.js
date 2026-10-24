@@ -103,6 +103,7 @@
 
             const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             icon.setAttribute('class', 'cp-icon');
+            icon.setAttribute('viewBox', '0 0 24 24');
             icon.setAttribute('aria-hidden', 'true');
             const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
             use.setAttribute('href', CP_SPRITE + '#i-' + (eintrag.icon || 'chevron-right'));

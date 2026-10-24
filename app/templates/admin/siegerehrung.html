@@ -15,7 +15,7 @@
 {% if not platzierung %}
 <div class="card">
     <div class="card-body text-center text-muted py-5">
-        <div style="font-size:2rem">&#127942;</div>
+        <div style="font-size:2rem">{{ icon('trophy') }}</div>
         <p class="mt-2 mb-0">Noch keine Mannschaften im Turnier.</p>
     </div>
 </div>
@@ -25,7 +25,7 @@
     <div class="col-lg-7">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#127942; Endplatzierung</h3>
+                <h3 class="card-title">{{ icon('trophy') }} Endplatzierung</h3>
                 <span class="ms-2 text-muted small">{{ platzierung | length }} Mannschaften</span>
             </div>
             <div class="table-responsive">
@@ -75,7 +75,7 @@
     <div class="col-lg-5">
         <div class="card mb-3">
             <div class="card-header">
-                <h3 class="card-title">&#128227; Ablauf der Siegerehrung</h3>
+                <h3 class="card-title">{{ icon('speakerphone') }} Ablauf der Siegerehrung</h3>
             </div>
             <div class="card-body">
                 <p class="text-muted small">
@@ -96,7 +96,7 @@
         {% if current_user.can_edit() %}
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#128220; Urkunden</h3>
+                <h3 class="card-title">{{ icon('certificate') }} Urkunden</h3>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('siegerehrung_admin.einstellungen_speichern', slug=tournament.slug) }}">

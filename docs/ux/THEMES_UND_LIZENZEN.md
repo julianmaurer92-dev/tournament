@@ -54,18 +54,25 @@ Die Lizenz erlaubt den Einsatz in einer Web-App nicht.
 | **Lizenz** | MIT → `lizenzen/tabler-icons-MIT.txt` |
 | **Quelle** | https://tabler.io/icons |
 | **Im Projekt** | `app/static/vendor/tabler-sprite.svg` |
-| **Umfang** | 53 Symbole, 11 KB – nur die tatsächlich verwendeten |
+| **Umfang** | 63 Symbole, 13 KB – nur die tatsächlich verwendeten |
 
 Tabler Icons passt zum bereits vorhandenen Tabler-CSS im Adminbereich,
 ist durchgängig im Umriss-Stil gezeichnet und nimmt die Textfarbe an
 (`currentColor`). Dadurch funktioniert jedes Symbol in allen 20
 Theme-Varianten ohne eigene Fassung.
 
-**Was ersetzt wurde:** 339 Emoji und HTML-Entities, die quer durch die
+**Was ersetzt wurde:** Emoji und HTML-Entities, die quer durch die
 Vorlagen verstreut waren (`&#9917;` Fußball, `&#127942;` Pokal,
 `&#128438;` Drucker und so weiter). Emoji sehen auf jedem Betriebssystem
 anders aus, lassen sich nicht einfärben und passen in keiner Größe zum
 Text daneben.
+
+Stand jetzt: **136 ersetzt** (121 in den Admin-Vorlagen, 15 in der
+Beamer-Ansicht). **135 stehen noch** – die größten Posten:
+`phone.html` (22), die Druckvorlagen `schedule_print` (17),
+`cabin_signs` (14) und `receipt_print` (6) sowie die beiden
+Statistikseiten (19). Die Druckvorlagen gehören zum Punkt
+„Druckansichten", der an diesem Tag nicht mehr drankam.
 
 **Nicht verwendet:** SF Symbols oder andere Apple-Symbole.
 

@@ -6,7 +6,11 @@
    ============================================================ #}
 
 {% macro icon(name, klasse='', titel=None) -%}
-<svg class="cp-icon {{ klasse }}" aria-hidden="{{ 'false' if titel else 'true' }}"
+{#- viewBox ist Pflicht: Ohne sie hat das <svg> keine Eigengroesse. In
+    einem Flex-Eltern – jeder Tabler-Knopf ist einer – drueckt der
+    Browser es dann auf null Breite zusammen. -#}
+<svg class="cp-icon {{ klasse }}" viewBox="0 0 24 24"
+     aria-hidden="{{ 'false' if titel else 'true' }}"
      {% if titel %}role="img"{% endif %}>
     {%- if titel %}<title>{{ titel }}</title>{% endif -%}
     <use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-{{ name }}"></use>
@@ -47,4 +51,16 @@
 {% else %}
 <span class="cp-wappen cp-wappen--{{ groesse }} cp-wappen--leer">{{ (team.name if team else '?')[0]|upper }}</span>
 {% endif %}
+{%- endmacro %}
+
+{# Gelbe und rote Karten. Vorher standen hier die Emoji-Quadrate
+   🟨 und 🟥 – die sind je nach Geraet unterschiedlich gross, haben
+   runde Ecken wie ein Bonbon und sind auf einem Beamer kaum zu
+   erkennen. Eine Spielkarte ist ein Rechteck im Hochformat. #}
+{% macro karten(gelb=0, gelb_rot=0, rot=0) -%}
+<span class="cp-spielkarten">
+    {%- for _ in range(gelb) %}<span class="cp-spielkarte cp-spielkarte--gelb" title="Gelbe Karte"></span>{% endfor -%}
+    {%- for _ in range(gelb_rot) %}<span class="cp-spielkarte cp-spielkarte--gelbrot" title="Gelb-Rote Karte"></span>{% endfor -%}
+    {%- for _ in range(rot) %}<span class="cp-spielkarte cp-spielkarte--rot" title="Rote Karte"></span>{% endfor -%}
+</span>
 {%- endmacro %}

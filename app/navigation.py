@@ -110,12 +110,24 @@ def palette_eintraege(tournament=None, teams=(), spiele=(), themes=()):
             ("Live-Ansicht öffnen", "main.tournament_view", "world",
              "öffentlich website zuschauer"),
             ("Beamer-Ansicht öffnen", "main.tournament_tv", "device-tv",
-             "fernseher präsentieren großbild anzeigetafel"),
+             "fernseher großbild anzeigetafel"),
             ("Handy-Ansicht öffnen", "main.tournament_phone", "device-mobile",
              "smartphone mobil eltern"),
             ("Anmeldeformular öffnen", "anmeldung.anmeldeformular", "user-plus",
              "melden teilnahme vereine einladen"),
         ]
+        # Praesentieren ist dieselbe Seite, aber mit Startschalter –
+        # deshalb ein eigener Eintrag statt eines Hinweises.
+        try:
+            eintraege.append({
+                "art": "Aktion", "name": "Präsentieren (Beamer, Vollbild)",
+                "ziel": url_for("main.tournament_tv", slug=slug) + "?praesentieren=1",
+                "icon": "player-play",
+                "stichwort": "beamer vollbild diaschau präsentation zelt",
+            })
+        except Exception:
+            pass
+
         for name, endpunkt, icon, stichwort in extra:
             try:
                 eintraege.append({

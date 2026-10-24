@@ -39,6 +39,8 @@ kosten — auf einem Handy am Spielfeldrand mehr als am Schreibtisch.
 | 14 | Spielplan drucken | 3 | 2 | *wird ergänzt* |
 | 15 | Zuschauer: Tabelle meiner Gruppe finden | 3 | 1 | *wird ergänzt* |
 | 16 | Zuschauer: nächstes Spiel meines Teams finden | 4 | 0–1 | **0** |
+| 17 | Beliebige Seite oder beliebiges Spiel öffnen | 2–4 | 1 | **1** |
+| 18 | Beamer-Präsentation starten | 5 | 1 | **1** |
 
 ---
 
@@ -216,3 +218,26 @@ bleiben.
 
 Die Wahl liegt nur im Browser (localStorage), je Turnier getrennt. Kein
 Konto, keine Daten auf dem Server.
+
+### 17. Beliebige Seite oder beliebiges Spiel öffnen — 1 (vorher 2–4)
+
+`Strg/Cmd + K`, Namen tippen, Enter. Durchsucht Seiten, Seitenaktionen,
+alle Mannschaften, alle Spiele und alle Themes.
+
+Vorher hing es davon ab, wo man gerade war: Von der Übersicht zur
+Statistik waren es zwei Klicks, von der Spielsteuerung zur Speisekarte
+vier — zurück zum Dashboard, zur Turnierliste, zur Speisekarte.
+
+### 18. Beamer-Präsentation starten — 1 (vorher 5)
+
+Vorher: Dashboard öffnen → Beamer-Ansicht in neuem Tab → Tab suchen →
+Vollbildknopf (`⛶`, unbeschriftet) finden → klicken. Und dann standen
+drei schmale Spalten nebeneinander, die aus zehn Metern niemand lesen
+konnte.
+
+Jetzt: **„Präsentieren"** auf dem Dashboard. Die Ansicht öffnet sich,
+ein Tastendruck startet Vollbild, und danach läuft sie allein: Live
+(20 s) → Tabellen (15 s) → Spielplan (15 s), jeweils über die volle
+Breite und in Beamer-Schriftgröße (Tabellenzeilen 24 px statt 15 px).
+
+`←` `→` blättern von Hand, `Leertaste` hält an, `Esc` beendet.

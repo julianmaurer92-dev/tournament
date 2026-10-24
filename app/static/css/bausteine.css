@@ -41,6 +41,11 @@
 
 .cp-icon {
     width: 1.25em; height: 1.25em;
+    /* Tabler setzt im Reset img,svg { max-width:100%; height:auto }.
+       Zusammen mit einem Flex-Eltern reichte die Breitenangabe allein
+       nicht – min-width haelt das Symbol auf. */
+    min-width: 1.25em; min-height: 1.25em;
+    max-width: none;
     flex: none;
     stroke: currentColor;
     fill: none;
@@ -538,3 +543,52 @@
 .mt-auswahl-knopf:hover { border-color: var(--akzent); background: var(--akzent-leise); }
 .mt-auswahl-knopf.ist-gewaehlt { border-color: var(--akzent); color: var(--akzent); font-weight: var(--gewicht-fett); }
 .mt-auswahl-knopf--weg { border-style: dashed; color: var(--text-leise); }
+
+/* In einem Flex-Eltern verschwinden reine Leerzeichen zwischen Symbol
+   und Beschriftung. Die eigenen Knoepfe (.cp-knopf) und die Navigation
+   loesen das ueber "gap"; Tablers .btn bringt das nicht mit, also hier. */
+.btn > .cp-icon { margin-right: .4em; }
+.btn > .cp-icon:only-child { margin-right: 0; }
+
+/* ── Gelbe und rote Karten ─────────────────────────────────── */
+/* Heissen bewusst .cp-spielkarte: .cp-karte ist seit dem Fundament
+   die Flaeche mit Rand und Schatten. Zwei Dinge unter einem Namen
+   gaben hier zuerst zwei Pixel breite Karten.
+
+   Vorher standen in der Statistik die Emoji-Quadrate 🟨 und 🟥 –
+   unterschiedlich gross je Geraet, mit runden Ecken wie ein Bonbon
+   und auf einem Beamer kaum zu erkennen. Eine Spielkarte ist ein
+   Rechteck im Hochformat. */
+
+.cp-spielkarten {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: -0.12em;
+}
+.cp-spielkarte {
+    display: inline-block;
+    /* Ohne flex:none schrumpfen sie im Flex-Eltern auf null zusammen –
+       dieselbe Falle wie bei den Symbolen ohne viewBox. */
+    flex: none;
+    width: 0.62em;
+    min-width: 0.62em;
+    height: 0.92em;
+    border-radius: 1.5px;
+    /* Dunkler Rand, damit die gelbe Karte auch auf hellem Grund
+       und auf dem Ausdruck eine Karte bleibt. */
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .4);
+}
+.cp-spielkarte--gelb { background: #f5c518; }
+.cp-spielkarte--rot  { background: #d92b2b; }
+/* Gelb-Rot ist eine Karte, nicht zwei: diagonal geteilt. */
+.cp-spielkarte--gelbrot {
+    background: linear-gradient(135deg, #f5c518 0 50%, #d92b2b 50% 100%);
+}
+
+@media print {
+    .cp-spielkarte {
+        box-shadow: inset 0 0 0 1px #000;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

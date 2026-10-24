@@ -1,12 +1,13 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Export &amp; Import{% endblock %}
 
 {% block page_content %}
 <!-- EXPORT -->
 <div class="card mb-3">
     <div class="card-header">
-        <h3 class="card-title">&#8681; Exportieren</h3>
+        <h3 class="card-title">{{ icon('download') }} Exportieren</h3>
         <span class="card-subtitle ms-2">Turnierwochenende als JSON-Datei herunterladen</span>
     </div>
     <div class="card-body">
@@ -15,7 +16,7 @@
             <div class="section-label">Turniere</div>
             <label class="checkbox-label" style="gap:0.5rem;font-weight:600;margin-bottom:0.5rem">
                 <input type="checkbox" id="export-select-all" onchange="toggleAll('export-cb', this.checked)">
-                Alle auswaehlen
+                Alle auswählen
             </label>
             <div class="tournament-checkboxes" style="margin-top:0.5rem">
                 {% for t in tournaments %}
@@ -37,11 +38,11 @@
             <div class="section-label">Speisekarte</div>
             <label class="checkbox-label">
                 <input type="checkbox" id="export-include-menu" checked>
-                Speisen &amp; Getraenke einschlie&szlig;en
+                Speisen &amp; Getränke einschlie&szlig;en
             </label>
         </div>
 
-        <button class="btn btn-accent" onclick="doExport()">&#8681; Exportieren</button>
+        <button class="btn btn-accent" onclick="doExport()">{{ icon('download') }} Exportieren</button>
         <span class="text-muted small ms-2">Enthalt alle Turniere und optional die Speisekarte.</span>
     </div>
 </div>
@@ -49,12 +50,12 @@
 <!-- IMPORT -->
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">&#8679; Importieren</h3>
+        <h3 class="card-title">{{ icon('upload') }} Importieren</h3>
         <span class="card-subtitle ms-2">Turnierwochenende aus einer JSON-Exportdatei wiederherstellen</span>
     </div>
     <div class="card-body">
         <div style="margin-bottom:1rem">
-            <label class="form-hint" style="display:block;margin-bottom:0.4rem">Backup-Datei auswaehlen (.json):</label>
+            <label class="form-hint" style="display:block;margin-bottom:0.4rem">Backup-Datei auswählen (.json):</label>
             <input type="file" id="import-file" accept=".json,application/json"
                    onchange="readImportFile(this)" style="font-size:0.9rem">
         </div>
@@ -65,7 +66,7 @@
                 <div id="import-checkboxes" class="tournament-checkboxes"></div>
                 <label class="checkbox-label" style="gap:0.5rem;font-weight:600;margin-top:0.5rem">
                     <input type="checkbox" id="import-select-all" onchange="toggleAll('import-cb', this.checked)">
-                    Alle auswaehlen
+                    Alle auswählen
                 </label>
             </div>
 
@@ -73,8 +74,8 @@
                 <div class="section-label">Speisekarte</div>
                 <label class="checkbox-label">
                     <input type="checkbox" id="import-include-menu" checked>
-                    <span id="import-menu-label">Speisen &amp; Getraenke importieren</span>
-                    <span class="text-muted small">(vorhandene Eintraege mit gleichem Namen werden uebersprungen)</span>
+                    <span id="import-menu-label">Speisen &amp; Getränke importieren</span>
+                    <span class="text-muted small">(vorhandene Einträge mit gleichem Namen werden übersprungen)</span>
                 </label>
             </div>
         </div>
@@ -84,9 +85,9 @@
             <input type="file" name="file" id="import-file-hidden" style="display:none">
             <input type="hidden" name="include_menu" id="import-menu-flag" value="0">
             <div id="import-name-inputs"></div>
-            <button type="submit" class="btn btn-accent">&#8679; Importieren</button>
+            <button type="submit" class="btn btn-accent">{{ icon('upload') }} Importieren</button>
             <span class="form-hint" style="margin-left:0.5rem">
-                Bereits vorhandene Turnier-Slugs werden umbenannt (kein Ueberschreiben).
+                Bereits vorhandene Turnier-Slugs werden umbenannt (kein Überschreiben).
             </span>
         </form>
 

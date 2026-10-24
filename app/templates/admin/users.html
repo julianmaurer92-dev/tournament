@@ -124,7 +124,7 @@
                             {% if user.id != current_user.id %}
                             <form method="POST" action="{{ url_for('admin.delete_user', uid=user.id) }}"
                                   style="display:inline" onsubmit="return confirm('Benutzer {{ user.username }} loeschen?')">
-                                <button type="submit" class="btn btn-sm btn-danger">Loeschen</button>
+                                <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
                             </form>
                             {% endif %}
                         </div>

@@ -1,21 +1,40 @@
-<!DOCTYPE html>
-<html lang="de" data-theme="{{ site_settings.theme or 'dark' }}">
+{% from '_bausteine.html' import icon %}<!DOCTYPE html>
+<html lang="de"
+      data-theme="{{ cp_theme }}"
+      data-schema="{{ cp_schema }}"
+      {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site_settings.tournament_name }} – TV</title>
+    <title>{{ site_settings.tournament_name }} – Beamer</title>
+    <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/praesentation.css') }}">
+    {% if cp_vereinsfarbe %}
+    <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
+    {% endif %}
     <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
     <style>
+        /* Die Beamer-Ansicht hatte feste Farben – immer dunkelblau,
+           egal welches Theme. In einem hellen Zelt bei Mittagssonne ist
+           das die schlechteste aller Moeglichkeiten. Die Variablen
+           zeigen jetzt auf die Design-Tokens; damit wirken alle 20
+           Varianten, auch "Papier" (sehr hell) und "Stadion"
+           (hoechster Kontrast) – ohne die 400 Zeilen darunter
+           anzufassen. */
         :root {
-            --primary: {{ site_settings.color_primary }};
-            --title:   {{ site_settings.color_title }};
-            --bg:      #050a10;
-            --bg2:     #0b1420;
-            --bg3:     #111c2e;
-            --text:    #f1f5f9;
-            --muted:   #64748b;
-            --border:  rgba(255,255,255,0.07);
+            --primary: var(--akzent);
+            --title:   var(--akzent);
+            --bg:      var(--flaeche-tief);
+            --bg2:     var(--flaeche);
+            --bg3:     var(--flaeche-erhoben);
+            /* --text kommt direkt aus tokens.css. Es hier noch einmal
+               auf sich selbst zu setzen waere ein Zirkelbezug und
+               machte die Schrift unsichtbar. */
+            --muted:   var(--text-leise);
+            --border:  var(--rand);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; hyphens: none; }
         html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
@@ -181,30 +200,40 @@
             <img id="tv-logo" src="{{ site_settings.org_logo_url }}" alt="Logo"
                  style="height:40px;width:auto;max-width:80px;object-fit:contain;flex-shrink:0;border-radius:5px">
             {% endif %}
-            <div id="tv-title">&#9917; {{ site_settings.tournament_name }}</div>
+            <div id="tv-title">{{ site_settings.tournament_name }}</div>
         </div>
         <div id="tv-clock">--:--</div>
-        <div style="display:flex;align-items:center;gap:0.6rem">
-            <a href="{{ url_for('main.tv_landing') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem" title="Turnierübersicht">&#127942; Übersicht</a>
-            <a href="{{ url_for('main.tv_speisekarte') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem" title="Speisekarte">&#127860; Speisekarte</a>
-            <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Vollbild">&#x26F6;</button>
+        <div style="display:flex;align-items:center;gap:0.6rem" class="pr-nur-bedienung">
+            <a href="{{ url_for('main.tv_landing') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem">{{ icon('trophy') }} Übersicht</a>
+            <a href="{{ url_for('main.tv_speisekarte') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem">{{ icon('clipboard-list') }} Speisekarte</a>
+            <button type="button" id="pr-start" class="pr-start">
+                {{ icon('player-play') }} Präsentieren
+            </button>
         </div>
+    </div>
+
+    <!-- Nur im Praesentationsmodus sichtbar -->
+    <div class="pr-leiste">
+        <span class="pr-seitenname" id="pr-seitenname">Live</span>
+        <span class="pr-punkte" id="pr-punkte"></span>
+        <span class="pr-fortschritt"><span class="pr-balken" id="pr-balken"></span></span>
+        <span class="pr-pause" id="pr-pause"></span>
     </div>
 
     <div id="tv-announcement"></div>
 
     <!-- Tab bar (visible on tablet/mobile) -->
     <div id="tv-tabs">
-        <button class="tv-tab" onclick="showTab('table')">&#128202; Tabelle</button>
-        <button class="tv-tab active" onclick="showTab('live')">&#9654; Live</button>
-        <button class="tv-tab" onclick="showTab('matches')">&#128203; Spiele</button>
+        <button class="tv-tab" onclick="showTab('table')">{{ icon('chart-bar') }} Tabelle</button>
+        <button class="tv-tab active" onclick="showTab('live')">{{ icon('player-play') }} Live</button>
+        <button class="tv-tab" onclick="showTab('matches')">{{ icon('calendar-event') }} Spiele</button>
     </div>
 
     <div id="tv-main">
 
         <!-- LEFT: Tabelle / Mannschaften -->
         <div class="tv-col tab-col" id="tab-table">
-            <div class="tv-col-header" id="col-table-header">&#128202; Tabelle</div>
+            <div class="tv-col-header" id="col-table-header">{{ icon('chart-bar') }} Tabelle</div>
             <div class="tv-col-body" id="col-table-body"></div>
         </div>
 
@@ -213,7 +242,7 @@
             <div id="live-area"></div>
             <div id="next-match-area">
                 <div id="next-match-card">
-                    <div class="nxt-label">&#9197; Nächstes Spiel</div>
+                    <div class="nxt-label">{{ icon('clock') }} Nächstes Spiel</div>
                     <div class="nxt-teams" id="nxt-teams"></div>
                     <div class="nxt-badge" id="nxt-badge"></div>
                 </div>
@@ -222,11 +251,23 @@
 
         <!-- RIGHT: Spiele -->
         <div class="tv-col tab-col" id="tab-matches">
-            <div class="tv-col-header">&#128203; Spiele</div>
+            <div class="tv-col-header">{{ icon('calendar-event') }} Spiele</div>
             <div class="tv-col-body" id="col-matches-body"></div>
         </div>
 
     </div>
+</div>
+
+<div class="pr-willkommen" id="pr-willkommen" role="button" tabindex="0">
+    <h1>{{ site_settings.tournament_name }}</h1>
+    <p>Zum Starten der Präsentation irgendwo klicken<br>
+       oder eine beliebige <kbd>Taste</kbd> drücken.</p>
+</div>
+
+<div class="pr-hilfe" id="pr-hilfe" aria-hidden="true">
+    <span><kbd>←</kbd> <kbd>→</kbd> blättern</span>
+    <span><kbd>Leer</kbd> anhalten</span>
+    <span><kbd>Esc</kbd> beenden</span>
 </div>
 
 <script>
@@ -276,14 +317,27 @@ function showTab(name) {
     }
 }
 
-// ── Fullscreen ──
+// ── Vollbild ──
+// Das Umschalten liegt jetzt in cp-praesentation.js; "F" bleibt als
+// reines Vollbild erhalten, fuer alle, die es gewohnt sind.
 function toggleFullscreen() {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
 }
-document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
+document.addEventListener('keydown', e => {
+    if ((e.key === 'f' || e.key === 'F') && !document.body.dataset.praesentation) {
+        toggleFullscreen();
+    }
+});
 
 // ── Helpers ──
+// Icons aus dem Sprite statt Emoji: Emoji sehen auf jedem Geraet
+// anders aus, lassen sich nicht einfaerben und sind auf einem Beamer
+// aus zehn Metern nicht zu erkennen.
+const SPRITE = "{{ url_for('static', filename='vendor/tabler-sprite.svg') }}";
+function sym(name, klasse) {
+    return `<svg class="cp-icon ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
+}
 function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
 
@@ -310,7 +364,7 @@ function applyState(s) {
     const hideScores = settings.hide_scores === '1' || legacyHide;
 
     if (settings.tournament_name) {
-        document.getElementById('tv-title').textContent = '⚽ ' + settings.tournament_name;
+        document.getElementById('tv-title').textContent = settings.tournament_name;
         document.title = settings.tournament_name + ' – TV';
     }
     if (settings.org_logo_url !== undefined) {
@@ -334,7 +388,7 @@ function applyState(s) {
     // Announcement
     const ann = document.getElementById('tv-announcement');
     if (settings.announcement && settings.announcement.trim()) {
-        ann.textContent = '📢 ' + settings.announcement;
+        ann.innerHTML = sym('speakerphone') + ' ' + esc(settings.announcement);
         ann.style.display = 'block';
     } else {
         ann.style.display = 'none';
@@ -352,11 +406,33 @@ function renderLive(matches, upcoming, hideResults) {
     const nextCard = document.getElementById('next-match-card');
 
     if (!matches || matches.length === 0) {
-        el.innerHTML = `<div class="no-live">
-            <div class="no-live-icon">⚽</div>
-            <div class="no-live-text">Kein Spiel aktiv</div>
-            <div class="no-live-sub">Warte auf den Anpfiff&hellip;</div>
-        </div>`;
+        // "Kein Spiel aktiv" beantwortet die Frage nicht, die alle im
+        // Zelt haben. Wenn etwas ansteht, steht hier, was und wann.
+        const n = upcoming && upcoming[0];
+        if (n) {
+            const zeit = n.scheduled_time
+                ? (String(n.scheduled_time).match(/T(\d{2}:\d{2})/) || [,''])[1] : '';
+            const ort = [zeit ? zeit + ' Uhr' : '',
+                         n.field ? 'Spielfeld ' + n.field : '',
+                         n.group_name || n.final_label || '']
+                        .filter(Boolean).join(' · ');
+            el.innerHTML = `<div class="no-live">
+                <div class="no-live-icon">${sym('clock', 'cp-icon--xl')}</div>
+                <div class="no-live-sub">Als Nächstes</div>
+                <div class="no-live-text" style="font-size:clamp(1.6rem,4vw,3.2rem);margin:.4rem 0">
+                    ${esc(n.team1 ? n.team1.name : 'offen')}
+                    <span style="color:var(--muted);font-weight:400"> gegen </span>
+                    ${esc(n.team2 ? n.team2.name : 'offen')}
+                </div>
+                <div class="no-live-sub" style="font-size:1.2rem">${esc(ort)}</div>
+            </div>`;
+        } else {
+            el.innerHTML = `<div class="no-live">
+                <div class="no-live-icon">${sym('check', 'cp-icon--xl')}</div>
+                <div class="no-live-text">Alle Spiele gespielt</div>
+                <div class="no-live-sub">Die Tabellen stehen fest.</div>
+            </div>`;
+        }
         clearInterval(liveTimerInterval);
         nextCard.style.display = 'none';
     } else {
@@ -368,8 +444,10 @@ function renderLive(matches, upcoming, hideResults) {
         startLiveTimer();
     }
 
-    // Next match below live area
-    const next = upcoming[0];
+    // Die kleine Karte unter der Live-Flaeche. Laeuft gerade nichts,
+    // steht das naechste Spiel schon gross in der Mitte – dann waere
+    // sie dasselbe ein zweites Mal.
+    const next = (matches && matches.length) ? upcoming[0] : null;
     if (next) {
         const t1 = next.team1 ? esc(next.team1.name) : 'TBD';
         const t2 = next.team2 ? esc(next.team2.name) : 'TBD';
@@ -383,7 +461,7 @@ function renderLive(matches, upcoming, hideResults) {
 
 function liveCard(m, hideResults, showField) {
     const phaseTag = m.is_penalty
-        ? `<div class="tv-phase-tag" style="color:#ef4444">⚽ Elfmeterschiessen</div>`
+        ? `<div class="tv-phase-tag" style="color:var(--gefahr)">${sym('target')} Elfmeterschiessen</div>`
         : m.is_extra_time ? `<div class="tv-phase-tag" style="color:var(--primary)">⏱ Verlaengerung</div>` : '';
     const metaTag = (showField ? `Spielfeld ${m.field || 1}` : '') + (m.group_name ? (showField ? ' · ' : '') + esc(m.group_name) : '') + (m.final_label ? esc(m.final_label) : '');
     const scoreHtml = hideResults
@@ -416,7 +494,7 @@ function renderTable(standingsMap, groups, hideTable) {
     if (hideTable) {
         // Show teams list as fallback — column stays visible
         if (col) col.style.display = '';
-        if (hd) hd.textContent = '👥 Mannschaften';
+        if (hd) hd.innerHTML = sym('users-group') + ' Mannschaften';
         el.innerHTML = groups.map(g => {
             const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
             const rows = data.map(s =>
@@ -427,7 +505,7 @@ function renderTable(standingsMap, groups, hideTable) {
         return;
     }
 
-    if (hd) hd.textContent = '📊 Tabelle';
+    if (hd) hd.innerHTML = sym('chart-bar') + ' Tabelle';
     if (col) col.style.display = '';
     el.innerHTML = groups.map(g => {
         const data = standingsMap && standingsMap[g.id] ? standingsMap[g.id].standings : [];
@@ -464,7 +542,7 @@ function matchItem(m, hideResults, isResult) {
     let scoreHtml = '';
     if (isResult) {
         scoreHtml = hideResults
-            ? `<div class="tv-match-score">&#10003;</div>`
+            ? `<div class="tv-match-score">${sym('check')}</div>`
             : `<div class="tv-match-score">${m.score_team1}<br><span class="tv-match-score-sub">:</span><br>${m.score_team2}</div>`;
     }
     return `<div class="tv-match-item">
@@ -480,15 +558,16 @@ function renderMatches(upcoming, past, hideResults) {
     const el = document.getElementById('col-matches-body');
     let html = '';
     if (upcoming.length > 0) {
-        html += `<div class="tv-section-title">&#9200; Kommende Spiele</div>`;
+        html += `<div class="tv-section-title">${sym('clock')} Kommende Spiele</div>`;
         upcoming.slice(0, 8).forEach(m => { html += matchItem(m, hideResults, false); });
     }
     if (past.length > 0) {
-        html += `<div class="tv-section-title" style="margin-top:${upcoming.length ? '1rem' : '0'}">&#9989; Ergebnisse</div>`;
+        html += `<div class="tv-section-title" style="margin-top:${upcoming.length ? '1rem' : '0'}">${sym('check')} Ergebnisse</div>`;
         past.slice(0, 14).forEach(m => { html += matchItem(m, hideResults, true); });
     }
     el.innerHTML = html || '<div style="color:var(--muted);font-size:0.9rem;padding:1rem 0">Keine Spiele</div>';
 }
 </script>
+<script src="{{ url_for('static', filename='js/cp-praesentation.js') }}"></script>
 </body>
 </html>

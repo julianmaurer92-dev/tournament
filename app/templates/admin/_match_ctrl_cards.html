@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 {% if match.is_final and match.final_label %}
 <div class="ctrl-card" style="padding:0.8rem 1.8rem">
     <span class="badge-final">{{ match.final_label }}</span>
@@ -12,7 +13,7 @@
 
 {% if match.is_final and match.next_match_id %}
 <div class="draw-warning">
-    &#9888; Bei Finalspielen mit Weiterschaltung ist kein Unentschieden erlaubt.
+    {{ icon('alert-triangle') }} Bei Finalspielen mit Weiterschaltung ist kein Unentschieden erlaubt.
 </div>
 {% endif %}
 
@@ -33,7 +34,7 @@
         <div class="score-divider" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
             <span>:</span>
             {% if current_user.can_edit() %}
-            <button class="btn btn-xs btn-outline" onclick="swapTeams()" title="Heim/Gast tauschen" style="font-size:0.75rem;padding:0.2rem 0.5rem">&#8646;</button>
+            <button class="btn btn-xs btn-outline" onclick="swapTeams()" title="Heim/Gast tauschen" style="font-size:0.75rem;padding:0.2rem 0.5rem">{{ icon('arrows-exchange') }}</button>
             {% endif %}
         </div>
         <div class="team-score-col">
@@ -53,29 +54,29 @@
 <div class="ctrl-card">
     <h3 class="ctrl-label">Timer</h3>
     <div style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:0.5rem;flex-wrap:wrap">
-        <div id="extra-time-badge" class="extra-time-badge" style="display:{% if match.is_extra_time %}inline-flex{% else %}none{% endif %}">&#9201; Verlaengerung</div>
-        <div id="penalty-badge" class="extra-time-badge" style="background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444;display:{% if match.is_penalty %}inline-flex{% else %}none{% endif %}">&#9917; Elfmeter</div>
+        <div id="extra-time-badge" class="extra-time-badge" style="display:{% if match.is_extra_time %}inline-flex{% else %}none{% endif %}">{{ icon('clock') }} Verlängerung</div>
+        <div id="penalty-badge" class="extra-time-badge" style="background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444;display:{% if match.is_penalty %}inline-flex{% else %}none{% endif %}">{{ icon('ball-football') }} Elfmeter</div>
     </div>
     <div id="timer-display" class="timer-huge">{{ '%02d' | format(match.timer_remaining // 60) }}:{{ '%02d' | format(match.timer_remaining % 60) }}</div>
     <div class="ctrl-buttons">
-        <button id="btn-start" class="btn btn-lg btn-accent" onclick="timerAction('start')">&#9654; Start</button>
+        <button id="btn-start" class="btn btn-lg btn-accent" onclick="timerAction('start')">{{ icon('player-play') }} Start</button>
         <button id="btn-pause" class="btn btn-lg btn-outline" onclick="timerAction('pause')">&#9646;&#9646; Pause</button>
-        <button id="btn-reset" class="btn btn-lg btn-outline" onclick="timerAction('reset')">&#8634; Reset</button>
+        <button id="btn-reset" class="btn btn-lg btn-outline" onclick="timerAction('reset')">{{ icon('refresh') }} Reset</button>
     </div>
     <div class="timer-set-row">
         <label>Dauer (Min):</label>
         <input type="number" id="timer-minutes" value="{{ match.timer_duration // 60 }}" min="1" max="90" class="input-narrow">
         <button class="btn btn-xs btn-outline" onclick="setDuration()">Setzen</button>
-        <button class="btn btn-xs btn-accent" onclick="setExtraTime()" title="Verlaengerung starten">&#9201; VL ({{ extra_time // 60 }} Min)</button>
+        <button class="btn btn-xs btn-accent" onclick="setExtraTime()" title="Verlaengerung starten">{{ icon('clock') }} VL ({{ extra_time // 60 }} Min)</button>
     </div>
 </div>
 
 <div class="ctrl-card">
     <h3 class="ctrl-label">Spielphase</h3>
     <div class="ctrl-buttons" style="flex-wrap:wrap">
-        <button id="phase-btn-normal" class="btn btn-sm {% if not match.is_extra_time and not match.is_penalty %}btn-accent{% else %}btn-outline{% endif %}" onclick="setPhase('normal')">Regulaer</button>
-        <button id="phase-btn-extra" class="btn btn-sm {% if match.is_extra_time %}btn-accent{% else %}btn-outline{% endif %}" onclick="setPhase('extra_time')">&#9201; Verlaengerung</button>
-        <button id="phase-btn-penalty" class="btn btn-sm {% if match.is_penalty %}btn-danger{% else %}btn-outline{% endif %}" onclick="setPhase('penalty')">&#9917; Elfmeter</button>
+        <button id="phase-btn-normal" class="btn btn-sm {% if not match.is_extra_time and not match.is_penalty %}btn-accent{% else %}btn-outline{% endif %}" onclick="setPhase('normal')">Regulär</button>
+        <button id="phase-btn-extra" class="btn btn-sm {% if match.is_extra_time %}btn-accent{% else %}btn-outline{% endif %}" onclick="setPhase('extra_time')">{{ icon('clock') }} Verlängerung</button>
+        <button id="phase-btn-penalty" class="btn btn-sm {% if match.is_penalty %}btn-danger{% else %}btn-outline{% endif %}" onclick="setPhase('penalty')">{{ icon('ball-football') }} Elfmeter</button>
     </div>
 </div>
 
@@ -94,10 +95,10 @@
 </div>
 
 <div class="ctrl-card">
-    <h3 class="ctrl-label">Ankuendigung</h3>
+    <h3 class="ctrl-label">Ankündigung</h3>
     <div id="announce-result" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;min-height:1.2em"></div>
     <div class="ctrl-buttons">
-        <button class="btn btn-sm btn-outline" onclick="announceNext()">&#9197; Naechstes Spiel</button>
-        <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:0.6">&#10005; Loeschen</button>
+        <button class="btn btn-sm btn-outline" onclick="announceNext()">{{ icon('player-skip-forward') }} Nächstes Spiel</button>
+        <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:0.6">{{ icon('x') }} Löschen</button>
     </div>
 </div>

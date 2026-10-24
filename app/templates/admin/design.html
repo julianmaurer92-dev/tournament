@@ -97,23 +97,18 @@
 </section>
 
 <section class="ga-abschnitt">
-    <h2 class="ga-titel">Anzeige</h2>
-    <p class="ga-unter">Was Zuschauer sehen – gilt für alle Ansichten.</p>
-    <div class="ga-schalter">
-        {% for schluessel, name, erklaerung in [
-            ('hide_table',  'Tabelle ausblenden',    'Gruppentabellen bleiben verborgen.'),
-            ('hide_scores', 'Ergebnisse ausblenden', 'Spielstände bleiben verborgen.')
-        ] %}
-        <label class="ga-schalter-zeile">
-            <input type="checkbox" data-einstellung="{{ schluessel }}"
-                   {% if settings[schluessel] == '1' %}checked{% endif %}>
-            <span>
-                <span class="ga-schalter-name">{{ name }}</span>
-                <span class="ga-schalter-text">{{ erklaerung }}</span>
-            </span>
-        </label>
-        {% endfor %}
-    </div>
+    <h2 class="ga-titel">Nicht hier</h2>
+    <p class="ga-unter">
+        Ob Tabelle und Ergebnisse öffentlich sichtbar sind, ist keine
+        Frage des Aussehens, sondern eine Turnierentscheidung. Sie steht
+        deshalb bei den Turniereinstellungen – an einer Stelle statt an zwei.
+    </p>
+    <p style="margin-top:var(--raum-3)">
+        <a class="cp-knopf cp-knopf--still"
+           href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}#einstellungen">
+            {{ icon('settings') }} Zu den Turniereinstellungen
+        </a>
+    </p>
 </section>
 
 <script>

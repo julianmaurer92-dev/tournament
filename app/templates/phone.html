@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
 <html lang="de"
       data-theme="{{ cp_theme }}"
@@ -215,7 +216,7 @@
 
 <div id="ph-info-overlay" class="ph-info-overlay" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="ph-info-box">
-        <div class="ph-info-logo">&#9917;</div>
+        <div class="ph-info-logo">{{ icon('ball-football', 'cp-icon--xl') }}</div>
         <div class="ph-info-app">CupPlan</div>
         <div class="ph-info-version">Version 1.5 &nbsp;&middot;&nbsp; 16.03.2026</div>
         <div class="ph-info-dev">Maurer Julian</div>
@@ -257,7 +258,12 @@ function switchTab(name) {
 })();
 
 // ── Helpers ──
-function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+// Symbole aus dem Sprite statt Emoji – siehe Beamer-Ansicht.
+    const SPRITE = "{{ url_for('static', filename='vendor/tabler-sprite.svg') }}";
+    function sym(name, klasse) {
+        return `<svg class="cp-icon ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
+    }
+    function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
 
 // ── Live timer ──
@@ -312,7 +318,7 @@ function applyState(s) {
     // Announcement
     const ann = document.getElementById('ph-announcement');
     if (settings.announcement && settings.announcement.trim()) {
-        ann.textContent = '📢 ' + settings.announcement;
+        ann.innerHTML = sym('speakerphone') + ' ' + esc(settings.announcement);
         ann.style.display = 'block';
     } else { ann.style.display = 'none'; }
 
@@ -341,7 +347,8 @@ function applyState(s) {
 
     // Update tab live indicator
     const tabLive = document.getElementById('tab-live');
-    tabLive.textContent = liveMatches.length > 0 ? '🔴 Live' : '⚪ Live';
+    tabLive.innerHTML = (liveMatches.length > 0
+        ? '<span class="cp-live-punkt"></span>' : '') + 'Live';
 }
 
 // ── Panel: Live ──
@@ -351,16 +358,16 @@ function renderLive(matches, upcoming, finals, hideResults) {
     let html = '';
     if (matches.length === 0) {
         html += `<div class="ph-no-live">
-            <div class="ph-no-live-icon">⚽</div>
+            <div class="ph-no-live-icon">${sym('ball-football', 'cp-icon--xl')}</div>
             <div class="ph-no-live-text">Kein Spiel aktiv</div>
         </div>`;
     } else {
         matches.forEach(m => {
             const fieldTag = matches.length > 1 ? `<div class="ph-field-tag">Spielfeld ${m.field || 1}</div>` : '';
             const groupTag = m.group_name ? `<div class="ph-group-tag">${esc(m.group_name)}</div>` : '';
-            const finalTag = m.final_label ? `<div class="ph-group-tag">🏆 ${esc(m.final_label)}</div>` : '';
+            const finalTag = m.final_label ? `<div class="ph-group-tag">${sym('trophy')} ${esc(m.final_label)}</div>` : '';
             const phaseTag = m.is_penalty
-                ? `<div class="ph-field-tag" style="color:#ef4444;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3)">⚽ Elfmeter</div>`
+                ? `<div class="ph-field-tag" style="color:var(--gefahr);background:color-mix(in srgb, var(--gefahr) 12%, transparent);border-color:color-mix(in srgb, var(--gefahr) 35%, transparent)">Elfmeter</div>`
                 : m.is_extra_time ? `<div class="ph-field-tag">⏱ Verlängerung</div>` : '';
             const scoreHtml = hideResults
                 ? `<div class="ph-score-row"><span class="ph-score" style="font-size:1.4rem;color:var(--muted)">vs</span></div>`
@@ -390,13 +397,13 @@ function renderLive(matches, upcoming, finals, hideResults) {
     // Next matches: group upcoming OR planned finals
     const plannedFinals = finals.filter(m => m.status === 'planned');
     const nextItems = upcoming.length > 0 ? upcoming.slice(0, 4) : plannedFinals.slice(0, 4);
-    const nextTitle = upcoming.length > 0 ? 'Nächste Spiele' : '🏆 Nächste Finalspiele';
+    const nextTitle = upcoming.length > 0 ? 'Nächste Spiele' : 'Nächste Finalspiele';
 
     if (nextItems.length > 0) {
         html += `<div class="ph-section-title">${nextTitle}</div>`;
         nextItems.forEach(m => {
             const badge = m.final_label
-                ? `<span class="ph-match-badge">🏆 ${esc(m.final_label)}</span>`
+                ? `<span class="ph-match-badge">${sym('trophy')} ${esc(m.final_label)}</span>`
                 : (m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '');
             html += `<div class="ph-match-item">
                 <div class="ph-match-teams">
@@ -501,7 +508,8 @@ function renderMeinTeam(s, hideResults) {
     }
 
     let inhalt = '';
-    if (spiele.live) inhalt += zeile(spiele.live, '● Läuft gerade', true);
+    if (spiele.live) inhalt += zeile(spiele.live,
+        '<span class="cp-live-punkt"></span> Läuft gerade', true);
     if (spiele.naechstes) inhalt += zeile(spiele.naechstes, 'Nächstes Spiel', false);
     if (!inhalt) {
         inhalt = `<div class="mt-spiel"><div class="mt-titel">Keine weiteren Spiele</div>
@@ -579,7 +587,7 @@ function renderMatches(past, upcoming, finals, hideResults, numFields) {
         html += `<div class="ph-section-title" style="margin-top:1.25rem">Ergebnisse</div>`;
         past.forEach(m => {
             const score = hideResults
-                ? `<span class="ph-match-score">✓</span>`
+                ? `<span class="ph-match-score">${sym('check')}</span>`
                 : `<span class="ph-match-score">${m.score_team1}:${m.score_team2}</span>`;
             const badge = m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '';
             html += `<div class="ph-match-item">
@@ -591,13 +599,13 @@ function renderMatches(past, upcoming, finals, hideResults, numFields) {
 
     // Finals section
     if (finals.length > 0) {
-        html += `<div class="ph-section-title" style="margin-top:1.25rem;color:var(--primary)">🏆 Finalrunde</div>`;
+        html += `<div class="ph-section-title" style="margin-top:1.25rem;color:var(--primary)">${sym('trophy')} Finalrunde</div>`;
         finals.forEach(m => {
             const label = m.final_label ? `<span class="ph-match-badge" style="color:var(--primary)">${esc(m.final_label)}</span>` : '';
             let score = '';
             if (m.status === 'finished') {
                 score = hideResults
-                    ? `<span class="ph-match-score">✓</span>`
+                    ? `<span class="ph-match-score">${sym('check')}</span>`
                     : `<span class="ph-match-score">${m.score_team1}:${m.score_team2}</span>`;
             } else if (m.status === 'live') {
                 score = hideResults

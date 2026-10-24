@@ -209,6 +209,8 @@
 {% block navbar_items %}
 <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" target="_blank"
    class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Live-Ansicht</a>
+<a href="{{ url_for('main.tournament_tv', slug=tournament.slug) }}?praesentieren=1" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('device-tv') }} Präsentieren</a>
 {% if control_match %}
 <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=control_match.id) }}"
    class="cp-knopf cp-knopf--haupt cp-knopf--klein">
@@ -241,33 +243,33 @@
     {% if phase == 'GROUP_STAGE' %}
     <button class="btn btn-xs btn-warning" onclick="endGroupStage()">Beenden</button>
     {% elif phase == 'FINAL_SETUP' %}
-    <a href="{{ url_for('admin.finals_setup', slug=tournament.slug) }}" class="btn btn-xs btn-primary">&#127942; Finalrunde</a>
+    <a href="{{ url_for('admin.finals_setup', slug=tournament.slug) }}" class="btn btn-xs btn-primary">{{ icon('trophy') }} Finalrunde</a>
     <button class="btn btn-xs btn-outline" onclick="finishTournament()">Ohne Finale</button>
-    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">&#8634;</button>
+    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">{{ icon('refresh') }}</button>
     {% elif phase == 'FINAL_ROUND' %}
     <button class="btn btn-xs btn-warning" onclick="finishTournament()">Beenden</button>
-    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">&#8634;</button>
+    <button class="btn btn-xs" onclick="resetPhase()" style="opacity:.6">{{ icon('refresh') }}</button>
     {% elif phase == 'FINISHED' %}
-    <button class="btn btn-xs btn-outline" onclick="resetPhase()">&#8634; Reset</button>
+    <button class="btn btn-xs btn-outline" onclick="resetPhase()">{{ icon('refresh') }} Reset</button>
     {% endif %}
     {% endif %}
 
     <span class="cb-sep"></span>
 
     <!-- Announcement -->
-    <span style="font-size:0.8rem;opacity:.6">&#128226;</span>
+    <span style="font-size:0.8rem;opacity:.6">{{ icon('speakerphone') }}</span>
     <input type="text" class="form-control form-control-sm" id="announcement-input"
            value="{{ settings.announcement or '' }}"
            placeholder="Ankündigung…" maxlength="200" style="max-width:260px"
            {% if not current_user.can_edit() %}readonly{% endif %}>
     {% if current_user.can_edit() %}
     <button class="btn btn-xs btn-primary" onclick="saveAnnouncement()">Senden</button>
-    <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:.55">&#10005;</button>
+    <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:.55">{{ icon('x') }}</button>
     {% endif %}
 
     {% if settings.num_fields|int > 1 and current_user.can_edit() %}
     <span class="cb-sep"></span>
-    <button class="btn btn-xs btn-success" onclick="startNextMatches()">&#9654;&#9654; Beide starten</button>
+    <button class="btn btn-xs btn-success" onclick="startNextMatches()">{{ icon('player-track-next') }} Beide starten</button>
     {% endif %}
 
 </div><!-- /ctrl-bar -->
@@ -305,7 +307,7 @@
             <tbody id="sortable-matches">
                 {% for match in matches %}
                 <tr class="sortable-item {% if match.status=='live' %}is-live{% elif match.status=='finished' %}is-done{% endif %}" data-id="{{ match.id }}">
-                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td style="padding-left:0.75rem"><span class="drag-handle">{{ icon('menu-2') }}</span></td>
                     <td style="color:var(--text-muted,#9ca3af);font-size:0.72rem;font-variant-numeric:tabular-nums">{{ loop.index }}</td>
                     <td class="fw-semibold" style="white-space:nowrap">
                         {{ match.team1.name }}
@@ -321,15 +323,15 @@
                     </td>
                     {% endif %}
                     <td><span class="score-tag {% if match.status=='live' %}live{% elif match.status=='finished' %}done{% endif %}">{{ match.score_team1 }} : {{ match.score_team2 }}</span></td>
-                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">&#10003;</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
+                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">{{ icon('check') }}</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
                     <td>
                         <div class="btn-list" style="gap:0.2rem">
-                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">&#9654;</a>
+                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">{{ icon('player-play') }}</a>
                             {% if current_user.can_edit() %}
                             {% if match.status in ('live','finished') %}
-                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">&#8634;</button>
+                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">{{ icon('refresh') }}</button>
                             {% endif %}
-                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">&#8646;</button>
+                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">{{ icon('arrows-exchange') }}</button>
                             {% endif %}
                             {% if phase == 'GROUP_STAGE' and current_user.can_delete() %}
                             <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" style="display:inline" onsubmit="return confirm('Spiel löschen?')">
@@ -352,8 +354,8 @@
     <!-- ── Sektion: Finalrunde ── -->
     {% if final_matches or groups %}
     <div class="mc-sec-hd" onclick="toggleSection('finals')">
-        <span class="mc-sec-arrow" id="arrow-finals">&#9654;</span>
-        <span class="mc-sec-title">&#127942; Finalrunde</span>
+        <span class="mc-sec-arrow" id="arrow-finals">{{ icon('player-play') }}</span>
+        <span class="mc-sec-title">{{ icon('trophy') }} Finalrunde</span>
         {% if not final_matches %}<span class="st-proj ms-1">– projiziert aus aktuellem Stand</span>{% endif %}
     </div>
     <div id="sec-finals" class="mc-sec-body collapsed">
@@ -373,7 +375,7 @@
             <tbody id="sortable-finals">
                 {% for match in final_matches %}
                 <tr class="sortable-item {% if match.status=='live' %}is-live{% elif match.status=='finished' %}is-done{% endif %}" data-id="{{ match.id }}">
-                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td style="padding-left:0.75rem"><span class="drag-handle">{{ icon('menu-2') }}</span></td>
                     <td><span class="badge badge-yellow-lt" style="font-size:0.68rem">{{ match.final_label }}</span></td>
                     <td class="fw-semibold" style="white-space:nowrap">
                         {{ match.team1.name if match.team1 else 'TBD' }}
@@ -388,20 +390,20 @@
                     </td>
                     {% endif %}
                     <td><span class="score-tag {% if match.status=='live' %}live{% elif match.status=='finished' %}done{% endif %}">{{ match.score_team1 }} : {{ match.score_team2 }}</span></td>
-                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">&#10003;</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
+                    <td>{% if match.status=='live' %}<span class="s-ind live">Live</span>{% elif match.status=='finished' %}<span class="s-ind done">{{ icon('check') }}</span>{% else %}<span class="s-ind planned">Geplant</span>{% endif %}</td>
                     <td>
                         <div class="btn-list" style="gap:0.2rem">
                             {% if match.team1 and match.team2 %}
-                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">&#9654;</a>
+                            <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-sm btn-primary">{{ icon('player-play') }}</a>
                             {% if current_user.can_edit() and match.status == 'planned' %}
-                            <button class="btn btn-sm btn-success" onclick="startFinalMatch({{ match.id }})" title="Live setzen" style="font-size:0.75rem">&#9654; Live</button>
+                            <button class="btn btn-sm btn-success" onclick="startFinalMatch({{ match.id }})" title="Live setzen" style="font-size:0.75rem">{{ icon('player-play') }} Live</button>
                             {% endif %}
                             {% endif %}
                             {% if current_user.can_edit() %}
                             {% if match.status in ('live','finished') %}
-                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">&#8634;</button>
+                            <button class="btn btn-sm btn-outline" onclick="resetMatchPlanned({{ match.id }})" title="Auf Geplant" style="font-size:0.75rem">{{ icon('refresh') }}</button>
                             {% endif %}
-                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">&#8646;</button>
+                            <button class="btn btn-sm btn-outline" onclick="swapMatchTeams({{ match.id }})" title="Tauschen">{{ icon('arrows-exchange') }}</button>
                             {% endif %}
                             {% if current_user.can_delete() %}
                             <form method="POST" action="{{ url_for('admin.delete_match', slug=tournament.slug, mid=match.id) }}" style="display:inline" onsubmit="return confirm('Finalspiel löschen?')">
@@ -432,7 +434,7 @@
                 <tr class="sortable-item" data-label="{{ row.label }}"
                     data-team1="{{ row.team1 }}" data-team2="{{ row.team2 }}"
                     {% if row.tbd %}data-tbd="1"{% endif %}>
-                    <td style="padding-left:0.75rem"><span class="drag-handle">&#9776;</span></td>
+                    <td style="padding-left:0.75rem"><span class="drag-handle">{{ icon('menu-2') }}</span></td>
                     <td><span class="badge badge-yellow-lt" style="font-size:0.68rem">{{ row.label }}</span></td>
                     <td class="fw-semibold" style="font-size:0.82rem">
                         <span class="proj-t1">{{ row.team1 }}</span>
@@ -440,7 +442,7 @@
                         <span class="proj-t2">{{ row.team2 }}</span>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline" onclick="swapProjRow(this)" title="Heim/Gast tauschen" style="padding:0.15rem 0.35rem">&#8646;</button>
+                        <button class="btn btn-sm btn-outline" onclick="swapProjRow(this)" title="Heim/Gast tauschen" style="padding:0.15rem 0.35rem">{{ icon('arrows-exchange') }}</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -458,7 +460,7 @@
 <!-- ── STANDINGS SIDEBAR ── -->
 {% if groups %}
 <div class="standings-sidebar">
-    <div class="ss-hd">&#128202; Tabellen</div>
+    <div class="ss-hd">{{ icon('chart-bar') }} Tabellen</div>
     {% for group in groups %}
     {% set st = standings_by_group.get(group.id, []) %}
     <div class="ss-group-block">
@@ -525,7 +527,7 @@ const HAS_FINALS = {{ 'true' if final_matches else 'false' }};
 <!-- ── End group stage modal ── -->
 <div id="end-group-modal" class="modal-overlay" onclick="if(event.target===this)closeEndGroupModal()">
     <div class="modal-box" style="max-width:480px">
-        <div class="modal-hd">&#127942; Gruppenphase beenden</div>
+        <div class="modal-hd">{{ icon('trophy') }} Gruppenphase beenden</div>
 
         <!-- Sektion 1: Neue Finalrunde -->
         <div class="egm-section-label">Neue Finalrunde erstellen</div>
@@ -536,7 +538,7 @@ const HAS_FINALS = {{ 'true' if final_matches else 'false' }};
                 <div class="egm-tile-sub">4 Teams, Halbfinale</div>
             </div>
             <div class="egm-tile" onclick="pickFinalMode('rank_vs_rank')">
-                <div class="egm-tile-icon">&#128202;</div>
+                <div class="egm-tile-icon">{{ icon('chart-bar') }}</div>
                 <div class="egm-tile-name">Platzierungsspiele</div>
                 <div class="egm-tile-sub">1.A vs 1.B &hellip;</div>
             </div>
@@ -551,12 +553,12 @@ const HAS_FINALS = {{ 'true' if final_matches else 'false' }};
                 <div class="egm-tile-sub">Auto-Setzliste</div>
             </div>
             <div class="egm-tile" onclick="pickFinalMode('free_ko')">
-                <div class="egm-tile-icon">&#127922;</div>
+                <div class="egm-tile-icon">{{ icon('dice-3') }}</div>
                 <div class="egm-tile-name">Freie KO</div>
                 <div class="egm-tile-sub">Manuell festlegen</div>
             </div>
             <div class="egm-tile" onclick="pickFinalMode('custom')">
-                <div class="egm-tile-icon">&#9998;</div>
+                <div class="egm-tile-icon">{{ icon('pencil') }}</div>
                 <div class="egm-tile-name">Eigene Paarungen</div>
                 <div class="egm-tile-sub">Vollst&auml;ndig frei</div>
             </div>
@@ -567,7 +569,7 @@ const HAS_FINALS = {{ 'true' if final_matches else 'false' }};
         <div class="egm-section-label">Definierte Finalrunde spielen</div>
         <div class="egm-grid">
             <div class="egm-tile keep" onclick="pickFinalMode('__keep__')">
-                <div class="egm-tile-icon">&#10003;</div>
+                <div class="egm-tile-icon">{{ icon('check') }}</div>
                 <div class="egm-tile-name">Vorhandene Finalrunde</div>
                 <div class="egm-tile-sub">Bereits eingerichtete Spiele verwenden</div>
             </div>

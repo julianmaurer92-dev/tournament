@@ -93,14 +93,80 @@ Mitteltönen wie `#996699` fiel dadurch die schlechtere Wahl (4,24:1 statt
 
 ---
 
+## Verlauf (Fortsetzung)
+
+### 10:40 – Spielsteuerung und Navigation (`d7f085e`)
+
+Siehe Notion. Kurz: Tor mit Torschütze von neun Schritten auf zwei, alles
+ohne Scrollen auf 390 × 844, keine Bestätigungsdialoge mehr (stattdessen
+Rückgängig), eine Seitenleiste statt pro Seite eigener Menüs.
+
+### 11:55 – Theme-Galerie (`f63a427`)
+
+Große Vorschaukarten, ein Klick wendet an. Dabei fiel ein echter Fehler
+auf, siehe unten.
+
+### 12:40 – „Mein Team" in der Handy-Ansicht (`41fd0da`)
+
+Einmal die Mannschaft wählen, danach steht das nächste Spiel oben.
+4 Klicks → 0.
+
+### 13:16 – Befehlspalette (`44ac76d`)
+
+`Strg/Cmd + K` sucht über Seiten, Aktionen, Mannschaften, Spiele und
+Themes; `?` zeigt die Tastenkürzel.
+
+**Anmerkung zur Ordnung:** In denselben Commit ist versehentlich das
+Aufräumen der alten Kopfzeilen-Menüs geraten (15 Vorlagen trugen neben
+der neuen Seitenleiste noch ihre alte Navigation). Inhaltlich gehört das
+zur Navigation, nicht zur Suche. Ich korrigiere es nicht nachträglich,
+weil der Commit bereits gepusht ist und der Auftrag kein Umschreiben der
+Historie erlaubt.
+
+### 14:00 – Beamer-Präsentation
+
+Die Beamer-Ansicht zeigte bisher immer alle drei Spalten gleichzeitig
+und hatte fest eingebaute Farben – immer dunkelblau, unabhängig vom
+gewählten Theme. Jetzt: Design-Tokens (alle 20 Varianten wirken, auch
+„Papier" für ein helles Zelt und „Stadion" für maximale Entfernung) und
+ein Präsentationsmodus, der immer nur eine Sache zeigt und von selbst
+weiterblättert.
+
+---
+
 ## Gefundene Bugs
 
 *(fachliche Fehler, die mir auffallen – nicht Teil dieses Auftrags)*
 
-- Noch keine.
+1. **Die Einstellungs-Route kannte nur sechs der zehn Theme-Namen.**
+   `navy`, `forest`, `amber` und `violet` standen in der Auswahl, wurden
+   beim Speichern aber stillschweigend verworfen – man klickte, und es
+   passierte nichts. Ursache: Die Namensliste stand doppelt im Code.
+   *Behoben*, weil sie die Theme-Galerie blockiert hätte: Jetzt
+   entscheidet `app/themes.py` allein.
+
+2. **Die Beamer-Ansicht ignorierte die Theme-Einstellung.**
+   `data-theme="{{ site_settings.theme or 'dark' }}"` stand zwar im
+   HTML, aber darunter überschrieben feste Farbwerte alles. Wer das
+   Theme umstellte, sah auf dem Beamer keinen Unterschied. *Behoben*,
+   weil es den Auftragspunkt „Theme gilt auch auf dem Beamer" direkt
+   betraf.
+
+*Geprüft und in Ordnung:* Ich hatte einen dritten Punkt notiert – in
+`tv.html` könnten Mannschaftsnamen ungefiltert in `innerHTML` landen.
+Das Nachzählen aller 30 Einsetzungen in den Template-Literalen zeigt:
+Jeder Name läuft durch `esc()`, auch `final_label` und `group_name`.
+Der Punkt war falsch und ist deshalb gestrichen.
 
 ---
 
 ## Ideen für später
 
-- Noch keine.
+- **Live-Seite überspringen, wenn nichts läuft.** Die Präsentation zeigt
+  die Live-Seite auch dann 20 Sekunden lang, wenn gerade kein Spiel
+  angepfiffen ist. Sie sagt inzwischen, was als Nächstes kommt – ein
+  automatisches Überspringen wäre trotzdem besser.
+- **Dauer je Seite einstellbar.** 20/15/15 Sekunden sind geraten. Wer
+  acht Gruppen hat, braucht auf der Tabellenseite länger.
+- **Zweiter Bildschirm.** Vereine mit zwei Beamern würden gern links die
+  Tabellen und rechts die Spiele stehen lassen, statt zu blättern.

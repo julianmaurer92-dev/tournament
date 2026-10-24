@@ -146,25 +146,5 @@
         });
     }
 
-    // ── Anzeige-Schalter ───────────────────────────────────
-
-    document.querySelectorAll('[data-einstellung]').forEach(function (feld) {
-        feld.addEventListener('change', function () {
-            const daten = {};
-            daten[feld.dataset.einstellung] = feld.checked ? '1' : '0';
-            cp.speichern('/admin/t/' + SLUG + '/api/settings', daten)
-                .then(function () {
-                    cp.merken('Anzeige geändert', function () {
-                        feld.checked = !feld.checked;
-                        const zurueck = {};
-                        zurueck[feld.dataset.einstellung] = feld.checked ? '1' : '0';
-                        return cp.speichern('/admin/t/' + SLUG + '/api/settings', zurueck);
-                    });
-                    cp.toast('Gespeichert.', { rueckgaengig: cp.rueckgaengig });
-                })
-                .catch(function () { feld.checked = !feld.checked; });
-        });
-    });
-
     anzeigen();
 })();

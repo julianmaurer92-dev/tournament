@@ -1,0 +1,181 @@
+/* ============================================================
+   CupPlan – Beamer-Praesentation
+   ------------------------------------------------------------
+   Die Beamer-Ansicht zeigte bisher immer alle drei Spalten
+   gleichzeitig: Tabelle, Live, Spiele. Auf einem Beamer im Zelt
+   heisst das drei schmale Spalten mit kleiner Schrift – aus zehn
+   Metern Entfernung liest das niemand.
+
+   Im Praesentationsmodus ist immer nur eine Sache zu sehen, dafuer
+   gross, und sie wechselt von selbst weiter. Wie eine Diaschau:
+   Hinstellen, einmal starten, laufen lassen.
+   ============================================================ */
+
+/* ── Der Startknopf in der Kopfzeile ───────────────────────── */
+
+.pr-start {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .9rem;
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text-auf-akzent);
+    background: var(--akzent);
+    border: 0;
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.pr-start:hover { background: var(--akzent-hover); }
+.pr-start:focus-visible { outline: none; box-shadow: var(--fokus); }
+
+/* ── Laufender Modus ───────────────────────────────────────── */
+
+/* Kopfzeile bleibt – sie traegt Turniername und Uhrzeit, und die
+   will man auf einem Beamer gerade nicht verlieren. Alles, was
+   Bedienung ist, verschwindet. */
+body[data-praesentation] #tv-tabs,
+body[data-praesentation] .pr-nur-bedienung { display: none !important; }
+
+/* Eine Spalte, volle Breite. Dieselbe Umschaltung, die die Ansicht
+   auf dem Handy schon benutzt – nur eben unabhaengig von der
+   Fensterbreite. */
+body[data-praesentation] #tv-main { grid-template-columns: 1fr !important; }
+body[data-praesentation] .tv-col { display: none; }
+body[data-praesentation] .tv-col.tab-active { display: flex; }
+body[data-praesentation] #col-live { border-right: 0; }
+
+/* Groesser werden darf alles, was Inhalt ist. Die Werte sind an
+   einem 1920er Beamer aus etwa zehn Metern ausprobiert. */
+body[data-praesentation] .tv-col-header { font-size: 1.6rem; padding: .8rem 1.5rem; }
+body[data-praesentation] .tv-col-body   { padding: 1rem 2rem; }
+body[data-praesentation] .tv-table td   { font-size: 1.5rem; padding: .55rem .5rem; }
+body[data-praesentation] .tv-table th   { font-size: 1rem; }
+body[data-praesentation] .tv-match-team { font-size: 1.4rem; }
+body[data-praesentation] .tv-group-title { font-size: 1.25rem; }
+body[data-praesentation] #tv-title      { font-size: 2rem; }
+body[data-praesentation] #tv-clock      { font-size: 2.2rem; }
+
+/* ── Titelzeile der aktuellen Seite ────────────────────────── */
+
+.pr-leiste {
+    display: none;
+    align-items: center;
+    gap: 1.25rem;
+    padding: .5rem 1.5rem;
+    background: var(--flaeche);
+    border-bottom: 1px solid var(--rand);
+    flex: none;
+}
+body[data-praesentation] .pr-leiste { display: flex; }
+
+.pr-seitenname {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-leise);
+}
+
+/* Punkte statt Zahlen: Man soll auf einen Blick sehen, wie viele
+   Seiten es gibt und wo man gerade ist – ohne zu lesen. */
+.pr-punkte { display: flex; gap: .5rem; }
+.pr-punkt {
+    width: .6rem; height: .6rem;
+    border-radius: 50%;
+    background: var(--rand-stark);
+}
+.pr-punkt.ist-aktiv { background: var(--akzent); }
+
+/* Der Fortschrittsbalken beantwortet die Frage "wann kommt das
+   naechste Bild?", ohne dass jemand fragen muss. */
+.pr-fortschritt {
+    flex: 1;
+    height: 4px;
+    border-radius: var(--radius-rund);
+    background: var(--flaeche-gedrueckt);
+    overflow: hidden;
+}
+.pr-balken {
+    height: 100%;
+    width: 0;
+    background: var(--akzent);
+    border-radius: var(--radius-rund);
+}
+.pr-pause {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--warnung);
+}
+
+/* ── Begruessung vor dem Start ─────────────────────────────── */
+
+/* Vollbild darf ein Browser nur auf eine echte Nutzeraktion hin
+   einschalten. Wer die Beamer-Ansicht mit ?praesentieren=1 oeffnet,
+   bekommt deshalb ein grosses Feld: einmal irgendwo klicken oder
+   eine Taste druecken, und es geht los. */
+.pr-willkommen {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+    background: var(--flaeche-tief);
+    cursor: pointer;
+}
+.pr-willkommen[data-offen] { display: flex; }
+.pr-willkommen h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin: 0; }
+.pr-willkommen p  { font-size: clamp(1.1rem, 2vw, 1.6rem); color: var(--text-leise); margin: 0; }
+.pr-willkommen kbd {
+    padding: .2rem .6rem;
+    font-family: inherit;
+    background: var(--flaeche-erhoben);
+    border: 1px solid var(--rand-interaktiv);
+    border-radius: var(--radius-s);
+}
+
+/* ── Tastenhilfe ───────────────────────────────────────────── */
+
+/* Blendet sich bei Mausbewegung ein und nach drei Sekunden wieder
+   aus: Wer die Ansicht nur anschaut, soll sie nie sehen. */
+.pr-hilfe {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    display: none;
+    gap: 1.5rem;
+    padding: .6rem 1.25rem;
+    font-size: .95rem;
+    color: var(--text-leise);
+    background: var(--flaeche-erhoben);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius-rund);
+    box-shadow: var(--schatten-l);
+    opacity: 0;
+    transition: opacity var(--zeit-normal) var(--kurve);
+    pointer-events: none;
+    z-index: 2500;
+}
+body[data-praesentation] .pr-hilfe { display: flex; }
+.pr-hilfe[data-sichtbar] { opacity: 1; }
+.pr-hilfe kbd {
+    padding: .1rem .45rem;
+    font-family: inherit;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--flaeche-gedrueckt);
+    border: 1px solid var(--rand-interaktiv);
+    border-radius: var(--radius-s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pr-balken, .pr-hilfe { transition: none; }
+}

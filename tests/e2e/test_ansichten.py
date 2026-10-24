@@ -195,5 +195,5 @@ def test_login_mit_falschem_passwort(seite):
     seite.fill('input[name="password"]', "garantiert-falsch")
     seite.click('button[type="submit"], input[type="submit"]')
     seite.wait_for_timeout(1000)
-    assert "Ungueltige Anmeldedaten" in seite.content() \
+    assert "Ungültige Anmeldedaten" in seite.content() \
         or "Zu viele Fehlversuche" in seite.content()

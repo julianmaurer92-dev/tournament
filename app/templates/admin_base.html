@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
 <html lang="de"
       data-bs-theme="{{ 'light' if cp_schema == 'hell' else 'dark' }}"
@@ -33,7 +34,7 @@
     {# ── Seitenleiste (Desktop) / Kopf (Handy) ─────────────── #}
     <aside class="nav-leiste" id="nav-leiste">
         <a class="nav-marke" href="{{ url_for('admin.tournament_list') }}">
-            <svg class="cp-icon cp-icon--l" aria-hidden="true"><use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-ball-football"></use></svg>
+            {{ icon('ball-football', 'cp-icon--l') }}
             <span>CupPlan</span>
         </a>
 
@@ -57,7 +58,7 @@
             <a class="nav-punkt {% if punkt.aktiv %}ist-aktiv{% endif %}"
                href="{{ punkt.ziel }}"
                {% if punkt.aktiv %}aria-current="page"{% endif %}>
-                <svg class="cp-icon" aria-hidden="true"><use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-{{ punkt.icon }}"></use></svg>
+                {{ icon(punkt.icon) }}
                 <span>{{ punkt.name }}</span>
                 {% if punkt.zahl %}<span class="nav-zahl">{{ punkt.zahl }}</span>{% endif %}
             </a>
@@ -66,12 +67,12 @@
 
         <div class="nav-fuss">
             <button type="button" class="nav-punkt" onclick="cp.palette && cp.palette.oeffnen()">
-                <svg class="cp-icon" aria-hidden="true"><use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-search"></use></svg>
+                {{ icon('search') }}
                 <span>Suchen</span>
                 <kbd class="nav-kbd">⌘K</kbd>
             </button>
             <a class="nav-punkt" href="{{ url_for('admin.logout') }}">
-                <svg class="cp-icon" aria-hidden="true"><use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-logout"></use></svg>
+                {{ icon('logout') }}
                 <span>Abmelden</span>
             </a>
             <div class="nav-version">v1.5</div>
@@ -83,7 +84,7 @@
         <header class="nav-kopf">
             <button type="button" class="cp-knopf cp-knopf--still cp-knopf--icon nav-auf"
                     aria-label="Menü" aria-expanded="false" id="nav-auf">
-                <svg class="cp-icon" aria-hidden="true"><use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-menu-2"></use></svg>
+                {{ icon('menu-2') }}
             </button>
             <div class="nav-kopf-titel">{% block kopf_titel %}{{ self.title() }}{% endblock %}</div>
             <div class="nav-kopf-aktionen">{% block navbar_items %}{% endblock %}</div>
@@ -93,7 +94,7 @@
             {% if sicherheitswarnungen %}
             <div class="alert alert-warning alert-dismissible mb-3" role="alert">
                 <div class="d-flex">
-                    <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">&#9888;</div>
+                    <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">{{ icon('alert-triangle') }}</div>
                     <div>
                         <h4 class="alert-title">Sicherheitshinweis zur Konfiguration</h4>
                         <ul class="mb-0" style="padding-left:1.1rem">
