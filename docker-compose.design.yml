@@ -41,6 +41,7 @@ services:
     environment:
       - SECRET_KEY=dev-only-not-a-secret
       - ADMIN_PASSWORD=admin123
+      - CUPPLAN_DESIGN_LAB=1
       - DATABASE_URL=postgresql://cupplan_design:designpass@db:5432/cupplan_design
       - GOOGLE_CLIENT_ID=
       - GOOGLE_CLIENT_SECRET=
@@ -85,6 +86,7 @@ services:
       - CUPPLAN_BASE_URL=http://web:5000
       - CUPPLAN_ADMIN_USER=admin
       - CUPPLAN_ADMIN_PASSWORD=admin123
+      - CUPPLAN_DESIGN_LAB=1
     volumes:
       - ./tests/e2e:/work/tests/e2e
       - ./pytest-e2e.ini:/work/pytest.ini

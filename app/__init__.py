@@ -253,6 +253,12 @@ def create_app(config_overrides=None):
     app.register_blueprint(siegerehrung_admin_bp, url_prefix="/admin")
     app.register_blueprint(schiedsrichter_bp, url_prefix="/admin")
 
+    # Design-Labor: nur in der Entwicklung, nur mit gesetzter Variable.
+    # In einer normalen Installation existiert die Route nicht.
+    if os.environ.get("CUPPLAN_DESIGN_LAB") == "1":
+        from app.design_lab import design_lab_bp
+        app.register_blueprint(design_lab_bp)
+
     with app.app_context():
         db.create_all()
         _migrate_db()
