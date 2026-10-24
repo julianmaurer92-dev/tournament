@@ -33,7 +33,7 @@ kosten — auf einem Handy am Spielfeldrand mehr als am Schreibtisch.
 | 8 | Spiel beenden und nächstes starten | 5 | 1 | **1** |
 | 9 | Anstoßzeit eines Spiels ändern | – | 2 | *wird ergänzt* |
 | 10 | Ankündigung senden | 4 | 2 | *wird ergänzt* |
-| 11 | Theme wechseln | 4 | 1 | *wird ergänzt* |
+| 11 | Theme wechseln | 4 | 1 | **1** |
 | 12 | Startgebühr als bezahlt markieren | 3 | 1 | *wird ergänzt* |
 | 13 | Quittung drucken | 4 | 2 | *wird ergänzt* |
 | 14 | Spielplan drucken | 3 | 2 | *wird ergänzt* |
@@ -183,3 +183,20 @@ dann wechselt die Seite zur Steuerung des nächsten Spiels.
 
 Bei zwei Spielfeldern werden beide Spiele gemeinsam beendet — sie laufen
 ohnehin parallel.
+
+### 11. Theme wechseln — 1 (vorher 4)
+
+Die Design-Seite ist eine Galerie mit zehn großen Karten. Jede zeigt eine
+**Miniatur der echten Oberfläche** in diesem Theme — Kopfzeile, Spielstand,
+Tabellenzeilen — nicht nur drei Farbpunkte.
+
+Ein Klick wendet an: sofort auf dieser Seite, gespeichert, und gültig für
+Live-Ansicht, Handy und Beamer. Kein Speichern-Knopf.
+
+Dazu ein Schalter **Hell / Dunkel** — jedes Theme gibt es in beiden
+Varianten, also 20 statt bisher 10 (von denen nur 9 dunkel waren).
+
+Nebenbei behoben: Die Einstellungs-Route akzeptierte nur sechs der zehn
+angebotenen Themes. „Navy", „Forest", „Amber" und „Violet" ließen sich
+auswählen, aber **nicht speichern** — der Server antwortete mit einem
+Fehler, den die Oberfläche verschluckte.

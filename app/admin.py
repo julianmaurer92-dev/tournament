@@ -606,9 +606,14 @@ def schedule_print():
 @login_required
 @tournament_required
 def design():
+    from app.themes import aufloesen, katalog
     t = g.tournament
     settings = get_all_settings(t.id)
-    return render_template("admin/design.html", settings=settings, tournament=t)
+    theme, schema = aufloesen(settings.get("theme"))
+    return render_template(
+        "admin/design.html", settings=settings, tournament=t,
+        themes=katalog(), aktuelles_theme=theme, aktuelles_schema=schema,
+    )
 
 
 @admin_bp.route("/t/<slug>/api/settings", methods=["POST"])
@@ -648,9 +653,13 @@ def update_settings():
             return jsonify({"error": "hide_results muss 0 oder 1 sein"}), 400
         if key in ("hide_table", "hide_scores") and value not in ("0", "1"):
             return jsonify({"error": f"{key} muss 0 oder 1 sein"}), 400
-        _valid_themes = {"dark", "midnight", "slate", "ocean", "crimson", "light"}
-        if key == "theme" and value not in _valid_themes:
-            return jsonify({"error": f"Ungueltiges Theme: {value}"}), 400
+        if key == "theme":
+            # Vorher stand hier eine feste Liste mit sechs Namen, obwohl die
+            # Designseite zehn anbot – "navy", "forest", "amber" und "violet"
+            # liessen sich gar nicht speichern. Jetzt entscheidet das
+            # Theme-Modul, und zwar fuer alte wie neue Schreibweisen.
+            from app.themes import aufloesen, speicherwert
+            value = speicherwert(*aufloesen(value))
         _valid_final_modes = {"", "semi_final", "direct_final", "classic_ko", "free_ko", "custom"}
         if key == "final_mode" and value not in _valid_final_modes:
             return jsonify({"error": "Ungueltiger Finalrundentyp"}), 400

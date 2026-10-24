@@ -1,0 +1,236 @@
+/* ============================================================
+   CupPlan – Theme-Galerie
+   ------------------------------------------------------------
+   Vorher: zehn kleine Farbkaestchen und ein Speichern-Knopf, den
+   man finden musste. Was ein Theme mit der Live-Ansicht macht,
+   sah man erst nach dem Speichern in einem anderen Tab.
+
+   Jetzt: grosse Karten mit einer Miniatur der echten Oberflaeche.
+   Ein Klick wendet an – sofort und ueberall.
+   ============================================================ */
+
+.ga-kopf {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--raum-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--raum-4);
+}
+.ga-titel {
+    font-size: var(--text-xl);
+    font-weight: var(--gewicht-schwer);
+    margin: 0 0 var(--raum-1);
+}
+.ga-unter {
+    font-size: var(--text-m);
+    color: var(--text-leise);
+    max-width: 52ch;
+    margin: 0;
+}
+
+.ga-abschnitt {
+    margin-top: var(--raum-7);
+    padding-top: var(--raum-5);
+    border-top: 1px solid var(--rand);
+}
+
+/* ── Hell / Dunkel ─────────────────────────────────────────── */
+
+.ga-schema {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--flaeche-gedrueckt);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius-rund);
+}
+.ga-schema-knopf {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--raum-2);
+    min-height: 38px;
+    padding: 0 var(--raum-4);
+    font-family: inherit;
+    font-size: var(--text-s);
+    font-weight: var(--gewicht-mittel);
+    color: var(--text-leise);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-rund);
+    cursor: pointer;
+    transition: background var(--zeit-schnell) var(--kurve),
+                color var(--zeit-schnell) var(--kurve);
+}
+.ga-schema-knopf[aria-pressed="true"] {
+    background: var(--flaeche);
+    color: var(--text);
+    font-weight: var(--gewicht-fett);
+    box-shadow: var(--schatten-s);
+}
+
+/* ── Galerie ───────────────────────────────────────────────── */
+
+.ga-galerie {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: var(--raum-4);
+}
+
+.ga-karte {
+    display: flex;
+    flex-direction: column;
+    /* Browser setzen bei <button> von Haus aus align-items:center.
+       Ohne diese Zeile bleibt die Vorschau schmal statt die Karte
+       auszufuellen. */
+    align-items: stretch;
+    gap: var(--raum-3);
+    padding: var(--raum-3);
+    text-align: left;
+    background: var(--flaeche);
+    border: 2px solid var(--rand);
+    border-radius: var(--radius-l);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color var(--zeit-normal) var(--kurve),
+                transform var(--zeit-normal) var(--kurve),
+                box-shadow var(--zeit-normal) var(--kurve);
+}
+.ga-karte:hover {
+    border-color: var(--rand-stark);
+    transform: translateY(-2px);
+    box-shadow: var(--schatten-m);
+}
+.ga-karte:focus-visible { outline: none; box-shadow: var(--fokus); }
+.ga-karte.ist-gewaehlt {
+    border-color: var(--akzent);
+    box-shadow: 0 0 0 1px var(--akzent);
+}
+
+/* ── Miniatur der Oberflaeche ──────────────────────────────── */
+
+.ga-vorschau {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px;
+    border-radius: var(--radius-m);
+    background: var(--v-tief);
+    /* Feste Hoehe: alle Karten sollen gleich gross sein, sonst
+       springt das Raster. */
+    min-height: 9.5rem;
+}
+.ga-v-kopf {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid color-mix(in srgb, var(--v-akzent) 22%, transparent);
+}
+.ga-v-punkt {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--v-akzent);
+    flex: none;
+}
+.ga-v-balken {
+    height: 6px;
+    flex: 1;
+    border-radius: var(--radius-rund);
+    background: color-mix(in srgb, var(--v-akzent) 28%, var(--v-flaeche));
+}
+.ga-v-balken--titel { max-width: 62%; background: var(--v-akzent); opacity: .85; }
+.ga-v-balken--kurz  { max-width: 55%; }
+
+.ga-v-stand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 0;
+    background: var(--v-flaeche);
+    border-radius: 8px;
+}
+.ga-v-zahl {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--v-akzent);
+    font-variant-numeric: tabular-nums;
+}
+.ga-v-doppelpunkt {
+    font-size: 1rem;
+    opacity: .4;
+    color: var(--v-akzent);
+}
+
+.ga-v-zeile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 7px;
+    background: var(--v-flaeche);
+    border-radius: 6px;
+}
+.ga-v-pille {
+    width: 15px; height: 6px;
+    flex: none;
+    border-radius: var(--radius-rund);
+    background: var(--v-akzent);
+}
+
+/* ── Beschriftung ──────────────────────────────────────────── */
+
+.ga-karte-text { display: flex; flex-direction: column; gap: 2px; }
+.ga-karte-name {
+    display: flex;
+    align-items: center;
+    gap: var(--raum-2);
+    font-size: var(--text-m);
+    font-weight: var(--gewicht-fett);
+    color: var(--text);
+}
+.ga-karte-beschreibung {
+    font-size: var(--text-s);
+    color: var(--text-leise);
+    line-height: 1.35;
+}
+.ga-haken { color: var(--akzent); opacity: 0; transition: opacity var(--zeit-schnell) var(--kurve); }
+.ga-karte.ist-gewaehlt .ga-haken { opacity: 1; }
+
+/* ── Vereinsfarbe ──────────────────────────────────────────── */
+
+.ga-farbe {
+    display: flex;
+    align-items: center;
+    gap: var(--raum-3);
+    flex-wrap: wrap;
+    margin-top: var(--raum-4);
+}
+.ga-farbe-wahl {
+    width: 56px; height: 44px;
+    padding: 2px;
+    background: var(--flaeche-gedrueckt);
+    border: 1px solid var(--rand-interaktiv);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+}
+.ga-farbe-text { width: 9rem; font-family: var(--schrift); }
+.ga-farbe-hinweis { font-size: var(--text-s); color: var(--warnung); }
+
+/* ── Schalter ──────────────────────────────────────────────── */
+
+.ga-schalter { display: flex; flex-direction: column; gap: var(--raum-2); margin-top: var(--raum-4); }
+.ga-schalter-zeile {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--raum-3);
+    padding: var(--raum-3);
+    background: var(--flaeche);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+}
+.ga-schalter-zeile:hover { border-color: var(--rand-stark); }
+.ga-schalter-zeile input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--akzent); }
+.ga-schalter-name { display: block; font-weight: var(--gewicht-fett); }
+.ga-schalter-text { display: block; font-size: var(--text-s); color: var(--text-leise); }
