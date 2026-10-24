@@ -311,7 +311,7 @@ def main():
         uri = app.config["SQLALCHEMY_DATABASE_URI"]
         # Schutz gegen einen versehentlichen Lauf gegen echte Daten:
         # nur ausdruecklich als Entwicklung gekennzeichnete Datenbanken.
-        ERLAUBT = ("cupplan_dev", "cupplan_ux", "sqlite")
+        ERLAUBT = ("cupplan_dev", "cupplan_ux", "cupplan_design", "sqlite")
         if not any(kennzeichen in uri for kennzeichen in ERLAUBT):
             sys.exit(f"ABBRUCH: Datenbank sieht nicht nach Entwicklung aus: {uri}")
 
