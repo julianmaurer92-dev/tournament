@@ -165,3 +165,123 @@ expliziten Treiber in der URL (`_normalize_db_uri()`), damit es auch bei
 einer künftigen Version nicht wieder umkippt.
 
 Tests: 35 passed.
+
+### 21:02 – Rollen, Rechte und ein Datenverlust im Backup (`e2eec28`)
+30 Tests für Anmeldung, Rollen und Turnier-Zugang. Dabei systematisch
+geprüft, ob eine Route ein Objekt aus einem fremden Turnier anfasst
+(Insecure Direct Object Reference): **keine Lücke gefunden** – jede Route
+mit ID in der URL vergleicht gegen `g.tournament.id`. Das ist für eine
+vibe-gecodete App bemerkenswert und jetzt festgenagelt.
+
+Dafür ein echter Fund im JSON-Export: `event_time`, `match.field`,
+`match.is_penalty` und die kompletten `TeamPayment`-Zeilen fehlten.
+Heißt: Nach einem Wiederherstellen lagen alle Spiele auf Feld 1 und die
+Buchhaltung der Startgebühren war weg. Exportformat auf Version 2 gehoben,
+Version 1 bleibt importierbar.
+
+### 21:17 – Sicherheits-Härtung (`ad36ddb`)
+Cookie: `HttpOnly`, `SameSite=Lax`, `Secure` (im Dev-Modus aus).
+`SameSite=Lax` ist hier die wirksamste Einzelmaßnahme – Browser senden das
+Cookie dann nicht bei POST von fremden Seiten, womit die Admin-Formulare
+gegen CSRF geschützt sind, obwohl es keine Token gibt. Echte Token betreffen
+~40 Routen und jeden `fetch()`; bewusst nicht nachts angefangen.
+
+Anmeldebremse: 8 Fehlversuche je Benutzer+IP, dann 5 Minuten Sperre (429).
+Konfigurationswarnungen für Vorgabe-`SECRET_KEY`/`ADMIN_PASSWORD` ins Log und
+als Banner für Superadmins – **bewusst kein Startabbruch**: Die App läuft auf
+einem Turnier, ein verweigerter Start wäre schlimmer als die Warnung.
+
+Zwei Fehler in meinen eigenen Fixtures behoben: die session-weite App behielt
+Config-Änderungen einzelner Tests, und der offene App-Kontext ließ
+Flask-Login seinen `current_user`-Cache in `g` über alle Anfragen eines
+Tests teilen (ein Test als Superadmin und dann als Viewer sah zweimal den
+Superadmin).
+
+### 21:40 – Vereinsanmeldung (`45f1b7e`)
+Das größte Stück: öffentliches Formular je Turnier, Statusseite mit Token,
+Selbst-Zurückziehen, Warteliste bei Ausbuchung oder abgelaufener Frist.
+Im Admin: Freigabe in einem Schritt zum Team (mit Gruppe und Startgebühr als
+offenem Posten), Ablehnen, Warteliste, CSV-Export mit Semikolon und BOM.
+Spamschutz per Honeypot und IP-Bremse, keine Captchas.
+
+Entscheidung: `Registration` bewusst getrennt von `Team`. Eine Anmeldung ist
+ein Antrag mit Kontaktdaten und Entscheidungshistorie, ein Team ist ein
+Teilnehmer im Spielplan. Sonst verschmutzen abgelehnte Anmeldungen den
+Spielplan.
+
+Nebenbei: Zugriffs-Decorators nach `app/auth.py` gezogen.
+
+### 22:10 – Spielplaner und zwei Löschfehler (`611675f`)
+Der alte Generator mischte zufällig und verteilte mit `nummer % felder` –
+keine Anstoßzeiten, und dieselbe Mannschaft konnte gleichzeitig auf Feld 1
+und 2 antreten. Die neue Prüffunktion hat das sofort in meinen eigenen
+Seed-Daten gefunden (2–4 Konflikte je Turnier).
+
+Neu: `app/spielplan.py` als reine Logik – Slots, Felder, Mindestpause je
+Mannschaft (wird gelockert statt zu scheitern), Anstoßzeiten mit optionaler
+Mittagspause, Konfliktprüfung für bestehende Pläne. Dazu ein Dialog in der
+Oberfläche und bis zu 6 Spielfelder statt 1 oder 2 (dafür musste die Annahme
+„num_fields == '2' heißt mehrere Felder" an neun Stellen umgestellt werden).
+
+Beim Umstellen des Seed-Skripts fielen zwei Löschfehler auf, die die
+Live-App betreffen:
+- Ein Turnier mit erfassten Startgebühren ließ sich **nicht löschen**.
+  `TeamPayment` hatte keine Löschweitergabe, also versuchte SQLAlchemy den
+  Primärschlüssel `team_payment.team_id` auf NULL zu setzen.
+- Dasselbe bei `TournamentSettings`. Die Löschroute verdeckte es nur, weil
+  sie die Einstellungen vorher von Hand wegräumt – jeder andere Aufrufer
+  (Skript, Import) lief in den Fehler.
+
+### 22:35 – Spielereignisse und Statistik (`f640245`)
+Tore und Karten je Spiel, daraus Torschützenliste und Fair-Play-Wertung,
+öffentlich und im Admin. Heikler Punkt war das Verhältnis zum Spielstand:
+Der bleibt die führende Zahl (Plus-Knöpfe am Turniertag), wird beim Erfassen
+eines Tores per Vorgabe mitgezogen, und wenn beide auseinanderlaufen, sagt
+die App das offen statt eine Zahl stillschweigend zu überschreiben.
+Eigentore zählen für den Gegner, aber nicht als Treffer des Schützen.
+
+Export/Import nehmen jetzt Anmeldungen und Ereignisse mit.
+
+### 22:58 – Siegerehrung (`8a17693`)
+Platz 1–3 gab es nur als Podium in `main.js`. Jetzt rechnet der Server die
+vollständige Endplatzierung für alle Finalformen – über Kategorien
+(Platz steht fest / noch im Rennen / ausgeschieden / Gruppenphase), damit
+die Liste auch mitten im Turnier sinnvoll ist. Dazu Ablaufliste für die
+Siegerehrung (von hinten nach vorne) und druckbare Urkunden, A4 quer.
+
+Erster Entwurf des Algorithmus war falsch: Ausgeschiedene landeten vor
+Mannschaften, die noch im Rennen sind. Auf Kategorien umgebaut.
+
+### 23:40 – Schiedsrichter (`f6ac2a3`)
+Stammdaten, automatische Einteilung, Konfliktprüfung, Einsatzplan zum
+Drucken. Die Zuteilung meidet die eigene Mannschaft und Zeitfenster, in
+denen die eigene Mannschaft spielt, und verteilt die Last gleichmäßig.
+Lässt sich eine Regel nicht einhalten, wird sie in zwei Stufen gelockert –
+ein Betreuer der eigenen Mannschaft ist besser als kein Schiedsrichter,
+und die Prüfung zeigt es an.
+
+Mitgenommen: Die gedruckte Spielplan-Ansicht hatte **keine Anstoßzeiten**.
+Jetzt zeigt sie Zeit und Schiedsrichter, aber nur wenn die Daten existieren.
+
+Postgres-Migration gegen die laufende Dev-Datenbank mit Altdaten geprüft:
+`referee_id` ergänzt, neue Tabellen angelegt, Bestand unverändert – auch
+nach Container-Neustart.
+
+### 23:50 – Refactoring
+`admin.py` von 2882 auf 2018 Zeilen: `app/finalrunde.py` (413),
+`app/backup.py` (465), `app/belege.py` (42) ausgezogen. Dafür
+`app/blueprints.py`, damit mehrere Module Routen am `admin_bp` registrieren
+können, ohne sich gegenseitig zu importieren.
+
+Dabei in eine Falle getappt: `import app.admin` innerhalb von `create_app()`
+überschreibt den lokalen Namen `app` (die Flask-App). Mit
+`from app import admin as _admin_routes` gelöst, der Grund steht als
+Kommentar daneben.
+
+Inline-Skripte aus sechs Admin-Vorlagen in `static/js/admin/` ausgelagert
+(~47 KB): dashboard, design, menu, export-import, organisation,
+finals-setup. Die Werte aus der Vorlage (`SLUG`, `ALL_TEAMS`, …) bleiben als
+kurzer Inline-Block davor. Eine Stelle brauchte Handarbeit: `maxRanks` stand
+mitten in einer Funktion und wurde zu `MAX_RANKS` als Konstante.
+
+Dazu `UX_REVIEW.md` und `ARCHITEKTUR.md`.

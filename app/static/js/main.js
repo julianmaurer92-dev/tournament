@@ -192,17 +192,43 @@ function renderLiveMatch(matches, hideResults) {
     renderNextMatchPrep(localTimerRemaining);
 }
 
+// ──────────────────────────────────────
+// Anstosszeit / Spielfeld
+// ──────────────────────────────────────
+
+// "2026-11-14T09:15:00" -> "09:15". Bewusst ohne Date-Objekt: der Server
+// liefert lokale Turnierzeit ohne Zeitzone, und ein new Date() wuerde sie
+// je nach Geraet verschieben.
+function matchTime(m) {
+    if (!m || !m.scheduled_time) return '';
+    const treffer = String(m.scheduled_time).match(/T(\d{2}:\d{2})/);
+    return treffer ? treffer[1] : '';
+}
+
+// Zeit und – bei mehreren Feldern – Feldnummer als kleine Zeile
+function matchMeta(m, numFields) {
+    const zeit = matchTime(m);
+    const teile = [];
+    if (zeit) teile.push(zeit);
+    if (numFields > 1 && m.field) teile.push('Feld ' + m.field);
+    if (!teile.length) return '';
+    return `<span class="match-meta">${teile.join(' &middot; ')}</span>`;
+}
+
 function renderPastMatches(matches, hideResults) {
     const container = document.getElementById('past-matches');
     if (!matches || matches.length === 0) {
         container.innerHTML = '<p class="empty-state">Noch keine Spiele beendet</p>';
         return;
     }
+    const numFields = parseInt((currentState && currentState.settings
+        && currentState.settings.num_fields) || 1, 10);
     container.innerHTML = matches.map(m => `
         <div class="match-item finished">
             <span class="team-name">${teamLogo(m.team1, 'sm')}${m.team1 ? esc(m.team1.name) : 'TBD'}</span>
             <span class="match-score">${hideResults ? '&#10003;' : m.score_team1 + ' : ' + m.score_team2}</span>
             <span class="team-name">${teamLogo(m.team2, 'sm')}${m.team2 ? esc(m.team2.name) : 'TBD'}</span>
+            ${matchMeta(m, numFields)}
         </div>
     `).join('');
 }
@@ -213,11 +239,14 @@ function renderUpcomingMatches(matches) {
         container.innerHTML = '<p class="empty-state">Keine Spiele geplant</p>';
         return;
     }
+    const numFields = parseInt((currentState && currentState.settings
+        && currentState.settings.num_fields) || 1, 10);
     container.innerHTML = matches.map((m, i) => `
         <div class="match-item planned${i === 0 ? ' next-match' : ''}">
             <span class="team-name">${teamLogo(m.team1, 'sm')}${m.team1 ? esc(m.team1.name) : 'TBD'}</span>
-            <span class="match-score">vs</span>
+            <span class="match-score">${matchTime(m) || 'vs'}</span>
             <span class="team-name">${teamLogo(m.team2, 'sm')}${m.team2 ? esc(m.team2.name) : 'TBD'}</span>
+            ${numFields > 1 && m.field ? `<span class="match-meta">Feld ${m.field}</span>` : ''}
         </div>
     `).join('');
 }
@@ -243,7 +272,10 @@ function renderNextMatchPrep(remaining) {
 
     container.innerHTML = `
         <div class="next-match-card">
-            <div class="next-match-label">&#128226; Naechstes Spiel &ndash; Bitte vorbereiten!</div>
+            <div class="next-match-label">
+                &#128226; Nächstes Spiel &ndash; Bitte vorbereiten!
+                ${matchTime(next) ? ' (' + matchTime(next) + ' Uhr)' : ''}
+            </div>
             <div class="next-match-teams">
                 <div class="next-match-team">
                     ${t1Logo}

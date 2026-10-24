@@ -3,7 +3,7 @@
 {% block title %}Spielsteuerung - {{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}{% endblock %}
 
 {% block head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
 <style>
 {% if parallel_match %}
 /* ── Dual-field layout ── */

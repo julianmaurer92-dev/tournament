@@ -55,3 +55,4 @@ playwright-report/
 dumps/
 *.dump
 export-*.json
+test-results/

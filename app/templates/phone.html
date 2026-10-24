@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>{{ site_settings.tournament_name }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+    <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
     <style>
         :root {
             --primary: {{ site_settings.color_primary }};
@@ -293,7 +292,8 @@ function applyState(s) {
     const liveMatches = s.live_matches && s.live_matches.length ? s.live_matches : (s.live_match ? [s.live_match] : []);
     renderLive(liveMatches, s.upcoming_matches || [], s.final_matches || [], hideScores);
     renderTable(s.standings_by_group, s.groups, hideTable);
-    renderMatches(s.past_matches || [], s.upcoming_matches || [], s.final_matches || [], hideScores);
+    renderMatches(s.past_matches || [], s.upcoming_matches || [], s.final_matches || [],
+                  hideScores, (s.settings && s.settings.num_fields) || 1);
     renderTeams(s.standings_by_group, s.groups);
 
     // Update tab live indicator
@@ -394,9 +394,29 @@ function renderTable(standingsMap, groups, hideTable) {
 }
 
 // ── Panel: Matches ──
-function renderMatches(past, upcoming, finals, hideResults) {
+// Anstosszeit aus dem ISO-Text ziehen. Bewusst ohne Date-Objekt: der
+// Server liefert lokale Turnierzeit ohne Zeitzone, new Date() wuerde sie
+// je nach Geraeteeinstellung verschieben.
+function phMatchTime(m) {
+    if (!m || !m.scheduled_time) return '';
+    const treffer = String(m.scheduled_time).match(/T(\d{2}:\d{2})/);
+    return treffer ? treffer[1] : '';
+}
+
+function phZeitBadge(m, numFields) {
+    const zeit = phMatchTime(m);
+    const teile = [];
+    if (zeit) teile.push(zeit + ' Uhr');
+    if (numFields > 1 && m.field) teile.push('Feld ' + m.field);
+    if (!teile.length) return '';
+    return `<span class="ph-match-badge">${teile.join(' · ')}</span>`;
+}
+
+function renderMatches(past, upcoming, finals, hideResults, numFields) {
     const el = document.getElementById('panel-matches');
     let html = '';
+
+    numFields = parseInt(numFields || 1, 10);
 
     if (upcoming.length > 0) {
         html += `<div class="ph-section-title">Kommende Spiele</div>`;
@@ -404,7 +424,7 @@ function renderMatches(past, upcoming, finals, hideResults) {
             const badge = m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '';
             html += `<div class="ph-match-item">
                 <div class="ph-match-teams">${m.team1 ? esc(m.team1.name) : '?'}<span class="ph-match-vs">vs</span>${m.team2 ? esc(m.team2.name) : '?'}</div>
-                ${badge}
+                ${phZeitBadge(m, numFields)}${badge}
             </div>`;
         });
     }
@@ -418,7 +438,7 @@ function renderMatches(past, upcoming, finals, hideResults) {
             const badge = m.group_name ? `<span class="ph-match-badge">${esc(m.group_name)}</span>` : '';
             html += `<div class="ph-match-item">
                 <div class="ph-match-teams">${m.team1 ? esc(m.team1.name) : '?'}<span class="ph-match-vs">vs</span>${m.team2 ? esc(m.team2.name) : '?'}</div>
-                ${score}${badge}
+                ${score}${phZeitBadge(m, numFields)}${badge}
             </div>`;
         });
     }

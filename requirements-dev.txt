@@ -3,3 +3,6 @@
 # Test- und Entwicklungswerkzeuge (nicht im Produktions-Image)
 pytest==8.3.4
 pytest-cov==6.0.0
+# Parallele Testlaeufe: die Suite ist auf 400+ Tests gewachsen und braucht
+# seriell ueber zehn Minuten. "pytest -n 4" bringt auf vier Kernen Faktor 3.
+pytest-xdist==3.6.1

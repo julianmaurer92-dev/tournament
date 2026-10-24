@@ -1816,3 +1816,15 @@ body {
 .card-anmeldung .tournament-card-icon { color: #3b82f6; }
 .card-anmeldung { border-color: rgba(59, 130, 246, 0.3); }
 .card-anmeldung:hover { border-color: #3b82f6; }
+
+/* Anstosszeit und Spielfeld in den Spiellisten (Nachtschicht 2026-10-24) */
+.match-meta {
+    display: block;
+    width: 100%;
+    margin-top: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    opacity: 0.55;
+    text-align: center;
+}

@@ -81,5 +81,29 @@ services:
     command: ["pytest", "-q"]
     profiles: ["tools"]
 
+  # Browser-Tests (Playwright). Laeuft gegen den web-Container im selben
+  # Netz, nicht ueber localhost – deshalb http://web:5000.
+  e2e:
+    image: mcr.microsoft.com/playwright/python:v1.49.0-jammy
+    working_dir: /work
+    environment:
+      - CUPPLAN_BASE_URL=http://web:5000
+      - CUPPLAN_ADMIN_USER=admin
+      - CUPPLAN_ADMIN_PASSWORD=admin123
+    volumes:
+      - ./tests/e2e:/work/tests/e2e
+      - ./pytest-e2e.ini:/work/pytest.ini
+      - ./test-results:/work/test-results
+    depends_on:
+      - web
+    # pytest-playwright ist im Image nicht enthalten, aber klein.
+    # playwright MUSS auf die Version des Images gepinnt werden – sonst zieht
+    # pip die neueste nach und findet die mitgelieferten Browser nicht mehr
+    # ("Executable doesn't exist at /ms-playwright/...").
+    command: >
+      sh -c "pip install -q 'pytest-playwright==0.5.2' 'playwright==1.49.0' &&
+             pytest -q tests/e2e"
+    profiles: ["tools"]
+
 volumes:
   dev-pg-data:

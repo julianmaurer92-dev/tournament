@@ -31,6 +31,11 @@
    - [Design & Farben](#design--farben)
    - [Export & Import](#export--import)
    - [Benutzerverwaltung](#benutzerverwaltung)
+   - [Vereinsanmeldung](#vereinsanmeldung)
+   - [Spielplan automatisch erzeugen](#spielplan-automatisch-erzeugen)
+   - [Torschützen & Karten](#torschützen--karten)
+   - [Schiedsrichter](#schiedsrichter)
+   - [Siegerehrung & Urkunden](#siegerehrung--urkunden)
 5. [Rollen & Berechtigungen](#rollen--berechtigungen)
 6. [Tipps & Hinweise](#tipps--hinweise)
 
@@ -438,6 +443,154 @@ Unter `/admin/users/` *(nur Superadmin)*:
 
 ---
 
+### Vereinsanmeldung
+
+Statt jedes Team von Hand einzutippen, können sich Vereine selbst anmelden.
+
+**Einrichten:** Turnier-Administration → *Vereinsanmeldungen*. Dort stellst du ein:
+
+| Einstellung | Bedeutung |
+|---|---|
+| Anmeldung | *geöffnet* schaltet das öffentliche Formular frei |
+| Anmeldeschluss | nach diesem Datum landen Anmeldungen auf der Warteliste |
+| Max. Mannschaften | ist die Zahl erreicht, geht es auf die Warteliste; leer = unbegrenzt |
+| Startgebühr | erscheint im Formular und wird beim Bestätigen als offener Posten angelegt |
+| Infotext | steht über dem Formular, z. B. Hinweise zur Anreise |
+
+Den Link darunter (`/t/<turnier>/anmeldung`) gibst du an die Vereine – per
+Mail, auf der Vereinsseite oder als QR-Code auf dem Aushang. Er erscheint
+außerdem automatisch als Kachel auf der Startseite, solange die Anmeldung
+offen ist.
+
+**Was der Verein sieht:** Ein Formular mit Verein, Teamname, Ansprechpartner,
+E-Mail, Telefon, Spieleranzahl und Anmerkungen. Nach dem Absenden bekommt er
+einen persönlichen Link auf eine Statusseite – dort sieht er, ob die Anmeldung
+noch offen, bestätigt, auf der Warteliste oder abgelehnt ist, und kann sie
+selbst zurückziehen, solange sie nicht bestätigt ist.
+
+**Bearbeiten:** Oben stehen vier Zähler (offen / bestätigt / Warteliste /
+abgelehnt), die gleichzeitig als Filter dienen. Je Anmeldung kannst du:
+
+- **Bestätigen** – legt in einem Schritt das Team an. Teamname ist änderbar,
+  eine Gruppe kann direkt zugewiesen werden, und die Startgebühr erscheint als
+  offener Posten in *Organisation & Kasse*.
+- **Warteliste** – Platz wird noch nicht vergeben, der Verein sieht es.
+- **Ablehnen** – mit optionaler Notiz.
+- **Zurückholen** – Entscheidung rückgängig. Ein bereits angelegtes Team
+  bleibt im Spielplan.
+- **CSV herunterladen** – alle Anmeldungen mit Kontaktdaten für Excel.
+
+---
+
+### Spielplan automatisch erzeugen
+
+Turnier-Administration → *Spielplan erzeugen*. Der Generator spielt „jeder
+gegen jeden" innerhalb der Gruppen und verteilt die Partien auf Spielfelder
+und Zeitfenster.
+
+| Einstellung | Hinweis |
+|---|---|
+| Spielfelder | wie viele Plätze gleichzeitig bespielt werden |
+| Spielzeit | Netto-Spielzeit je Partie, landet auch im Timer |
+| Wechselzeit | Pause zwischen zwei Zeitfenstern |
+| Pause je Team | wie viele Zeitfenster eine Mannschaft mindestens aussetzt |
+| Erster Anstoß | Datum und Uhrzeit des ersten Spiels |
+| Längere Pause nach Runde N | z. B. Mittagspause |
+| Komplett neu planen | ohne Häkchen bleiben vorhandene Spiele stehen und fehlende werden hinten angehängt |
+
+Es wird garantiert, dass **keine Mannschaft zweimal gleichzeitig** angesetzt
+wird. Die Pausenregel wird gelockert, wenn sie rechnerisch nicht aufgeht
+(z. B. vier Teams auf zwei Feldern) – abgebrochen wird nie.
+
+Der Knopf **Plan prüfen** klopft einen bestehenden Spielplan auf
+Doppelbelegungen ab. Lohnt sich auch bei von Hand gebauten oder importierten
+Plänen, am besten einmal am Vorabend.
+
+---
+
+### Torschützen & Karten
+
+In der Spielsteuerung führt der Knopf **⚽ Ereignisse** zur Erfassung.
+Pro Spiel kannst du eintragen: Tor, Eigentor, Gelbe Karte, Gelb-Rote Karte,
+Rote Karte – jeweils mit Mannschaft, Spielername und Minute. Die Spieler aus
+dem Teamfeld erscheinen als Auswahlvorschläge.
+
+**Wichtig zum Spielstand:** Der Spielstand bleibt die führende Zahl und wird
+weiter mit den Plus-Knöpfen gesetzt. Erfasst du ein Tor mit Schützen, zählt
+die App den Stand per Vorgabe mit – das Häkchen *Spielstand mitzählen* kannst
+du abwählen, wenn der Stand schon stimmt und du nur noch Schützen nachträgst.
+Passen erfasste Tore und eingetragener Stand nicht zusammen, erscheint ein
+Hinweis.
+
+Daraus entstehen automatisch:
+
+- **Torschützenliste** – gleiche Toranzahl bedeutet gleicher Platz.
+  Verschiedene Schreibweisen desselben Namens werden zusammengefasst.
+- **Fair-Play-Wertung** – Gelb 1, Gelb-Rot 3, Rot 5 Strafpunkte; wer weniger
+  hat, steht weiter oben.
+- **Karten je Spieler** – für Sperren und Rückfragen.
+
+Zu finden unter Turnier-Administration → *Torschützen & Fair-Play*, öffentlich
+unter `/t/<turnier>/statistik`. Die öffentliche Seite hält sich an die
+Einstellung „Ergebnisse ausblenden".
+
+---
+
+### Schiedsrichter
+
+Turnier-Administration → *Schiedsrichter*.
+
+**Anlegen:** Name, Telefon, Notiz – und optional *gehört zu Mannschaft X*.
+Letzteres ist wichtig: Die automatische Einteilung setzt niemanden auf ein
+Spiel der eigenen Mannschaft und auch nicht in ein Zeitfenster, in dem die
+eigene Mannschaft spielt (da wird der Betreuer gebraucht). Wer gerade nicht
+kann, wird auf *inaktiv* gesetzt statt gelöscht.
+
+**Einteilen:** Entweder je Spiel über das Auswahlfeld, oder automatisch:
+
+- **Lücken füllen** – lässt deine Handarbeit in Ruhe und besetzt nur die
+  offenen Spiele.
+- **Alles neu verteilen** – rechnet die komplette Einteilung neu.
+
+Die Last wird gleichmäßig verteilt: Wer bisher am wenigsten gepfiffen hat,
+kommt zuerst dran. Lässt sich eine Regel nicht einhalten, wird sie gelockert,
+statt ein Spiel unbesetzt zu lassen – oben erscheint dann ein roter Kasten
+mit dem konkreten Problem.
+
+**Einsatzplan** druckt eine Liste je Schiedsrichter mit Uhrzeiten, Feld und
+Telefonnummer – zum Aushängen. Spiele ohne Schiedsrichter stehen als Warnung
+oben drauf.
+
+---
+
+### Siegerehrung & Urkunden
+
+Turnier-Administration → *Siegerehrung & Urkunden*.
+
+**Endplatzierung:** Die App berechnet die vollständige Reihenfolge – nicht nur
+das Podium. Sie funktioniert für alle Finalformen: ohne Finalrunde
+(Gruppenphase entscheidet), direktes Finale, Halbfinale + Finale (mit und ohne
+Spiel um Platz 3), klassische KO-Runde und Platzierungsspiele. Hinter jedem
+Platz steht, wodurch er entschieden wurde. Verlierer eines Viertelfinales
+teilen Platz 5; läuft das Turnier noch, erscheinen die betroffenen
+Mannschaften als „noch im Rennen".
+
+**Ablaufliste:** Die Reihenfolge zum Aufrufen – von hinten nach vorne, der
+Sieger kommt zuletzt. Zum Vorlesen am Mikrofon.
+
+**Urkunden:** Einmal Veranstalter, Ort, einen Freitext und die
+Unterschriftzeile eintragen, dann drucken. A4 quer, eine Urkunde pro Seite,
+Medaille für die ersten drei. Du kannst alle Mannschaften drucken, nur das
+Podium, oder über den Knopf *Urkunde* in der Platzierungstabelle eine
+einzelne nachdrucken.
+
+> Im Druckdialog **„Hintergrundgrafiken" aktivieren**, sonst fehlt der Rahmen
+> der Urkunde.
+
+Öffentlich ist die Platzierung unter `/t/<turnier>/platzierung` erreichbar.
+
+---
+
 ## Rollen & Berechtigungen
 
 | Funktion | Superadmin | Editor | Viewer |
@@ -478,6 +631,6 @@ Die Smartphone-Ansicht (`/phone/`) kann als QR-Code auf Aushängen bereitgestell
 
 Den Browser auf dem TV-Gerät in den Vollbildmodus versetzen (F11) und die URL `/t/<turnier>/tv/` aufrufen. Die Ansicht benötigt keine Bedienung und aktualisiert sich automatisch.
 
-### Zwei Spielfelder
+### Mehrere Spielfelder
 
-Bei Aktivierung von „2 Felder" in den Turniereinstellungen können zwei Spiele gleichzeitig live sein. In der Spielsteuerung erscheinen beide Felder als separate Karten.
+In den Turniereinstellungen lassen sich **1 bis 6 Spielfelder** einstellen. Bei mehr als einem Feld können entsprechend viele Spiele gleichzeitig live sein; in der Spielsteuerung erscheinen die Felder als separate Karten, und Spielplan, Druckansicht und Live-Ansichten zeigen die Feldnummer mit an.

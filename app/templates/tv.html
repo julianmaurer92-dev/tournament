@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_settings.tournament_name }} – TV</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+    <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
     <style>
         :root {
             --primary: {{ site_settings.color_primary }};
@@ -453,8 +452,15 @@ function matchItem(m, hideResults, isResult) {
     const t2 = m.team2 ? esc(m.team2.name) : (isResult ? '?' : 'TBD');
     const w1 = isResult && !hideResults && m.score_team1 > m.score_team2;
     const w2 = isResult && !hideResults && m.score_team2 > m.score_team1;
-    const badge = (m.group_name || m.final_label)
-        ? `<div class="tv-match-badge">${esc(m.group_name || m.final_label)}</div>` : '';
+    // Anstosszeit aus dem ISO-Text ziehen – ohne Date-Objekt, weil der
+    // Server lokale Turnierzeit ohne Zeitzone liefert.
+    const zeitTreffer = m.scheduled_time
+        ? String(m.scheduled_time).match(/T(\d{2}:\d{2})/) : null;
+    const zeit = zeitTreffer ? zeitTreffer[1] : '';
+    const beschriftung = [m.group_name || m.final_label, zeit ? zeit + ' Uhr' : '']
+        .filter(Boolean).join(' · ');
+    const badge = beschriftung
+        ? `<div class="tv-match-badge">${esc(beschriftung)}</div>` : '';
     let scoreHtml = '';
     if (isResult) {
         scoreHtml = hideResults

@@ -63,6 +63,13 @@ def create_app(config_overrides=None):
     app.config["CUPPLAN_ENV"] = umgebung
     app.config["CUPPLAN_DEV_MODE"] = umgebung in ("dev", "test", "development")
 
+    # Im Dev-Modus Vorlagen bei jeder Anfrage neu einlesen. Ohne das haelt
+    # Jinja die kompilierte Vorlage im Speicher, und eine Aenderung an einer
+    # .html-Datei wird erst nach einem Neustart sichtbar – gunicorn --reload
+    # achtet nur auf .py-Dateien.
+    if app.config["CUPPLAN_DEV_MODE"]:
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+
     # Sitzungs-Cookie absichern.
     # SameSite=Lax ist hier die wirksamste Einzelmassnahme: Browser senden das
     # Cookie dann nicht bei POST-Anfragen von fremden Seiten mit. Damit sind
@@ -142,7 +149,12 @@ def create_app(config_overrides=None):
         return {"sicherheitswarnungen": []}
 
     from app.routes import main_bp
-    from app.admin import admin_bp
+    from app.blueprints import admin_bp
+    # Nur importieren, damit die Routen sich am admin_bp registrieren.
+    # NICHT als "import app.admin" – das wuerde den Namen "app" in dieser
+    # Funktion ueberschreiben (dort steht die Flask-App).
+    from app import admin as _admin_routes      # noqa: F401
+    from app import backup as _backup_routes    # noqa: F401
     from app.anmeldung import anmeldung_admin_bp, anmeldung_bp
     from app.ereignisse import ereignisse_admin_bp, ereignisse_bp
     from app.siegerehrung import siegerehrung_admin_bp, siegerehrung_bp
