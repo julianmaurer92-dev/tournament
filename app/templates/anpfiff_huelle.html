@@ -89,6 +89,27 @@
         </header>
 
         <main class="ap-inhalt" id="inhalt">
+            {# Der Sicherheitshinweis darf nie stillschweigend
+               verschwinden – er ist der einzige Ort, an dem jemand
+               erfährt, dass SECRET_KEY oder ADMIN_PASSWORD noch auf
+               dem Vorgabewert stehen. Nur für Superadmins. #}
+            {% if sicherheitswarnungen %}
+            <section class="ap-tafel ap-warnbanner" role="alert">
+                <header class="ap-tafel-kopf">
+                    {{ symbol('alert-triangle') }} Sicherheitshinweis zur Konfiguration
+                </header>
+                <div class="ap-tafel-inhalt">
+                    <ul class="ap-warnliste">
+                        {% for warnung in sicherheitswarnungen %}<li>{{ warnung }}</li>{% endfor %}
+                    </ul>
+                    <p class="ap-klein ap-leise" style="margin:var(--ap-raum-3) 0 0">
+                        Dieser Hinweis erscheint nur für Superadmins und verschwindet,
+                        sobald die Werte in der <code>.env</code> gesetzt sind.
+                    </p>
+                </div>
+            </section>
+            {% endif %}
+
             {% with meldungen = get_flashed_messages(with_categories=true) %}
             {% if meldungen %}
             {% for art, text in meldungen %}

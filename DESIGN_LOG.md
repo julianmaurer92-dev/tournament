@@ -143,6 +143,25 @@ Variante, weil es keine gibt.
 
 ---
 
+### 23:40 – Abschluss
+
+Tests: **512 bestanden, 0 offen.** Zwei Dateien mussten mitziehen:
+
+- `tests/test_themes.py` – die 32 alten Tests prüften den vorherigen
+  Theme-Katalog und sind zu Recht durchgefallen. 36 neue, die vor
+  allem das prüfen, worauf es ankommt: dass niemandem seine
+  Einstellung wegbricht.
+- **Ein echter Rückschritt, den die Tests gefangen haben:** Das
+  Sicherheits-Warnbanner („SECRET_KEY ist ein Vorgabewert") war in
+  meiner neuen Hülle verschwunden. Das ist der einzige Ort, an dem
+  ein Superadmin davon erfährt. Wiederhergestellt – jetzt als Tafel
+  in der Warnfarbe.
+
+52 Nachher-Bilder in `docs/design/nachher/`, dazu 17 Theme-Bilder in
+`docs/design/themes/`.
+
+---
+
 ## Was fertig wurde
 
 | Bereich | Zustand |

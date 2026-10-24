@@ -554,3 +554,16 @@ a { color: var(--ap-akzent); }
     .ap-nicht-drucken, .ap-meldungen, .ap-schublade-grund { display: none !important; }
     .ap-tafel { break-inside: avoid; }
 }
+
+/* ── Warnbanner ────────────────────────────────────────────── */
+/* Fällt auf, ohne zu schreien: Akzent ist die Warnfarbe, aber die
+   Fläche bleibt ruhig – der Hinweis steht oft wochenlang da. */
+
+.ap-warnbanner { border-color: var(--ap-warnung); }
+.ap-warnbanner .ap-tafel-kopf {
+    color: var(--ap-warnung);
+    border-bottom-color: var(--ap-warnung);
+    background: color-mix(in srgb, var(--ap-warnung) 12%, var(--ap-tafel));
+}
+.ap-warnliste { margin: 0; padding-left: 1.2rem; display: grid; gap: var(--ap-raum-2); }
+.ap-warnliste li { line-height: 1.45; }
