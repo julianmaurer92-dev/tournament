@@ -1,0 +1,492 @@
+/* ============================================================
+   ANPFIFF – die öffentlichen Ansichten
+   ------------------------------------------------------------
+   Live-Ansicht, Handy, Startseite, Speisekarte, Statistik.
+
+   Hier schaut niemand, um etwas zu tun – hier schaut man, um
+   etwas zu WISSEN. Deshalb: eine Sache groß in der Mitte, alles
+   andere ringsherum und leise.
+
+   Die Klassennamen sind die der bestehenden Vorlagen und des
+   bestehenden JavaScripts. Die Gestaltung dahinter ist neu; das
+   erspart es, funktionierende Logik anzufassen, nur um sie
+   anders aussehen zu lassen.
+   ============================================================ */
+
+body.public {
+    background: var(--ap-grund);
+    color: var(--ap-schrift-farbe);
+    font-family: var(--ap-schrift);
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 900px) {
+    body.public { padding-bottom: 0; }
+}
+
+/* ── Kopfzeile ─────────────────────────────────────────────── */
+
+.header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--ap-tafel);
+    border-bottom: 2px solid var(--ap-kante);
+}
+.header-inner {
+    display: flex; align-items: center; gap: var(--ap-raum-3);
+    max-width: 90rem; margin: 0 auto;
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+}
+.header-logo { display: flex; color: var(--ap-akzent); }
+.header-logo .ap-symbol, .header-logo svg { width: 2rem; height: 2rem; }
+.header-text { min-width: 0; }
+.header-text h1 {
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0;
+    /* Vereins- und Turniernamen werden nicht getrennt. */
+    hyphens: manual; word-break: normal;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.header-sub { font-size: var(--ap-text-s); color: var(--ap-still); margin: 0; }
+.header-menu-link {
+    display: inline-flex; align-items: center; gap: var(--ap-raum-2);
+    min-height: 40px; padding: 0 var(--ap-raum-3);
+    font-size: var(--ap-text-s); font-weight: var(--ap-fett);
+    color: var(--ap-leise); text-decoration: none;
+    border: 1px solid var(--ap-kante); border-radius: var(--ap-rund-m);
+    white-space: nowrap;
+}
+.header-menu-link:hover { color: var(--ap-schrift-farbe); background: var(--ap-tafel-tief); }
+@media (max-width: 640px) {
+    .header-menu-link span, .header-menu-link { font-size: 0; padding: 0 var(--ap-raum-2); }
+    .header-menu-link .ap-symbol, .header-menu-link svg { font-size: 1rem; }
+}
+
+/* ── Ankündigung ───────────────────────────────────────────── */
+/* Eine Ankündigung ist das Einzige, was den Blick ziehen darf. */
+
+#announcement-bar, .announcement {
+    display: flex; align-items: center; gap: var(--ap-raum-3);
+    max-width: 90rem; margin: var(--ap-raum-3) auto 0;
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    font-weight: var(--ap-fett);
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border-radius: var(--ap-rund-m);
+}
+.announcement-icon { display: flex; }
+
+/* ── Aufteilung ────────────────────────────────────────────── */
+
+.layout {
+    display: grid;
+    grid-template-columns: 20rem 1fr 20rem;
+    gap: var(--ap-raum-4);
+    max-width: 90rem;
+    margin: 0 auto;
+    padding: var(--ap-raum-4);
+    align-items: start;
+}
+.sidebar { display: flex; flex-direction: column; gap: var(--ap-raum-4); }
+.center { display: flex; flex-direction: column; gap: var(--ap-raum-4); min-width: 0; }
+
+@media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr 1fr; }
+    .center { grid-column: 1 / -1; order: -1; }
+}
+
+/* ── Die Tafel als Grundform ───────────────────────────────── */
+
+.panel {
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+    overflow: hidden;
+}
+.panel-title {
+    display: flex; align-items: center; gap: var(--ap-raum-2);
+    margin: 0;
+    padding: var(--ap-raum-2) var(--ap-raum-4);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-streifen-groesse);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: var(--ap-streifen-abstand);
+    text-transform: uppercase;
+    color: var(--ap-still);
+    background: var(--ap-tafel-kopf);
+    border-bottom: 1px solid var(--ap-kante);
+}
+
+/* ════════════════════════════════════════════════════════════
+   DIE BÜHNE – das laufende Spiel
+   ------------------------------------------------------------
+   Das Wichtigste auf der Seite, und es sieht auch so aus: volle
+   Breite, Akzentrahmen, die Zahlen so groß wie der Platz erlaubt.
+   ════════════════════════════════════════════════════════════ */
+
+.live-match-container {
+    position: relative;
+    padding: var(--ap-raum-5) var(--ap-raum-4);
+    background: var(--ap-tafel);
+    border: 2px solid var(--ap-akzent);
+    border-radius: var(--ap-rund-xl);
+    overflow: hidden;
+}
+/* Die Kreidelinie als Signatur: ein angedeuteter Mittelkreis
+   hinter dem Spielstand. Reine Zierde, nie Information. */
+.live-match-container::before {
+    content: "";
+    position: absolute; left: 50%; top: 50%;
+    width: min(60vw, 22rem); aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border: var(--ap-kreide-staerke) solid var(--ap-kreide);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: .7;
+}
+.live-match-container > * { position: relative; }
+
+.live-badge {
+    display: inline-flex; align-items: center; gap: var(--ap-raum-2);
+    padding: 3px var(--ap-raum-3);
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: .14em; text-transform: uppercase;
+    color: #fff; background: var(--ap-live);
+    border-radius: var(--ap-rund-voll);
+}
+.live-badge::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; animation: ap-puls 1.8s ease-in-out infinite;
+}
+.live-field-label, .live-final-label {
+    font-size: var(--ap-text-s); font-weight: var(--ap-fett);
+    color: var(--ap-leise); margin-top: var(--ap-raum-2);
+}
+.extra-time-badge {
+    display: inline-block; padding: 2px var(--ap-raum-2);
+    font-size: var(--ap-text-xs); font-weight: var(--ap-fett-schwer);
+    color: var(--ap-warnung); border: 1px solid var(--ap-warnung);
+    border-radius: var(--ap-rund-voll);
+}
+
+.live-teams {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: var(--ap-raum-3);
+    margin: var(--ap-raum-4) 0;
+}
+.live-team { min-width: 0; text-align: center; }
+.live-team-name {
+    font-family: var(--ap-schrift-anzeige);
+    font-size: clamp(1.1rem, 3.4vw, 2rem);
+    font-weight: var(--ap-fett-schwer);
+    line-height: 1.15;
+    hyphens: manual; word-break: normal;
+}
+.live-score {
+    font-family: var(--ap-schrift-zahl);
+    font-size: clamp(3.5rem, 15vw, 7rem);
+    font-weight: var(--ap-fett-schwer);
+    line-height: .9;
+    font-variant-numeric: tabular-nums;
+    color: var(--ap-tor);
+    white-space: nowrap;
+}
+.live-timer {
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-2xl);
+    font-weight: var(--ap-fett-schwer);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ap-schrift-farbe);
+}
+.live-timer.urgent, .live-timer.kritisch { color: var(--ap-live); }
+
+.no-live-match {
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--ap-raum-2); padding: var(--ap-raum-6) var(--ap-raum-4);
+    text-align: center; color: var(--ap-leise);
+}
+.no-live-icon { color: var(--ap-still); }
+.no-live-icon .ap-symbol, .no-live-icon svg { width: 3rem; height: 3rem; }
+.no-live-sub { font-size: var(--ap-text-s); color: var(--ap-still); }
+
+/* ── Nächstes Spiel ────────────────────────────────────────── */
+
+.next-match-card {
+    padding: var(--ap-raum-4);
+    background: var(--ap-tafel);
+    border: 1px dashed var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-l);
+    text-align: center;
+}
+.next-match-label {
+    font-size: var(--ap-streifen-groesse);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: var(--ap-streifen-abstand);
+    text-transform: uppercase;
+    color: var(--ap-still);
+}
+.next-match-teams {
+    display: flex; align-items: center; justify-content: center;
+    gap: var(--ap-raum-3); flex-wrap: wrap;
+    margin-top: var(--ap-raum-2);
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-l);
+    font-weight: var(--ap-fett-schwer);
+}
+.next-match-vs { color: var(--ap-still); font-weight: var(--ap-fett-normal); }
+
+/* ── Spielliste ────────────────────────────────────────────── */
+
+.match-list { display: flex; flex-direction: column; }
+.match-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px var(--ap-raum-3);
+    align-items: center;
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    border-bottom: 1px solid var(--ap-kreide);
+}
+.match-item:last-child { border-bottom: 0; }
+.match-item > div:first-child {
+    min-width: 0;
+    font-weight: var(--ap-fett-mittel);
+    hyphens: manual; word-break: normal;
+}
+.match-meta {
+    grid-column: 1 / -1;
+    font-size: var(--ap-text-xs);
+    color: var(--ap-still);
+}
+.match-score {
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+    font-variant-numeric: tabular-nums;
+    color: var(--ap-schrift-farbe);
+    white-space: nowrap;
+}
+.match-item.finished .match-score { color: var(--ap-tor); }
+
+/* ── Tabellen ──────────────────────────────────────────────── */
+
+.standings-table { width: 100%; border-collapse: collapse; }
+.standings-table th {
+    padding: var(--ap-raum-2);
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett);
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ap-still);
+    text-align: right;
+    border-bottom: 1px solid var(--ap-kante);
+    white-space: nowrap;
+}
+.standings-table th:nth-child(1), .standings-table th:nth-child(2) { text-align: left; }
+.standings-table td {
+    padding: var(--ap-raum-2) var(--ap-raum-2);
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-l);
+    font-weight: var(--ap-fett);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    border-bottom: 1px solid var(--ap-kreide);
+    white-space: nowrap;
+}
+/* Die Mannschaftsspalte bekommt den Rest und die Textschrift */
+.standings-table td:nth-child(2) {
+    width: 100%;
+    text-align: left;
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    hyphens: manual; word-break: normal; white-space: normal;
+}
+.standings-table td:nth-child(1) { color: var(--ap-still); }
+.standings-table tbody tr:last-child td { border-bottom: 0; }
+.standings-table tbody tr:first-child td:nth-child(2) {
+    color: var(--ap-akzent); font-weight: var(--ap-fett-schwer);
+}
+/* Beim Toranzeigen rutschen Zeilen – das darf man sehen. */
+.standings-table tbody tr { transition: background var(--ap-zeit-lang) var(--ap-kurve); }
+
+/* ── Podium ────────────────────────────────────────────────── */
+
+.podium {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    align-items: end; gap: var(--ap-raum-3);
+    padding: var(--ap-raum-5) var(--ap-raum-4) 0;
+}
+.podium-place {
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--ap-raum-2);
+    padding: var(--ap-raum-3) var(--ap-raum-2);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l) var(--ap-rund-l) 0 0;
+    text-align: center;
+}
+.podium-1 { padding-bottom: var(--ap-raum-8); border-color: var(--ap-akzent); order: 2; }
+.podium-2 { padding-bottom: var(--ap-raum-6); order: 1; }
+.podium-3 { padding-bottom: var(--ap-raum-5); order: 3; }
+.podium-medal {
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-3xl);
+    font-weight: var(--ap-fett-schwer);
+    color: var(--ap-still);
+}
+.podium-1 .podium-medal { color: var(--ap-akzent); font-size: 3.5rem; }
+.podium-name { font-weight: var(--ap-fett); hyphens: manual; }
+
+/* ── Turnierbaum ───────────────────────────────────────────── */
+
+.bracket { display: flex; gap: var(--ap-raum-4); overflow-x: auto; padding: var(--ap-raum-4); }
+.bracket-round { display: flex; flex-direction: column; gap: var(--ap-raum-3); min-width: 11rem; }
+.bracket-round-title {
+    font-size: var(--ap-text-xs); font-weight: var(--ap-fett-schwer);
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ap-still);
+}
+.bracket-team-name { font-weight: var(--ap-fett-mittel); }
+.bracket-team-score {
+    font-family: var(--ap-schrift-zahl); font-weight: var(--ap-fett-schwer);
+    font-variant-numeric: tabular-nums;
+}
+.bracket-live-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ap-live); animation: ap-puls 1.8s ease-in-out infinite;
+}
+
+/* ── Leerer Zustand ────────────────────────────────────────── */
+
+.empty-state {
+    padding: var(--ap-raum-5) var(--ap-raum-4);
+    text-align: center;
+    color: var(--ap-still);
+    font-size: var(--ap-text-s);
+    margin: 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LEISTE UNTEN AUF DEM HANDY
+   ------------------------------------------------------------
+   Die bisherigen Reiter oben werden zu einer App-Leiste unten.
+   Am Spielfeldrand hält man das Gerät in einer Hand; was oben
+   klebt, erreicht der Daumen nicht.
+   ════════════════════════════════════════════════════════════ */
+
+.mobile-tabs { display: none; }
+
+@media (max-width: 899px) {
+    .layout { grid-template-columns: 1fr; padding: var(--ap-raum-3); }
+    .mobile-panel { display: none; }
+    .mobile-panel.active-panel { display: flex; }
+
+    .mobile-tabs {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 600;
+        display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+        padding-bottom: env(safe-area-inset-bottom);
+        background: var(--ap-tafel);
+        border-top: 1px solid var(--ap-kante);
+    }
+    .mobile-tab {
+        position: relative;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 2px;
+        min-height: 68px; padding: var(--ap-raum-2) 2px;
+        font-family: var(--ap-schrift); font-size: 11px;
+        font-weight: var(--ap-fett);
+        color: var(--ap-still);
+        background: transparent; border: 0; cursor: pointer;
+    }
+    .mobile-tab .ap-symbol, .mobile-tab svg { width: 1.5rem; height: 1.5rem; }
+    .mobile-tab.active { color: var(--ap-akzent); }
+    .mobile-tab.active::before {
+        content: ""; position: absolute; top: 0;
+        width: 32px; height: 3px;
+        background: var(--ap-akzent); border-radius: 0 0 3px 3px;
+    }
+    /* Der Punkt zeigt an, dass gerade etwas läuft */
+    .mobile-tab-dot {
+        position: absolute; top: 12px; right: 50%;
+        transform: translateX(22px);
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--ap-live);
+        animation: ap-puls 1.8s ease-in-out infinite;
+    }
+    .live-match-container { padding: var(--ap-raum-4) var(--ap-raum-3); }
+}
+
+/* ── Druck ─────────────────────────────────────────────────── */
+
+@media print {
+    .header, .mobile-tabs, .header-menu-link { display: none !important; }
+    .layout { display: block; max-width: none; padding: 0; }
+    .panel { break-inside: avoid; border: 1px solid #666; margin-bottom: 8mm; }
+}
+
+/* ── Zwei laufende Partien ─────────────────────────────────── */
+/* Nebeneinander nur, wenn wirklich Platz ist. Auf 390 px wurden
+   die Mannschaftsnamen sonst zu Brei. */
+
+.live-match-container[data-partien="2"] {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--ap-raum-4);
+    padding: var(--ap-raum-3);
+}
+.live-match-container[data-partien="2"]::before { display: none; }
+.live-match-container[data-partien="2"] > * {
+    padding: var(--ap-raum-3);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+}
+.live-match-container[data-partien="2"] .live-score { font-size: clamp(2.5rem, 11vw, 4.5rem); }
+.live-match-container[data-partien="2"] .live-team-name { font-size: var(--ap-text-m); }
+
+@media (min-width: 760px) {
+    .live-match-container[data-partien="2"] { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Ankündigungsband ──────────────────────────────────────── */
+
+.announcement-banner {
+    display: flex; align-items: center; gap: var(--ap-raum-3);
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    font-weight: var(--ap-fett);
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+}
+.announcement-banner .ap-symbol { width: 1.5rem; height: 1.5rem; }
+.announcement-text { min-width: 0; }
+
+/* ── Wappen in den öffentlichen Ansichten ──────────────────── */
+/* Ohne feste Größe blasen sich Vereinslogos auf ihre natürliche
+   Pixelgröße auf – auf dem Handy war das Wappen dreimal so hoch
+   wie der Name daneben. */
+
+.next-match-teams img,
+.live-team img,
+.match-item img,
+.standings-table img,
+.bracket img {
+    width: 1.6em; height: 1.6em;
+    object-fit: contain;
+    vertical-align: -0.35em;
+    flex: none;
+}
+.next-match-teams img { width: 2.4em; height: 2.4em; }
+.live-team img { width: 2em; height: 2em; display: block; margin: 0 auto var(--ap-raum-2); }
+
+/* Eine Gruppentabelle hat bis zu acht Zahlenspalten. In einer
+   20-rem-Spalte ragte sie rechts aus ihrer Tafel heraus. Jetzt
+   scrollt sie innerhalb – die Seite selbst nie. */
+.standings-group-panel { overflow-x: auto; }
+.standings-group-panel .standings-table { min-width: 17rem; }
+
+@media (min-width: 1101px) {
+    .layout { grid-template-columns: 19rem 1fr 23rem; }
+}

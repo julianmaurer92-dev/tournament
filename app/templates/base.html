@@ -5,13 +5,15 @@
       {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="{{ cp_themefarbe or '#11703f' }}">
     <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
     <title>{% block title %}Turnier{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/anpfiff-schriften.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-bausteine.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-oeffentlich.css') }}">
     {# Vereinsfarbe: ueberschreibt den Theme-Akzent. Die Schriftfarbe darauf
        entscheidet der Kontrast, siehe app/farben.py. #}
     {% if cp_vereinsfarbe %}
@@ -20,10 +22,10 @@
     {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
-    <a class="cp-sprung" href="#inhalt">Zum Inhalt springen</a>
+    <a class="ap-sprung" href="#inhalt">Zum Inhalt springen</a>
     {% block content %}{% endblock %}
-    <div class="cp-toasts" id="cp-toasts" role="status" aria-live="polite"></div>
-    <script src="{{ url_for('static', filename='js/cp-basis.js') }}"></script>
+    <div class="ap-meldungen" id="ap-meldungen" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', filename='js/anpfiff.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

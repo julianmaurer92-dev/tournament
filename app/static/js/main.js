@@ -13,6 +13,12 @@ let localTimerRemaining = 0;
 let localTimerRunning = false;
 let localTimerServerSync = 0;
 
+// Symbole aus dem Sprite statt Emoji – siehe anpfiff.css.
+function apSymbol(name) {
+    return '<svg class="ap-symbol" viewBox="0 0 24 24" aria-hidden="true">' +
+           '<use href="/static/vendor/tabler-sprite.svg#i-' + name + '"></use></svg>';
+}
+
 // ──────────────────────────────────────
 // Socket events
 // ──────────────────────────────────────
@@ -88,7 +94,8 @@ function renderAnnouncement(text) {
             document.body.prepend(banner);
         }
     }
-    banner.innerHTML = `<span class="announcement-icon">&#128226;</span><span class="announcement-text">${esc(text)}</span>`;
+    banner.innerHTML = '<span class="announcement-icon">' + apSymbol('speakerphone') +
+        '</span><span class="announcement-text">' + esc(text) + '</span>';
 }
 
 // ──────────────────────────────────────
@@ -181,9 +188,14 @@ function renderLiveMatch(matches, hideResults) {
 
     if (matches.length === 1) {
         container.style.cssText = '';
+        container.dataset.partien = 1;
         container.innerHTML = buildLiveCard(primary, hideResults, false, 'live-timer', false);
     } else {
-        container.style.cssText = 'display:grid;grid-template-columns:repeat(' + matches.length + ',1fr);gap:1rem';
+        // Keine Inline-Breiten mehr: Ob zwei laufende Partien neben-
+        // oder untereinander stehen, entscheidet das CSS nach Platz.
+        // Auf 390 px nebeneinander waren die Mannschaftsnamen Brei.
+        container.style.cssText = '';
+        container.dataset.partien = matches.length;
         container.innerHTML = matches.map((m, i) =>
             buildLiveCard(m, hideResults, true, 'live-timer-' + i, true)
         ).join('');
@@ -273,7 +285,7 @@ function renderNextMatchPrep(remaining) {
     container.innerHTML = `
         <div class="next-match-card">
             <div class="next-match-label">
-                &#128226; Nächstes Spiel &ndash; Bitte vorbereiten!
+                ${apSymbol('speakerphone')} Nächstes Spiel &ndash; Bitte vorbereiten!
                 ${matchTime(next) ? ' (' + matchTime(next) + ' Uhr)' : ''}
             </div>
             <div class="next-match-teams">
