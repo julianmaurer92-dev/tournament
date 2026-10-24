@@ -1,120 +1,121 @@
-{% extends "admin_base.html" %}
-{% from "_bausteine.html" import icon %}
+{% extends "anpfiff_huelle.html" %}
+{% from "_anpfiff.html" import symbol, knopf %}
 
-{% block title %}Design{% endblock %}
-{% block kopf_titel %}Design{% endblock %}
+{% block title %}Design – {{ tournament.name }}{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/galerie.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-galerie.css') }}">
 {% endblock %}
 
-{% block navbar_items %}
-<a class="cp-knopf cp-knopf--still"
-   href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" target="_blank">
-    {{ icon('world') }} Live-Ansicht ansehen
+{% block kopf_aktionen %}
+<a class="ap-knopf ap-knopf--klein" target="_blank"
+   href="{{ url_for('main.tournament_view', slug=tournament.slug) }}">
+    {{ symbol('world') }} Live-Ansicht
 </a>
 {% endblock %}
 
-{% block page_content %}
+{% block inhalt %}
 
-<section class="ga-kopf">
-    <div>
-        <h2 class="ga-titel">Theme</h2>
-        <p class="ga-unter">
-            Ein Klick wendet das Theme sofort an – hier, in der Live-Ansicht,
-            auf dem Handy und am Beamer. Du musst nichts speichern.
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">
+        Darstellung
+        <div class="ap-rechts ap-segment" role="group" aria-label="Hell oder dunkel">
+            <button type="button" class="ap-segment-knopf" data-schema="hell"
+                    aria-pressed="false">{{ symbol('sun') }} Hell</button>
+            <button type="button" class="ap-segment-knopf" data-schema="dunkel"
+                    aria-pressed="false">{{ symbol('moon') }} Dunkel</button>
+        </div>
+    </header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Ein Klick wendet an – sofort und überall: Adminbereich,
+            Live-Ansicht, Handy und Beamer. Jede Karte zeigt eine
+            Miniatur der echten Oberfläche, nicht nur einen Farbfleck.
         </p>
-    </div>
-    <div class="ga-schema" role="group" aria-label="Helligkeit">
-        <button type="button" class="ga-schema-knopf" data-schema="hell"
-                {% if aktuelles_schema == 'hell' %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-            {{ icon('sun') }} Hell
-        </button>
-        <button type="button" class="ga-schema-knopf" data-schema="dunkel"
-                {% if aktuelles_schema == 'dunkel' %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-            {{ icon('moon') }} Dunkel
-        </button>
-    </div>
-</section>
 
-<div class="ga-galerie" id="ga-galerie" role="radiogroup" aria-label="Theme auswählen">
-    {% for t in themes %}
-    {% set farben = t.vorschau[aktuelles_schema] %}
-    <button type="button" class="ga-karte {% if t.schluessel == aktuelles_theme %}ist-gewaehlt{% endif %}"
-            data-theme="{{ t.schluessel }}"
-            role="radio"
-            aria-checked="{{ 'true' if t.schluessel == aktuelles_theme else 'false' }}"
-            data-hell='{{ t.vorschau["hell"]|tojson }}'
-            data-dunkel='{{ t.vorschau["dunkel"]|tojson }}'>
-
-        {# Miniatur der echten Oberflaeche: Kopfzeile, Spielstand,
-           Tabellenzeilen. Die Farben kommen aus dem Theme, damit man
-           sieht, wie es wirklich wirkt – nicht nur drei Farbpunkte. #}
-        <span class="ga-vorschau" style="--v-tief:{{ farben[0] }};--v-flaeche:{{ farben[1] }};--v-akzent:{{ farben[2] }}">
-            <span class="ga-v-kopf">
-                <span class="ga-v-punkt"></span>
-                <span class="ga-v-balken ga-v-balken--titel"></span>
-            </span>
-            <span class="ga-v-stand">
-                <span class="ga-v-zahl">3</span>
-                <span class="ga-v-doppelpunkt">:</span>
-                <span class="ga-v-zahl">1</span>
-            </span>
-            <span class="ga-v-zeile"><span class="ga-v-balken"></span><span class="ga-v-pille"></span></span>
-            <span class="ga-v-zeile"><span class="ga-v-balken ga-v-balken--kurz"></span><span class="ga-v-pille"></span></span>
-            <span class="ga-v-zeile"><span class="ga-v-balken"></span><span class="ga-v-pille"></span></span>
-        </span>
-
-        <span class="ga-karte-text">
-            <span class="ga-karte-name">
-                {{ t.name }}
-                <span class="ga-haken" aria-hidden="true">{{ icon('circle-check') }}</span>
-            </span>
-            <span class="ga-karte-beschreibung">{{ t.beschreibung }}</span>
-        </span>
-    </button>
-    {% endfor %}
-</div>
-
-<section class="ga-abschnitt">
-    <h2 class="ga-titel">Vereinsfarbe</h2>
-    <p class="ga-unter">
-        Überschreibt die Akzentfarbe des Themes. Die Schriftfarbe darauf
-        wählt CupPlan selbst, damit sie lesbar bleibt.
-    </p>
-    <div class="ga-farbe">
-        <input type="color" id="ga-farbe-wahl" class="ga-farbe-wahl"
-               value="{{ settings.color_primary or '#22c55e' }}"
-               aria-label="Vereinsfarbe wählen">
-        <input type="text" id="ga-farbe-text" class="cp-eingabe ga-farbe-text"
-               value="{{ settings.color_primary or '#22c55e' }}"
-               spellcheck="false" aria-label="Vereinsfarbe als Hex-Wert">
-        <button type="button" class="cp-knopf" id="ga-farbe-weg">
-            {{ icon('x') }} Zurück zum Theme
-        </button>
-        <span class="ga-farbe-hinweis" id="ga-farbe-hinweis"></span>
+        <div class="ga-galerie" id="ga-galerie" role="radiogroup"
+             aria-label="Theme auswählen">
+            {% for t in themes %}
+            <button type="button" class="ga-karte"
+                    role="radio" aria-checked="false"
+                    data-theme="{{ t.schluessel }}"
+                    data-hell='{{ t.vorschau.hell | tojson }}'
+                    data-dunkel='{{ t.vorschau.dunkel | tojson }}'>
+                {# Die Miniatur zeigt genau das, was man auf der echten
+                   Seite sieht: Streifen, Spielstand, zwei Tabellenzeilen. #}
+                <span class="ga-vorschau" aria-hidden="true">
+                    <span class="ga-v-kopf">
+                        <span class="ga-v-punkt"></span>
+                        <span class="ga-v-streifen"></span>
+                    </span>
+                    <span class="ga-v-stand">
+                        <span class="ga-v-zahl">2</span>
+                        <span class="ga-v-doppel">:</span>
+                        <span class="ga-v-zahl">1</span>
+                    </span>
+                    <span class="ga-v-zeile"><span class="ga-v-pille"></span></span>
+                    <span class="ga-v-zeile ga-v-zeile--kurz"><span class="ga-v-pille"></span></span>
+                </span>
+                <span class="ga-text">
+                    <span class="ga-name">
+                        {{ t.name }}{{ symbol('check', 'ga-haken') }}
+                    </span>
+                    <span class="ga-beschreibung">{{ t.beschreibung }}</span>
+                    {% if t.nur_dunkel %}
+                    <span class="ga-merkmal">nur dunkel</span>
+                    {% endif %}
+                </span>
+            </button>
+            {% endfor %}
+        </div>
     </div>
 </section>
 
-<section class="ga-abschnitt">
-    <h2 class="ga-titel">Nicht hier</h2>
-    <p class="ga-unter">
-        Ob Tabelle und Ergebnisse öffentlich sichtbar sind, ist keine
-        Frage des Aussehens, sondern eine Turnierentscheidung. Sie steht
-        deshalb bei den Turniereinstellungen – an einer Stelle statt an zwei.
-    </p>
-    <p style="margin-top:var(--raum-3)">
-        <a class="cp-knopf cp-knopf--still"
-           href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}#einstellungen">
-            {{ icon('settings') }} Zu den Turniereinstellungen
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Vereinsfarbe</header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Überschreibt die Akzentfarbe des Themes. Die Schriftfarbe darauf
+            wählt CupPlan selbst nach Kontrast – eine knallgelbe Vereinsfarbe
+            mit weißer Schrift wäre unlesbar. Hebt sich die Farbe zu wenig
+            vom Hintergrund ab, bleibt der Theme-Akzent.
+        </p>
+        <div class="ga-farbe">
+            <input type="color" class="ga-farbwahl" id="ga-farbwahl"
+                   value="{{ settings.color_primary or '#11703f' }}"
+                   aria-label="Vereinsfarbe wählen">
+            <input type="text" class="ap-eingabe ga-farbtext" id="ga-farbtext"
+                   value="{{ settings.color_primary or '#11703f' }}"
+                   aria-label="Vereinsfarbe als Hexwert">
+            {{ knopf('Zurück zum Theme', klasse='ap-knopf--klein',
+                     attribute='id="ga-farbweg"') }}
+            <span class="ga-farbhinweis" id="ga-farbhinweis" role="status"></span>
+        </div>
+    </div>
+</section>
+
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Nicht hier</header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Ob Tabelle und Ergebnisse öffentlich sichtbar sind, ist keine
+            Frage des Aussehens, sondern eine Turnierentscheidung. Sie steht
+            bei den Turniereinstellungen – an einer Stelle statt an zwei.
+        </p>
+        <a class="ap-knopf" href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}#einstellungen">
+            {{ symbol('settings') }} Zu den Turniereinstellungen
         </a>
-    </p>
+    </div>
 </section>
 
+{% endblock %}
+
+{% block skripte %}
 <script>
 const SLUG = {{ tournament.slug | tojson }};
 let AKTUELLES_THEME = {{ aktuelles_theme | tojson }};
 let AKTUELLES_SCHEMA = {{ aktuelles_schema | tojson }};
+const NUR_DUNKEL = {{ (themes | selectattr('nur_dunkel') | map(attribute='schluessel') | list) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/admin/galerie.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/anpfiff-galerie.js') }}"></script>
 {% endblock %}

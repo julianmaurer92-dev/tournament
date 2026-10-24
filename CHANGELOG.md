@@ -1,136 +1,139 @@
 # Was sich geändert hat
 
-## UX-Redesign (24.10.2026)
+## Neues UI – „Anpfiff" (25.10.2026)
 
-Ein Tag ausschließlich an der Bedienung. Keine neuen Turnierfunktionen –
-alles, was CupPlan vorher konnte, kann es weiterhin. Es ist nur schneller
-zu erreichen.
+CupPlan sieht komplett anders aus. **Es kann genau dasselbe wie
+vorher** – alle 113 Seiten und Aktionen funktionieren weiter, nichts
+ist weggefallen. Nur die Oberfläche ist neu.
 
-Der Leitgedanke: **wenige große, eindeutige Elemente, möglichst wenige
-Klicks, und Einstellungen dort, wo man sie braucht.**
+Die Gestaltungssprache heißt **Anpfiff** und folgt drei Gedanken:
+
+**Alles ist eine Tafel.** Jede Fläche hat einen Beschriftungsstreifen
+oben und darunter den Inhalt – wie eine Anzeigetafel. Das ist das
+einzige Objekt am Sportplatz, das wirklich jeder ohne Nachdenken
+liest.
+
+**Zahlen sind das Gesicht.** Spielstand, Uhr und Punkte bekommen die
+größte Schrift und eine eigene, schmale Anzeigeschrift. Alles andere
+ist Beschriftung.
+
+**Zwei Betriebsarten.** Hell heißt *bedienen* – draußen, in der Sonne,
+mit einer Hand. Dunkel heißt *zeigen* – im Zelt, auf dem Beamer,
+abends.
 
 ---
 
 ### Am Spielfeldrand
 
-**Tor mit Torschütze: zwei Tipps statt neun Schritte.**
-Vorher: „+" drücken, auf eine eigene Seite wechseln, Ereignisart wählen,
-Mannschaft wählen, Spieler wählen, Minute eintippen, das Häkchen
-„Spielstand mitzählen" **abwählen** (sonst zählte das Tor doppelt),
-abschicken. Jetzt: Tipp auf das große **+**, Tipp auf den Spielernamen.
-Zuletzt eingetragene Schützen stehen oben.
+**Die Spielsteuerung ist komplett neu.** Der Tor-Knopf ist jetzt der
+größte Knopf der ganzen App: volle Breite, 84 Pixel hoch. Ein Tipp
+öffnet die Spielerliste von unten, ein zweiter trägt Tor und
+Torschützen ein. Zuletzt eingetragene Schützen stehen oben – im selben
+Spiel trifft oft derselbe mehrfach.
 
-**Der Spielstand steht sofort im Bild**, ohne auf den Rundruf zu warten.
-Im Sportheim-WLAN konnte das dauern – und wer nichts passieren sah,
-tippte noch einmal.
+**Alles passt auf ein Bild**, auch mit zwei Spielfeldern gleichzeitig.
+Kein Scrollen, kein Umschalten – wer scrollen muss, verpasst das
+nächste Tor.
 
-**Alles passt ohne Scrollen auf ein Handy**, auch mit zwei Spielfeldern.
-Vorher waren es 1932 Pixel Inhalt auf 844 Pixel Bildschirm.
+**Die Uhr zeigt ihren Zustand über die Farbe:** bereit, läuft, letzte
+Minute, letzte 30 Sekunden (blinkt), abgelaufen. Kein Wort daneben,
+das man erst lesen muss.
 
-**Keine Bestätigungsdialoge mehr.** Jede Aktion lässt sich zurücknehmen –
-über den Hinweis unten am Bildschirm oder mit `Strg/Cmd + Z`. Ein Dialog
-am Spielfeldrand hält die ganze Seite an, auch die Live-Aktualisierung.
+**Keine Bestätigungsdialoge.** Alles lässt sich mit einem Tipp
+zurücknehmen. Ein Dialog hält am Spielfeldrand die ganze Seite an –
+auch die Live-Aktualisierung.
 
-**Die Uhr zeigt ihren Zustand über die Farbe:** läuft, letzte Minute,
-letzte 30 Sekunden, abgelaufen.
-
-**Fällt die Verbindung aus, steht das oben auf der Seite** – vorher nur
-in der Browserkonsole, die am Spielfeldrand niemand offen hat.
-
-Am Schreibtisch: `Leertaste` pfeift an, `Q` und `P` sind die Tore links
-und rechts.
+**Fällt die Verbindung aus**, steht das als roter Streifen oben auf der
+Seite.
 
 ---
 
-### Überall im Adminbereich
+### Auf dem Handy
 
-**Ein Menü statt elf verschiedener.** Vorher trug jede Seite ihr eigenes:
-die Turnierliste zeigte „Benutzer · Speisekarte · Export", das Dashboard
-„Design · Spielplan · Org", die Spielsteuerung nur „Ereignisse ·
-Dashboard". Welche Bereiche es überhaupt gibt, stand nirgends
-vollständig. Jetzt: eine feste Seitenleiste mit Turnier-Umschalter und
-immer denselben acht Bereichen. Auf dem Handy fährt sie als Schublade
-aus.
+**Die Bedienleiste ist nach unten gewandert.** Am Spielfeldrand hält
+man das Gerät in einer Hand; was oben klebt, erreicht der Daumen
+nicht. Fünf Ziele unten, alles Weitere hinter „Mehr".
 
-**Suche über alles: `Strg/Cmd + K`.** Namen tippen, Enter. Findet Seiten,
-Aktionen (drucken, Live-Ansicht, Anmeldeformular), alle Mannschaften,
-alle Spiele und alle Themes. Auch unter Wörtern, die nirgends im Menü
-stehen: „spielzeit", „startgeld", „backup", „anzeigetafel". `?` zeigt
-alle Tastenkürzel.
-
-**Turnier-Einstellungen an einer Stelle.** Spielfelder, Spielzeit,
-Verlängerung und „Was Zuschauer sehen" standen vorher auf zwei Seiten
-verteilt, die beiden Haken sogar doppelt. Jetzt stehen sie in einer
-Karte und speichern sofort.
-
----
-
-### Aussehen
-
-**Zehn Themes, jedes hell und dunkel** – von „Rasen" (Vorgabe) über
-„Papier" (sehr hell, für den Beamer bei Tageslicht) bis „Stadion"
-(höchster Kontrast für große Entfernung). **Ein Klick wechselt**, und man
-sieht sofort, worauf man sich einlässt: Jede Karte in der Galerie zeigt
-eine Miniatur der echten Oberfläche.
-
-Alle zwanzig Varianten sind gegen den Barrierefreiheits-Standard
-**WCAG AA** nachgerechnet, nicht nur behauptet.
-
-**Die Vereinsfarbe** überschreibt den Theme-Akzent. Die Schriftfarbe
-darauf wählt CupPlan selbst nach Kontrast – eine knallgelbe Vereinsfarbe
-mit weißer Schrift wäre unlesbar. Hebt sich die Farbe zu wenig vom
-Hintergrund ab, bleibt der Theme-Akzent.
-
-**Einheitliche Symbole statt Emoji.** Vorher waren 339 Emoji und
-HTML-Zeichen quer durch die Oberfläche verstreut. Die sehen auf jedem
-Gerät anders aus, lassen sich nicht einfärben und passen in keiner Größe
-zum Text daneben.
-
-**Der Ausdruck ist immer hell und tintensparend**, unabhängig vom
-gewählten Theme.
-
----
-
-### Auf dem Beamer
-
-**„Präsentieren" – ein Klick.** Danach läuft die Anzeige allein: Live
-(20 s) → Tabellen (15 s) → Spielplan (15 s), jeweils über die volle
-Breite und in Beamer-Schriftgröße. Vorher standen immer alle drei
-Spalten gleichzeitig nebeneinander; aus zehn Metern las das niemand.
-
-`←` `→` blättern von Hand, `Leertaste` hält an, `Esc` beendet.
-
-**Die Beamer-Ansicht folgt jetzt dem gewählten Theme.** Vorher war sie
-fest dunkelblau – in einem hellen Zelt die schlechteste aller
-Möglichkeiten.
-
-**Läuft gerade kein Spiel**, steht groß da, welches als Nächstes kommt,
-mit Uhrzeit, Spielfeld und Gruppe – statt „Kein Spiel aktiv".
+Das gilt im Adminbereich genauso wie in der Zuschaueransicht. Ein
+pulsender Punkt am Reiter „Live" zeigt, dass gerade ein Spiel läuft.
 
 ---
 
 ### Für Zuschauer
 
-**„Mein Team" merken.** Einmal die Mannschaft wählen – danach steht beim
-Öffnen der Handy-Ansicht ganz oben, wann und wo das nächste Spiel ist,
-mit Gegner, Uhrzeit, Spielfeld und Gruppe. Läuft gerade eines, steht es
-darüber mit Spielstand. Die Wahl liegt nur im eigenen Browser; kein
-Konto, keine Daten auf dem Server.
+**Das laufende Spiel ist eine Bühne:** volle Breite, Spielstand so
+groß wie der Platz hergibt, dahinter ein angedeuteter Mittelkreis in
+Kreideoptik.
 
-**Mannschaftsnamen werden nicht mehr getrennt.** Vorher stand in
-schmalen Spalten „SpVgg Hohen-berg" oder „TSV Metten-berg" – der Browser
-trennte Vereinsnamen wie Fließtext.
+Laufen zwei Partien gleichzeitig, stehen sie am Rechner nebeneinander
+und auf dem Handy untereinander – vorher wurden die Mannschaftsnamen
+auf schmalen Bildschirmen zu Brei.
+
+---
+
+### Auf dem Beamer
+
+**„Präsentieren" – ein Klick**, danach läuft die Anzeige allein: Live,
+Tabellen, Spielplan im Wechsel, jeweils über die volle Breite.
+Pfeiltasten blättern von Hand, Leertaste hält an, Esc beendet.
+
+**Neues Theme „Anzeigetafel"**, auf dem Beamer die Vorgabe: reines
+Schwarz, ein leuchtender Akzent, alles eine Nummer größer. Gebaut für
+zehn Meter Abstand. Wer ein eigenes Theme gewählt hat, bekommt
+seines – die Entscheidung gehört dem Verein.
+
+---
+
+### Aussehen
+
+**Neun Themes**, acht davon in hell und dunkel: Rasen (die Vorgabe),
+Flutlicht, Trikot, Auswärts, Bernstein, Kreide, Vereinsheim,
+Nachtspiel und Anzeigetafel.
+
+**Ein Klick wechselt**, sofort und überall – Adminbereich,
+Live-Ansicht, Handy und Beamer. Jede Karte in der Galerie zeigt eine
+**Miniatur der echten Oberfläche**, nicht nur einen Farbfleck.
+
+Alle 17 Varianten sind gegen den Barrierefreiheits-Standard **WCAG AA**
+nachgerechnet, nicht behauptet. 272 Farbkombinationen, nachprüfbar mit
+einem Befehl.
+
+**Alte Theme-Namen funktionieren weiter** – beide Generationen. Wer
+irgendwann „Midnight" oder „Papier" gespeichert hat, bekommt etwas
+Sinnvolles und keinen Fehler.
+
+**Drei neue Schriften**, alle frei lizenziert und lokal im Projekt:
+Bricolage Grotesque für Überschriften, Barlow Condensed für alle
+Zahlen, Inter für den Fließtext. CupPlan ruft im Betrieb keinen
+fremden Server auf – wichtig am Turniertag, wenn das Internet im Zelt
+schwächelt.
+
+**Der Ausdruck ist immer hell und tintensparend**, unabhängig vom
+Bildschirm.
 
 ---
 
 ### Behobene Fehler
 
-- **Vier von zehn Themes ließen sich nicht speichern.** `navy`, `forest`,
-  `amber` und `violet` standen in der Auswahl, wurden beim Speichern aber
-  stillschweigend verworfen. Man klickte, und es passierte nichts.
-- **„Tabelle ausblenden" sprang von selbst wieder an.** Wer die Tabelle
-  verborgen hatte und danach irgendetwas an den Turnierdaten änderte –
-  Datum, Uhrzeit, Beschreibung –, hatte sie wieder öffentlich im Netz,
-  ohne es zu merken.
-- **Lange Turniernamen** drückten in der Handy-Kopfzeile die Knöpfe
-  daneben zusammen.
+- **Ein Fußball-Symbol füllte auf dem Beamer den ganzen Bildschirm**
+  als schwarze Fläche.
+- **Symbole in Knöpfen waren unsichtbar dünn** – sie waren da, aber
+  auf null Pixel Breite zusammengedrückt.
+- **Mannschaftswappen blähten sich auf** – auf dem Handy war das
+  Wappen dreimal so hoch wie der Name daneben.
+- **Gruppentabellen ragten aus ihrer Karte heraus.**
+- **Die Seite ließ sich seitwärts schieben** – auf dem Handy das
+  Ärgerlichste, was passieren kann.
+- **Auf dem Handy war die halbe Übersicht unerreichbar**, weil sie
+  gegen eine feste Kopfzeilenhöhe rechnete.
+
+---
+
+### Für Entwickler
+
+- Styleguide unter `/admin/styleguide` – jeder Baustein in jedem Theme
+- Die drei verworfenen Entwurfsrichtungen stehen unter `/design-lab/`
+- `docs/design/DESIGN_SYSTEM.md` – Prinzipien, Tokens, Bausteine, und
+  wie man ein neues Theme anlegt
+- `docs/design/FUNKTIONEN.md` – die Prüfliste aller 113 Routen
+- Keine neue Bibliothek, kein Bauschritt

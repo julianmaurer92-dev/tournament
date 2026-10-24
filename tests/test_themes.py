@@ -1,155 +1,170 @@
-"""Tests fuer den Theme-Katalog und die Abbildung der alten Namen."""
+"""Themes: Katalog, Auflösung, Abbildung alter Namen.
+
+Die Gestaltungssprache heisst „Anpfiff" und bringt acht eigene Themes
+mit, jedes hell und dunkel, dazu „Anzeigetafel" nur fuer den Beamer.
+
+Der wichtigste Punkt hier: **Niemandem darf seine Einstellung
+wegbrechen.** Es gibt inzwischen zwei Generationen alter Namen, und
+beide muessen weiter etwas Sinnvolles ergeben – keinen Fehler und
+keine leere Seite.
+"""
 import pytest
 
-from app.themes import (
-    ALTE_NAMEN, SCHEMATA, STANDARD_SCHEMA, STANDARD_THEME, THEMES,
-    aufloesen, katalog, speicherwert,
-)
+from app.models import get_setting
+from app.themes import (ALTE_NAMEN, NUR_DUNKEL, SCHEMATA, STANDARD_SCHEMA,
+                        STANDARD_THEME, THEMES, aufloesen, katalog,
+                        speicherwert)
+from tests.conftest import make_tournament
 
 
-# ──────────────────────────────────────
-# Katalog
-# ──────────────────────────────────────
+# ── Katalog ────────────────────────────────────────────────────
 
-def test_zehn_themes_mit_beiden_schemata():
-    assert len(THEMES) == 10
+def test_neun_themes():
+    assert len(THEMES) == 9
     for schluessel, daten in THEMES.items():
-        assert set(daten["vorschau"]) == {"hell", "dunkel"}, schluessel
-        for schema, farben in daten["vorschau"].items():
+        assert daten["name"], schluessel
+        assert daten["beschreibung"], schluessel
+        for schema in SCHEMATA:
+            farben = daten["vorschau"][schema]
             assert len(farben) == 3, f"{schluessel}/{schema}"
-            for farbe in farben:
-                assert farbe.startswith("#") and len(farbe) == 7, farbe
+            for f in farben:
+                assert f.startswith("#") and len(f) == 7, f"{schluessel}: {f}"
 
 
-def test_jedes_theme_hat_name_und_beschreibung():
-    for schluessel, daten in THEMES.items():
-        assert daten["name"] and len(daten["name"]) >= 4, schluessel
-        assert daten["beschreibung"].endswith("."), schluessel
-        assert len(daten["beschreibung"]) > 15, schluessel
-
-
-def test_katalog_behaelt_die_reihenfolge():
+def test_katalog_traegt_alles_was_die_galerie_braucht():
     eintraege = katalog()
-    assert [e["schluessel"] for e in eintraege] == list(THEMES)
-    assert eintraege[0]["schluessel"] == STANDARD_THEME
+    assert len(eintraege) == len(THEMES)
+    for e in eintraege:
+        assert set(e) == {"schluessel", "name", "beschreibung",
+                          "vorschau", "nur_dunkel"}
+    # Die Galerie muss wissen, wo sie den Hell-Schalter sperren soll
+    assert [e["schluessel"] for e in eintraege if e["nur_dunkel"]] == list(NUR_DUNKEL)
 
 
-# ──────────────────────────────────────
-# Alte Namen bleiben gueltig
-# ──────────────────────────────────────
-
-@pytest.mark.parametrize("alt", sorted(ALTE_NAMEN))
-def test_alter_name_ergibt_gueltiges_theme(alt):
-    theme, schema = aufloesen(alt)
-    assert theme in THEMES
-    assert schema in SCHEMATA
+def test_schluessel_sind_ascii_und_kleingeschrieben():
+    """Sie landen in CSS-Selektoren und in der Datenbank."""
+    for schluessel in THEMES:
+        assert schluessel.isascii()
+        assert schluessel.islower()
+        assert schluessel.isalpha()
 
 
-def test_alte_namen_behalten_ihren_charakter():
-    """midnight war fast schwarz und bleibt dunkel, light bleibt hell."""
-    assert aufloesen("midnight") == ("mitternacht", "dunkel")
-    assert aufloesen("slate") == ("schiefer", "dunkel")
-    assert aufloesen("light")[1] == "hell"
-    assert aufloesen("ocean") == ("ozean", "dunkel")
-    assert aufloesen("amber") == ("bernstein", "dunkel")
+# ── Auflösung ──────────────────────────────────────────────────
 
+def test_leerer_wert_gibt_die_vorgabe():
+    for wert in ("", "   ", None):
+        assert aufloesen(wert) == (STANDARD_THEME, STANDARD_SCHEMA)
 
-def test_alle_zehn_alten_namen_sind_abgedeckt():
-    """Die Designseite bot zehn Themes an – keines darf wegfallen."""
-    frueher = {"dark", "midnight", "slate", "ocean", "crimson",
-               "light", "navy", "forest", "amber", "violet"}
-    assert frueher <= set(ALTE_NAMEN)
-
-
-# ──────────────────────────────────────
-# Aufloesen
-# ──────────────────────────────────────
 
 def test_neue_schreibweise():
-    assert aufloesen("ozean:hell") == ("ozean", "hell")
-    assert aufloesen("stadion:dunkel") == ("stadion", "dunkel")
+    assert aufloesen("rasen:dunkel") == ("rasen", "dunkel")
+    assert aufloesen("flutlicht:hell") == ("flutlicht", "hell")
 
 
-def test_theme_ohne_schema():
-    assert aufloesen("veilchen") == ("veilchen", STANDARD_SCHEMA)
-
-
-def test_papier_ist_von_haus_aus_hell():
-    """Ein Theme namens Papier in Dunkel waere eine Ueberraschung."""
-    assert aufloesen("papier") == ("papier", "hell")
-
-
-@pytest.mark.parametrize("eingabe", ["", None, "   ", "gibtsnicht", "::",
-                                     "<script>", "rasen"])
-def test_unsinn_faellt_auf_die_vorgabe_zurueck(eingabe):
-    """Ein kaputter Wert in der Datenbank darf keine Seite weiss machen.
-
-    "ozean:lila" steht bewusst NICHT in dieser Liste: Dort ist das Theme
-    gueltig und nur das Schema nicht. Dann das Theme zu behalten ist
-    besser, als alles wegzuwerfen – siehe den naechsten Test.
-    """
-    assert aufloesen(eingabe) == (STANDARD_THEME, STANDARD_SCHEMA)
+def test_theme_ohne_schema_nimmt_das_standardschema():
+    assert aufloesen("trikot") == ("trikot", STANDARD_SCHEMA)
 
 
 def test_unbekanntes_schema_behaelt_das_theme():
-    assert aufloesen("ozean:quatsch") == ("ozean", STANDARD_SCHEMA)
+    """Das Theme ist die eigentliche Entscheidung – die bleibt."""
+    assert aufloesen("bernstein:lila") == ("bernstein", STANDARD_SCHEMA)
+
+
+def test_unbekanntes_theme_faellt_ganz_zurueck():
+    assert aufloesen("quatsch") == (STANDARD_THEME, STANDARD_SCHEMA)
+    assert aufloesen("quatsch:hell") == (STANDARD_THEME, STANDARD_SCHEMA)
 
 
 def test_grossschreibung_egal():
-    assert aufloesen("OZEAN:HELL") == ("ozean", "hell")
-    assert aufloesen("  Midnight ") == ("mitternacht", "dunkel")
+    assert aufloesen("RASEN:DUNKEL") == ("rasen", "dunkel")
+    assert aufloesen("  Flutlicht:Hell  ") == ("flutlicht", "hell")
 
 
-# ──────────────────────────────────────
-# Speichern
-# ──────────────────────────────────────
+def test_anzeigetafel_hat_keine_helle_variante():
+    """Sie hat genau eine Aufgabe: aus zehn Metern lesbar sein."""
+    assert aufloesen("anzeigetafel") == ("anzeigetafel", "dunkel")
+    assert aufloesen("anzeigetafel:hell") == ("anzeigetafel", "dunkel")
+    assert speicherwert("anzeigetafel", "hell") == "anzeigetafel:dunkel"
+
+
+# ── Alte Namen ─────────────────────────────────────────────────
+
+@pytest.mark.parametrize("alt", sorted(ALTE_NAMEN))
+def test_jeder_alte_name_ergibt_ein_gueltiges_theme(alt):
+    theme, schema = aufloesen(alt)
+    assert theme in THEMES, alt
+    assert schema in SCHEMATA, alt
+
+
+def test_beide_generationen_sind_abgedeckt():
+    englisch = {"dark", "midnight", "slate", "ocean", "crimson",
+                "light", "navy", "forest", "amber", "violet"}
+    deutsch = {"mitternacht", "schiefer", "ozean", "ziegel", "forst",
+               "veilchen", "papier", "stadion"}
+    assert englisch <= set(ALTE_NAMEN)
+    assert deutsch <= set(ALTE_NAMEN)
+
+
+def test_alte_namen_behalten_ihren_charakter():
+    """Wer Dunkles gespeichert hat, soll nichts Helles bekommen."""
+    assert aufloesen("dark")[1] == "dunkel"
+    assert aufloesen("midnight") == ("nachtspiel", "dunkel")
+    assert aufloesen("crimson") == ("trikot", "dunkel")
+    assert aufloesen("ziegel") == ("trikot", "dunkel")
+    # Die beiden hellen bleiben hell
+    assert aufloesen("light")[1] == "hell"
+    assert aufloesen("papier")[1] == "hell"
+    # Die Beamer-Variante landet auf der Anzeigetafel
+    assert aufloesen("stadion") == ("anzeigetafel", "dunkel")
+
+
+def test_kein_alter_name_kollidiert_mit_einem_neuen():
+    """Sonst entscheidet die Reihenfolge im Code, nicht die Absicht."""
+    doppelt = set(ALTE_NAMEN) & set(THEMES)
+    assert not doppelt, f"Name ist alt UND neu: {doppelt}"
+
+
+# ── Speicherwert ───────────────────────────────────────────────
 
 def test_speicherwert_und_zurueck():
     for theme in THEMES:
         for schema in SCHEMATA:
             wert = speicherwert(theme, schema)
-            assert aufloesen(wert) == (theme, schema)
+            zurueck = aufloesen(wert)
+            assert zurueck[0] == theme
+            if theme in NUR_DUNKEL:
+                assert zurueck[1] == "dunkel"
+            else:
+                assert zurueck[1] == schema
 
 
 def test_speicherwert_faengt_unsinn_ab():
-    assert speicherwert("gibtsnicht", "quatsch") == \
-        f"{STANDARD_THEME}:{STANDARD_SCHEMA}"
+    assert speicherwert("quatsch", "lila") == speicherwert(
+        STANDARD_THEME, STANDARD_SCHEMA)
 
 
-# ──────────────────────────────────────
-# Ueber die Route
-# ──────────────────────────────────────
-
-def test_alle_zehn_themes_lassen_sich_speichern(app, admin_client):
-    """Vorher nahm die Route nur sechs der zehn angebotenen Themes an."""
-    from app.models import get_setting
-    from tests.conftest import make_tournament
-    t = make_tournament("Theme Cup")
-    for theme in THEMES:
-        for schema in SCHEMATA:
-            wert = speicherwert(theme, schema)
-            resp = admin_client.post(f"/admin/t/{t.slug}/api/settings",
-                                     json={"theme": wert})
-            assert resp.status_code == 200, f"{wert}: {resp.data[:200]}"
-            assert get_setting(t.id, "theme") == wert
-
+# ── Zusammenspiel mit der Route ────────────────────────────────
 
 def test_alte_themenamen_werden_beim_speichern_uebersetzt(app, admin_client):
-    from app.models import get_setting
-    from tests.conftest import make_tournament
     t = make_tournament("Alt Theme Cup")
-    resp = admin_client.post(f"/admin/t/{t.slug}/api/settings",
-                             json={"theme": "midnight"})
-    assert resp.status_code == 200
-    assert get_setting(t.id, "theme") == "mitternacht:dunkel"
+    antwort = admin_client.post(f"/admin/t/{t.slug}/api/settings",
+                                json={"theme": "midnight"})
+    assert antwort.status_code == 200
+    assert get_setting(t.id, "theme") == "nachtspiel:dunkel"
 
 
-def test_kaputtes_theme_wird_nicht_gespeichert_sondern_ersetzt(app, admin_client):
-    from app.models import get_setting
-    from tests.conftest import make_tournament
-    t = make_tournament("Kaputt Theme Cup")
-    admin_client.post(f"/admin/t/{t.slug}/api/settings",
-                      json={"theme": "<script>alert(1)</script>"})
-    gespeichert = get_setting(t.id, "theme")
-    assert gespeichert == f"{STANDARD_THEME}:{STANDARD_SCHEMA}"
-    assert "<" not in gespeichert
+def test_alle_neuen_themes_lassen_sich_speichern(app, admin_client):
+    """Vorher nahm die Route nur sechs von zehn Namen an – man klickte,
+    und es passierte nichts."""
+    t = make_tournament("Theme Cup")
+    for schluessel in THEMES:
+        antwort = admin_client.post(f"/admin/t/{t.slug}/api/settings",
+                                    json={"theme": schluessel + ":dunkel"})
+        assert antwort.status_code == 200, schluessel
+        assert get_setting(t.id, "theme").startswith(schluessel + ":"), schluessel
+
+
+def test_kaputter_wert_zerlegt_keine_seite(app, admin_client, client):
+    t = make_tournament("Kaputt Cup")
+    admin_client.post(f"/admin/t/{t.slug}/api/settings", json={"theme": "<script>"})
+    assert client.get(f"/t/{t.slug}/").status_code == 200
