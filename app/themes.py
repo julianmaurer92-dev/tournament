@@ -1,97 +1,109 @@
-"""Themes: Katalog, Auflösung und Abbildung der alten Namen.
+"""Themes: Katalog, Aufloesung und Abbildung alter Namen.
 
-Vorher gab es zehn Themes als lose `[data-theme="x"]`-Bloecke im CSS, alle
-dunkel bis auf eines. Jetzt gibt es zehn Themes mit je einer hellen und
-einer dunklen Variante.
+Die Gestaltungssprache heisst „Anpfiff" und bringt acht eigene Themes
+mit, jedes hell und dunkel, dazu „Anzeigetafel" fuer den Beamer.
 
-Die alten Namen bleiben gueltig: Wer "midnight" gespeichert hat, bekommt
-"mitternacht" in dunkel. Niemandem bricht seine Einstellung weg.
+Zwei Generationen alter Namen bleiben gueltig:
+  - die urspruenglichen englischen (dark, midnight, slate, ocean,
+    crimson, light, navy, forest, amber, violet)
+  - die deutschen aus der UX-Nachtschicht (rasen, mitternacht,
+    schiefer, ozean, ziegel, forst, bernstein, veilchen, papier,
+    stadion)
+
+Niemandem bricht seine Einstellung weg.
 """
 
-# Schluessel -> Anzeige. Die Vorschaufarben stehen hier, damit die Galerie
-# sie nicht aus dem CSS parsen muss.
+# Schluessel -> Anzeige. Die Vorschaufarben stehen hier, damit die
+# Galerie sie nicht aus dem CSS parsen muss. Reihenfolge der Werte:
+# (Grund, Tafel, Akzent).
 THEMES = {
     "rasen": {
         "name": "Rasen",
-        "beschreibung": "Grün wie der Platz. Die Vorgabe.",
-        "vorschau": {"dunkel": ("#0a1410", "#162c23", "#34d27b"),
-                     "hell":   ("#f1f8f3", "#ffffff", "#0d7c42")},
+        "beschreibung": "Platzgruen auf warmem Papier. Die Vorgabe.",
+        "vorschau": {"hell":   ("#f4f2ea", "#ffffff", "#11703f"),
+                     "dunkel": ("#0a1410", "#12211a", "#43d98a")},
     },
-    "mitternacht": {
-        "name": "Mitternacht",
-        "beschreibung": "Fast schwarz. Für dunkle Hallen und Abendspiele.",
-        "vorschau": {"dunkel": ("#07080c", "#151823", "#7c8cff"),
-                     "hell":   ("#f3f4fb", "#ffffff", "#4452d6")},
+    "flutlicht": {
+        "name": "Flutlicht",
+        "beschreibung": "Kuehles Blauweiss, dunkel mit Signalgelb.",
+        "vorschau": {"hell":   ("#eef2f7", "#ffffff", "#0b5fbe"),
+                     "dunkel": ("#070c14", "#101a28", "#d6f94a")},
     },
-    "schiefer": {
-        "name": "Schiefer",
-        "beschreibung": "Neutrales Grau. Hält sich maximal zurück.",
-        "vorschau": {"dunkel": ("#0d1117", "#1d242e", "#4c9aff"),
-                     "hell":   ("#f4f6f8", "#ffffff", "#1769d4")},
+    "trikot": {
+        "name": "Trikot",
+        "beschreibung": "Vereinsrot, kraeftig und laut.",
+        "vorschau": {"hell":   ("#f7f1f0", "#ffffff", "#ab1f28"),
+                     "dunkel": ("#140a0a", "#211312", "#ff6b6b")},
     },
-    "ozean": {
-        "name": "Ozean",
-        "beschreibung": "Kühles Blau mit Türkis-Akzent.",
-        "vorschau": {"dunkel": ("#06121f", "#122a42", "#2ec5d8"),
-                     "hell":   ("#eff7fc", "#ffffff", "#0b7f91")},
-    },
-    "ziegel": {
-        "name": "Ziegel",
-        "beschreibung": "Warmes Rot. Für Vereine in Rot-Weiß.",
-        "vorschau": {"dunkel": ("#180b0c", "#31191b", "#ff6b5e"),
-                     "hell":   ("#fdf3f2", "#ffffff", "#c23a2b")},
-    },
-    "forst": {
-        "name": "Forst",
-        "beschreibung": "Dunkles Tannengrün mit Gold.",
-        "vorschau": {"dunkel": ("#081512", "#143029", "#c9a227"),
-                     "hell":   ("#f0f7f4", "#ffffff", "#8a6d09")},
+    "auswaerts": {
+        "name": "Auswaerts",
+        "beschreibung": "Tiefes Blau. Ruhig und seriös.",
+        "vorschau": {"hell":   ("#eef0f6", "#ffffff", "#2f3b8f"),
+                     "dunkel": ("#080a16", "#121631", "#8ea2ff")},
     },
     "bernstein": {
         "name": "Bernstein",
-        "beschreibung": "Warm und kräftig. Gut bei Sonnenlicht.",
-        "vorschau": {"dunkel": ("#16100a", "#2f2416", "#ffb340"),
-                     "hell":   ("#fdf6ea", "#ffffff", "#a06a00")},
+        "beschreibung": "Warmes Orange auf Sand. Gut bei Sonne.",
+        "vorschau": {"hell":   ("#f8f1e4", "#fffdf8", "#9a5410"),
+                     "dunkel": ("#140e06", "#221809", "#ffa733")},
     },
-    "veilchen": {
-        "name": "Veilchen",
-        "beschreibung": "Kräftiges Lila. Fällt auf.",
-        "vorschau": {"dunkel": ("#0f0a1c", "#22183a", "#a78bfa"),
-                     "hell":   ("#f6f2fd", "#ffffff", "#6b3fd4")},
+    "kreide": {
+        "name": "Kreide",
+        "beschreibung": "Fast farblos. Laesst die Vereinsfarben sprechen.",
+        "vorschau": {"hell":   ("#f2f2f1", "#ffffff", "#2e2e2b"),
+                     "dunkel": ("#0f0f0e", "#1a1a18", "#ededea")},
     },
-    "papier": {
-        "name": "Papier",
-        "beschreibung": "Sehr hell und ruhig. Für Beamer bei Tageslicht.",
-        "vorschau": {"hell":   ("#faf9f7", "#ffffff", "#1f6feb"),
-                     "dunkel": ("#16150f", "#2b2820", "#74a9ff")},
+    "vereinsheim": {
+        "name": "Vereinsheim",
+        "beschreibung": "Holz und Creme. Gemuetlich wie der Tresen.",
+        "vorschau": {"hell":   ("#f4eee6", "#fffaf4", "#7a4a21"),
+                     "dunkel": ("#15100b", "#221a12", "#e3a765")},
     },
-    "stadion": {
-        "name": "Stadion",
-        "beschreibung": "Höchster Kontrast. Für große Entfernung.",
-        "vorschau": {"dunkel": ("#000000", "#171717", "#ffdd00"),
-                     "hell":   ("#ffffff", "#ffffff", "#0b57d0")},
+    "nachtspiel": {
+        "name": "Nachtspiel",
+        "beschreibung": "Beinahe schwarz mit Neongruen. Hoher Kontrast.",
+        "vorschau": {"hell":   ("#f0f3ee", "#ffffff", "#2d6b1f"),
+                     "dunkel": ("#000000", "#0d0f0d", "#5dff9b")},
+    },
+    "anzeigetafel": {
+        "name": "Anzeigetafel",
+        "beschreibung": "Nur dunkel. Fuer den Beamer, aus zehn Metern lesbar.",
+        "vorschau": {"hell":   ("#000000", "#0a0a0a", "#ffe600"),
+                     "dunkel": ("#000000", "#0a0a0a", "#ffe600")},
     },
 }
 
 SCHEMATA = ("dunkel", "hell")
 
 STANDARD_THEME = "rasen"
-STANDARD_SCHEMA = "dunkel"
+STANDARD_SCHEMA = "hell"
 
-# Alte Theme-Namen aus der Datenbank -> (neues Theme, Schema).
-# Jeder alte Name behaelt seinen Charakter: midnight war fast schwarz und
-# bleibt fast schwarz, light war hell und bleibt hell.
+# „Anzeigetafel" hat keine helle Variante – sie hat genau eine Aufgabe.
+NUR_DUNKEL = ("anzeigetafel",)
+
+# Beide Generationen alter Namen. Links steht, was gespeichert sein
+# kann; rechts, was es heute bedeutet.
 ALTE_NAMEN = {
-    "dark":     ("rasen", "dunkel"),      # Vorgabe war dunkel mit Gruen-Akzent
-    "midnight": ("mitternacht", "dunkel"),
-    "slate":    ("schiefer", "dunkel"),
-    "ocean":    ("ozean", "dunkel"),
-    "crimson":  ("ziegel", "dunkel"),
-    "light":    ("schiefer", "hell"),
-    "navy":     ("ozean", "dunkel"),      # Marineblau mit Gold
-    "forest":   ("forst", "dunkel"),
-    "amber":    ("bernstein", "dunkel"),
-    "violet":   ("veilchen", "dunkel"),
+    # Erste Generation (englisch)
+    "dark":        ("rasen", "dunkel"),
+    "midnight":    ("nachtspiel", "dunkel"),
+    "slate":       ("kreide", "dunkel"),
+    "ocean":       ("auswaerts", "dunkel"),
+    "crimson":     ("trikot", "dunkel"),
+    "light":       ("kreide", "hell"),
+    "navy":        ("auswaerts", "dunkel"),
+    "forest":      ("rasen", "dunkel"),
+    "amber":       ("bernstein", "dunkel"),
+    "violet":      ("auswaerts", "dunkel"),
+    # Zweite Generation (deutsch, aus der UX-Nachtschicht)
+    "mitternacht": ("nachtspiel", "dunkel"),
+    "schiefer":    ("kreide", "dunkel"),
+    "ozean":       ("auswaerts", "dunkel"),
+    "ziegel":      ("trikot", "dunkel"),
+    "forst":       ("rasen", "dunkel"),
+    "veilchen":    ("auswaerts", "dunkel"),
+    "papier":      ("kreide", "hell"),
+    "stadion":     ("anzeigetafel", "dunkel"),
 }
 
 
@@ -101,11 +113,10 @@ def aufloesen(gespeichert):
     Akzeptiert:
       - neue Schreibweise "rasen:hell"
       - neues Theme ohne Schema  -> Standardschema des Themes
-      - alte Namen wie "midnight"
-      - Unsinn oder leer         -> Vorgabe
+      - alte Namen beider Generationen
+      - alles andere             -> Vorgabe
 
-    Nie eine Ausnahme: Ein kaputter Wert in der Datenbank darf keine Seite
-    weiss machen.
+    Wirft nie – eine kaputte Einstellung darf keine Seite zerlegen.
     """
     wert = (gespeichert or "").strip().lower()
     if not wert:
@@ -113,14 +124,16 @@ def aufloesen(gespeichert):
 
     if ":" in wert:
         theme, _, schema = wert.partition(":")
-        if theme in THEMES and schema in SCHEMATA:
-            return theme, schema
         if theme in THEMES:
+            if theme in NUR_DUNKEL:
+                return theme, "dunkel"
+            if schema in SCHEMATA:
+                return theme, schema
             return theme, STANDARD_SCHEMA
+        return STANDARD_THEME, STANDARD_SCHEMA
 
     if wert in THEMES:
-        # Papier ist von Haus aus hell – sonst saehe es aus wie ein Fehler
-        return wert, "hell" if wert == "papier" else STANDARD_SCHEMA
+        return wert, "dunkel" if wert in NUR_DUNKEL else STANDARD_SCHEMA
 
     if wert in ALTE_NAMEN:
         return ALTE_NAMEN[wert]
@@ -129,9 +142,11 @@ def aufloesen(gespeichert):
 
 
 def speicherwert(theme, schema):
-    """(theme, schema) in den Wert fuer die Datenbank."""
+    """Aus (theme, schema) den Wert machen, der in die Datenbank geht."""
     theme = theme if theme in THEMES else STANDARD_THEME
     schema = schema if schema in SCHEMATA else STANDARD_SCHEMA
+    if theme in NUR_DUNKEL:
+        schema = "dunkel"
     return f"{theme}:{schema}"
 
 
@@ -143,6 +158,7 @@ def katalog():
             "name": daten["name"],
             "beschreibung": daten["beschreibung"],
             "vorschau": daten["vorschau"],
+            "nur_dunkel": schluessel in NUR_DUNKEL,
         }
         for schluessel, daten in THEMES.items()
     ]

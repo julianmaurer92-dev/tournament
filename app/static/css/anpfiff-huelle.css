@@ -1,0 +1,253 @@
+/* ============================================================
+   ANPFIFF – die App-Hülle
+   ------------------------------------------------------------
+   Eine Hülle für alle Adminseiten. Am Schreibtisch eine
+   Seitenleiste links, am Handy eine Leiste unten – wie bei einer
+   App, nicht wie bei einer Website. Wer am Spielfeldrand steht,
+   erreicht alles mit dem Daumen.
+   ============================================================ */
+
+.ap-huelle {
+    display: grid;
+    grid-template-columns: 16rem 1fr;
+    min-height: 100dvh;
+}
+
+/* ── Seitenleiste (ab 900 px) ──────────────────────────────── */
+
+.ap-leiste {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ap-raum-2);
+    padding: var(--ap-raum-4) var(--ap-raum-3);
+    background: var(--ap-tafel);
+    border-right: 1px solid var(--ap-kante);
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+}
+
+.ap-marke {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    padding: var(--ap-raum-2) var(--ap-raum-3) var(--ap-raum-4);
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: -0.02em;
+    color: var(--ap-schrift-farbe);
+    text-decoration: none;
+}
+.ap-marke .ap-symbol { color: var(--ap-akzent); }
+
+/* Turnier-Umschalter: oben, weil die Frage „welches Turnier?"
+   vor jeder anderen kommt. */
+.ap-turnier {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ap-raum-1);
+    padding: var(--ap-raum-3);
+    margin-bottom: var(--ap-raum-3);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-m);
+}
+.ap-turnier-label {
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: var(--ap-streifen-abstand);
+    text-transform: uppercase;
+    color: var(--ap-still);
+}
+.ap-turnier-wahl {
+    width: 100%;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    min-height: 40px;
+    padding: 0 var(--ap-raum-2);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    font-weight: var(--ap-fett);
+    color: var(--ap-schrift-farbe);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+.ap-turnier-wahl:focus-visible { outline: 3px solid var(--ap-akzent); }
+
+.ap-punkte { display: flex; flex-direction: column; gap: 2px; }
+.ap-punkt {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    min-height: var(--ap-ziel);
+    padding: 0 var(--ap-raum-3);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    font-weight: var(--ap-fett-mittel);
+    text-align: left;
+    text-decoration: none;
+    color: var(--ap-leise);
+    background: transparent;
+    border: 0;
+    border-radius: var(--ap-rund-m);
+    cursor: pointer;
+    width: 100%;
+    transition: background var(--ap-zeit-kurz) var(--ap-kurve),
+                color var(--ap-zeit-kurz) var(--ap-kurve);
+}
+.ap-punkt:hover { background: var(--ap-tafel-tief); color: var(--ap-schrift-farbe); }
+.ap-punkt.ist-aktiv {
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    font-weight: var(--ap-fett);
+}
+.ap-punkt-zahl {
+    margin-left: auto;
+    padding: 1px var(--ap-raum-2);
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett-schwer);
+    background: var(--ap-akzent-leise);
+    color: var(--ap-akzent);
+    border-radius: var(--ap-rund-voll);
+}
+.ap-punkt.ist-aktiv .ap-punkt-zahl {
+    background: rgb(255 255 255 / .25);
+    color: var(--ap-auf-akzent);
+}
+.ap-taste {
+    margin-left: auto;
+    padding: 1px 6px;
+    font-size: var(--ap-text-xs);
+    color: var(--ap-still);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-s);
+}
+
+.ap-leiste-fuss { margin-top: auto; padding-top: var(--ap-raum-3); }
+
+/* ── Kopfzeile und Inhalt ──────────────────────────────────── */
+
+.ap-haupt-spalte { display: flex; flex-direction: column; min-width: 0; }
+
+.ap-kopf {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    min-height: 64px;
+    padding: var(--ap-raum-2) var(--ap-raum-5);
+    background: color-mix(in srgb, var(--ap-grund) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--ap-kante);
+}
+.ap-kopf-titel {
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ap-kopf-aktionen { display: flex; align-items: center; gap: var(--ap-raum-2); margin-left: auto; }
+
+.ap-inhalt {
+    flex: 1;
+    min-width: 0;
+    padding: var(--ap-raum-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ap-raum-5);
+}
+
+/* ── Leiste unten (bis 899 px) ─────────────────────────────── */
+
+.ap-unten { display: none; }
+
+@media (max-width: 899px) {
+    .ap-huelle { grid-template-columns: 1fr; }
+
+    /* Die Seitenleiste wird zur Schublade */
+    .ap-leiste {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 700;
+        width: min(19rem, 86vw);
+        height: 100dvh;
+        transform: translateX(-102%);
+        transition: transform var(--ap-zeit-lang) var(--ap-kurve);
+        box-shadow: var(--ap-schatten-l);
+    }
+    .ap-leiste[data-offen] { transform: none; }
+    .ap-leiste-schatten {
+        position: fixed; inset: 0; z-index: 690;
+        background: rgb(0 0 0 / .5);
+        display: none;
+    }
+    .ap-leiste-schatten[data-offen] { display: block; }
+
+    .ap-kopf { padding: var(--ap-raum-2) var(--ap-raum-4); }
+    .ap-inhalt {
+        padding: var(--ap-raum-4);
+        gap: var(--ap-raum-4);
+        /* Platz für die Leiste unten */
+        padding-bottom: calc(68px + env(safe-area-inset-bottom) + var(--ap-raum-4));
+    }
+
+    /* Die App-Leiste unten: fünf Ziele, mit dem Daumen erreichbar */
+    .ap-unten {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 600;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        padding-bottom: env(safe-area-inset-bottom);
+        background: var(--ap-tafel);
+        border-top: 1px solid var(--ap-kante);
+    }
+    .ap-unten-punkt {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 68px;
+        padding: var(--ap-raum-2) 2px;
+        font-family: var(--ap-schrift);
+        font-size: 11px;
+        font-weight: var(--ap-fett);
+        text-decoration: none;
+        color: var(--ap-still);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+    }
+    .ap-unten-punkt.ist-aktiv { color: var(--ap-akzent); }
+    .ap-unten-punkt .ap-symbol { width: 1.5em; height: 1.5em; min-width: 1.5em; min-height: 1.5em; }
+    /* Dünner Strich oben zeigt den aktiven Punkt an */
+    .ap-unten-punkt.ist-aktiv::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 32px; height: 3px;
+        background: var(--ap-akzent);
+        border-radius: 0 0 3px 3px;
+    }
+    .ap-unten-punkt { position: relative; }
+}
+
+@media (min-width: 900px) {
+    .ap-auf, .ap-leiste-schatten { display: none !important; }
+}
+
+@media print {
+    .ap-leiste, .ap-unten, .ap-kopf { display: none !important; }
+    .ap-huelle { display: block; }
+    .ap-inhalt { padding: 0; }
+}

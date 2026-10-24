@@ -2002,6 +2002,19 @@ def menu_bulk_delete():
 # User Management (superadmin only)
 # ──────────────────────────────────────
 
+@admin_bp.route("/styleguide")
+@login_required
+def styleguide():
+    """Alle Bausteine von „Anpfiff" auf einer Seite.
+
+    Nicht nur Schmuck: Wer eine neue Seite baut, sieht hier, welche
+    Bausteine es gibt und wie sie in jedem Theme aussehen. Und wer ein
+    Theme aendert, sieht sofort, ob etwas durchfaellt.
+    """
+    from app.themes import katalog
+    return render_template("admin/styleguide.html", themes=katalog())
+
+
 @admin_bp.route("/users")
 @login_required
 @superadmin_required

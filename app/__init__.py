@@ -182,9 +182,10 @@ def create_app(config_overrides=None):
         """
         from flask import request
         from flask_login import current_user
-        from app.navigation import navigation, palette_eintraege
+        from app.navigation import navigation, palette_eintraege, unten_punkte
 
-        leer = {"cp_navigation": [], "cp_turniere": [], "cp_palette": []}
+        leer = {"cp_navigation": [], "cp_turniere": [], "cp_palette": [],
+                "cp_unten": []}
         if not request.blueprint or not request.blueprint.startswith(
                 ("admin", "anmeldung_admin", "ereignisse_admin",
                  "siegerehrung_admin", "schiedsrichter")):
@@ -221,6 +222,7 @@ def create_app(config_overrides=None):
             "cp_navigation": navigation(tournament),
             "cp_turniere": turniere,
             "cp_palette": palette_eintraege(tournament, teams, spiele, themes),
+            "cp_unten": unten_punkte(tournament),
         }
 
     @app.context_processor

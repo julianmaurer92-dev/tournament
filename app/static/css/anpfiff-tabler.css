@@ -1,0 +1,181 @@
+/* ============================================================
+   ANPFIFF – Brücke zu Tabler
+   ------------------------------------------------------------
+   Nicht jede Seite wird in fünf Stunden neu gebaut. Die übrigen
+   benutzen weiterhin Tabler-Klassen (.btn, .card, .form-control,
+   .table, .badge). Diese Datei biegt Tablers Variablen auf die
+   Anpfiff-Rollen um.
+
+   Ergebnis: Auch eine Seite, die ich nicht angefasst habe,
+   bekommt die neuen Farben, die neue Schrift und die neuen
+   Rundungen – sie sieht nicht nach Fremdkörper aus, nur eben
+   nicht nach Anpfiff im engeren Sinn.
+
+   Das ist ausdrücklich eine Brücke, kein Dauerzustand: Wer eine
+   Seite überarbeitet, ersetzt .card durch .ap-tafel und .btn
+   durch .ap-knopf und braucht von hier nichts mehr.
+   ============================================================ */
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+    --tblr-font-sans-serif: var(--ap-schrift);
+    --tblr-body-font-family: var(--ap-schrift);
+    --tblr-body-bg: var(--ap-grund);
+    --tblr-body-color: var(--ap-schrift-farbe);
+    --tblr-secondary: var(--ap-leise);
+    --tblr-secondary-color: var(--ap-leise);
+    --tblr-muted: var(--ap-still);
+    --tblr-border-color: var(--ap-kante);
+    --tblr-border-color-translucent: var(--ap-kreide);
+    --tblr-border-radius: var(--ap-rund-m);
+    --tblr-border-radius-sm: var(--ap-rund-s);
+    --tblr-border-radius-lg: var(--ap-rund-l);
+    --tblr-primary: var(--ap-akzent);
+    --tblr-primary-rgb: 0, 0, 0;  /* wird unten nicht gebraucht */
+    --tblr-link-color: var(--ap-akzent);
+    --tblr-link-hover-color: var(--ap-akzent-stark);
+    --tblr-success: var(--ap-tor);
+    --tblr-danger: var(--ap-gefahr);
+    --tblr-warning: var(--ap-warnung);
+    --tblr-info: var(--ap-akzent);
+}
+
+/* ── Karten werden Tafeln ──────────────────────────────────── */
+
+.card {
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+    color: var(--ap-schrift-farbe);
+    box-shadow: none;
+}
+.card-header, .card-footer {
+    background: var(--ap-tafel-kopf);
+    border-color: var(--ap-kante);
+    color: var(--ap-still);
+    font-size: var(--ap-streifen-groesse);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: var(--ap-streifen-abstand);
+    text-transform: uppercase;
+}
+.card-title { font-family: var(--ap-schrift-anzeige); font-weight: var(--ap-fett-schwer); }
+
+/* ── Knöpfe bekommen die Anpfiff-Haptik ────────────────────── */
+
+.btn {
+    min-height: 40px;
+    font-family: var(--ap-schrift);
+    font-weight: var(--ap-fett);
+    border-radius: var(--ap-rund-m);
+    border-width: 2px;
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel);
+    border-color: var(--ap-kante-aktiv);
+}
+.btn:hover { background: var(--ap-tafel-tief); color: var(--ap-schrift-farbe); }
+.btn-sm { min-height: 36px; }
+.btn-primary, .btn-success {
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border-color: var(--ap-akzent);
+    box-shadow: var(--ap-kante-unten) var(--ap-akzent-stark);
+}
+.btn-primary:hover, .btn-success:hover {
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent-stark);
+    border-color: var(--ap-akzent-stark);
+}
+.btn-primary:active, .btn-success:active { transform: translateY(3px); box-shadow: none; }
+.btn-danger {
+    color: #fff; background: var(--ap-gefahr); border-color: var(--ap-gefahr);
+}
+.btn-outline, .btn-outline-secondary {
+    background: transparent;
+    color: var(--ap-schrift-farbe);
+    border-color: var(--ap-kante-aktiv);
+}
+.btn-ghost-secondary, .btn-link {
+    background: transparent; border-color: transparent; color: var(--ap-leise);
+}
+
+/* ── Formularfelder ────────────────────────────────────────── */
+
+.form-control, .form-select {
+    min-height: 44px;
+    font-family: var(--ap-schrift);
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel-tief);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-m);
+}
+.form-control:focus, .form-select:focus {
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel-tief);
+    border-color: var(--ap-akzent);
+    box-shadow: 0 0 0 3px var(--ap-akzent-leise);
+}
+.form-control::placeholder { color: var(--ap-still); }
+.form-label { color: var(--ap-leise); font-weight: var(--ap-fett); }
+.form-check-input { border-color: var(--ap-kante-aktiv); }
+.form-check-input:checked { background-color: var(--ap-akzent); border-color: var(--ap-akzent); }
+
+/* ── Tabellen ──────────────────────────────────────────────── */
+
+.table {
+    --tblr-table-bg: transparent;
+    --tblr-table-color: var(--ap-schrift-farbe);
+    --tblr-table-border-color: var(--ap-kreide);
+    --tblr-table-hover-bg: var(--ap-tafel-tief);
+    color: var(--ap-schrift-farbe);
+}
+.table thead th {
+    color: var(--ap-still);
+    font-size: var(--ap-text-xs);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-bottom-color: var(--ap-kante);
+}
+
+/* ── Abzeichen ─────────────────────────────────────────────── */
+
+.badge {
+    font-family: var(--ap-schrift);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: .05em;
+    border-radius: var(--ap-rund-voll);
+    background: var(--ap-tafel-tief);
+    color: var(--ap-leise);
+    border: 1px solid var(--ap-kante);
+}
+.badge.bg-success, .badge.bg-primary {
+    background: var(--ap-akzent) !important;
+    color: var(--ap-auf-akzent);
+    border-color: var(--ap-akzent);
+}
+.badge.bg-danger { background: var(--ap-gefahr) !important; color: #fff; border-color: var(--ap-gefahr); }
+.badge-gray-lt, .badge.bg-secondary {
+    background: var(--ap-tafel-tief) !important;
+    color: var(--ap-leise);
+}
+
+/* ── Sonstiges, was sonst weiß bliebe ──────────────────────── */
+
+.modal-content, .dropdown-menu, .offcanvas, .popover {
+    background: var(--ap-tafel);
+    color: var(--ap-schrift-farbe);
+    border-color: var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+}
+.modal-header, .modal-footer { border-color: var(--ap-kante); }
+.dropdown-item { color: var(--ap-schrift-farbe); }
+.dropdown-item:hover { background: var(--ap-tafel-tief); color: var(--ap-schrift-farbe); }
+.alert { border-radius: var(--ap-rund-m); border-color: var(--ap-kante); }
+.text-muted, .text-secondary { color: var(--ap-leise) !important; }
+.bg-body, .bg-white { background: var(--ap-tafel) !important; }
+hr { border-color: var(--ap-kreide); opacity: 1; }
+code, pre, kbd {
+    background: var(--ap-tafel-tief);
+    color: var(--ap-schrift-farbe);
+    border-radius: var(--ap-rund-s);
+}

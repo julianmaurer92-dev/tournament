@@ -1,0 +1,137 @@
+{% from "_anpfiff.html" import symbol %}<!DOCTYPE html>
+<html lang="de"
+      data-theme="{{ cp_theme }}"
+      data-schema="{{ cp_schema }}"
+      {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}
+      data-bs-theme="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{% block title %}CupPlan{% endblock %}</title>
+    <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
+    <meta name="theme-color" content="{{ cp_themefarbe or '#11703f' }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/anpfiff-schriften.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabler.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-bausteine.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-huelle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-tabler.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-palette.css') }}">
+    {% if cp_vereinsfarbe %}
+    <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
+    {% endif %}
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<a class="ap-sprung" href="#inhalt">Zum Inhalt springen</a>
+
+{% block vollbild %}
+<div class="ap-huelle">
+
+    <div class="ap-leiste-schatten" id="ap-leiste-schatten"></div>
+
+    <nav class="ap-leiste" id="ap-leiste" aria-label="Hauptnavigation">
+        <a class="ap-marke" href="{{ url_for('admin.tournament_list') }}">
+            {{ symbol('ball-football', 'ap-symbol--l') }} CupPlan
+        </a>
+
+        {% if cp_turniere %}
+        <div class="ap-turnier">
+            <span class="ap-turnier-label" id="ap-turnier-label">Turnier</span>
+            <select class="ap-turnier-wahl" aria-labelledby="ap-turnier-label"
+                    onchange="if(this.value) location.href = this.value">
+                {% for t in cp_turniere %}
+                <option value="{{ url_for('admin.dashboard', slug=t.slug) }}"
+                        {% if g.tournament and t.id == g.tournament.id %}selected{% endif %}>
+                    {{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="ap-punkte">
+            {% for punkt in cp_navigation %}
+            <a class="ap-punkt {% if punkt.aktiv %}ist-aktiv{% endif %}"
+               href="{{ punkt.ziel }}"
+               {% if punkt.aktiv %}aria-current="page"{% endif %}>
+                {{ symbol(punkt.icon) }}<span>{{ punkt.name }}</span>
+                {% if punkt.zahl %}<span class="ap-punkt-zahl">{{ punkt.zahl }}</span>{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="ap-leiste-fuss ap-punkte">
+            <button type="button" class="ap-punkt" onclick="ap.palette && ap.palette.oeffnen()">
+                {{ symbol('search') }}<span>Suchen</span>
+                <kbd class="ap-taste">⌘K</kbd>
+            </button>
+            <a class="ap-punkt" href="{{ url_for('admin.logout') }}">
+                {{ symbol('logout') }}<span>Abmelden</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="ap-haupt-spalte">
+        <header class="ap-kopf">
+            <button type="button" class="ap-knopf ap-knopf--still ap-knopf--symbol ap-auf"
+                    id="ap-auf" aria-label="Menü öffnen" aria-expanded="false">
+                {{ symbol('menu-2') }}
+            </button>
+            <h1 class="ap-kopf-titel">{% block kopf_titel %}{{ self.title() }}{% endblock %}</h1>
+            <div class="ap-kopf-aktionen">{% block kopf_aktionen %}{% endblock %}</div>
+        </header>
+
+        <main class="ap-inhalt" id="inhalt">
+            {% with meldungen = get_flashed_messages(with_categories=true) %}
+            {% if meldungen %}
+            {% for art, text in meldungen %}
+            <div class="ap-meldung {% if art == 'error' %}ap-meldung--fehler{% endif %}"
+                 style="position:static;transform:none">
+                {{ symbol('alert-triangle' if art == 'error' else 'check') }}
+                <span class="ap-meldung-text">{{ text }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block inhalt %}{% endblock %}
+        </main>
+
+        {# Leiste unten – nur auf dem Handy sichtbar. Fünf Ziele,
+           alle mit dem Daumen erreichbar. #}
+        {% if cp_unten %}
+        <nav class="ap-unten" aria-label="Schnellzugriff">
+            {% for punkt in cp_unten %}
+            <a class="ap-unten-punkt {% if punkt.aktiv %}ist-aktiv{% endif %}"
+               href="{{ punkt.ziel }}"
+               {% if punkt.aktiv %}aria-current="page"{% endif %}>
+                {{ symbol(punkt.icon) }}<span>{{ punkt.kurz }}</span>
+            </a>
+            {% endfor %}
+            <button type="button" class="ap-unten-punkt" id="ap-auf-unten"
+                    aria-label="Mehr">
+                {{ symbol('menu-2') }}<span>Mehr</span>
+            </button>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+<div class="ap-meldungen" id="ap-meldungen" role="status" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='vendor/tabler.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/anpfiff.js') }}"></script>
+{% if cp_palette %}
+<script>
+const AP_PALETTE = {{ cp_palette | tojson }};
+const AP_SPRITE = {{ url_for('static', filename='vendor/tabler-sprite.svg') | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/anpfiff-palette.js') }}"></script>
+{% endif %}
+{% block skripte %}{% endblock %}
+</body>
+</html>

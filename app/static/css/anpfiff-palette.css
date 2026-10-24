@@ -1,0 +1,148 @@
+/* ============================================================
+   CupPlan – Befehlspalette
+   ------------------------------------------------------------
+   Liegt ueber der Seite, nimmt aber nur so viel Platz wie sie
+   braucht. Oben die Eingabe, darunter hoechstens zwoelf Treffer –
+   mehr liest niemand, und eine lange Liste zum Scrollen ist das
+   Gegenteil von „tippen und Enter".
+   ============================================================ */
+
+.ap-pal-hintergrund {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12vh var(--ap-raum-4) var(--ap-raum-4);
+    background: rgb(0 0 0 / .45);
+    backdrop-filter: blur(3px);
+}
+.ap-pal-hintergrund[data-offen] { display: flex; }
+
+.ap-pal-fenster {
+    width: 100%;
+    max-width: 34rem;
+    display: flex;
+    flex-direction: column;
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-l);
+    box-shadow: var(--ap-schatten-l);
+    overflow: hidden;
+    animation: ap-pal-auf var(--ap-zeit) var(--ap-kurve);
+}
+@keyframes ap-pal-auf {
+    from { opacity: 0; transform: translateY(-8px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ── Eingabe ───────────────────────────────────────────────── */
+
+.ap-pal-kopf {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    padding: var(--ap-raum-4);
+    border-bottom: 1px solid var(--ap-kante);
+    color: var(--ap-leise);
+}
+.ap-pal-feld {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-l);
+    color: var(--ap-schrift-farbe);
+    background: transparent;
+    border: 0;
+    outline: none;
+}
+.ap-pal-feld::placeholder { color: var(--ap-still); }
+
+.ap-pal-kbd {
+    flex: none;
+    padding: 2px 7px;
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett-mittel);
+    line-height: 1.5;
+    color: var(--ap-leise);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-s);
+    white-space: nowrap;
+}
+
+/* ── Treffer ───────────────────────────────────────────────── */
+
+.ap-pal-liste {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: var(--ap-raum-2);
+}
+.ap-pal-zeile {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--ap-raum-2) var(--ap-raum-3);
+    text-align: left;
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    color: var(--ap-schrift-farbe);
+    background: transparent;
+    border: 0;
+    border-radius: var(--ap-rund-m);
+    cursor: pointer;
+}
+.ap-pal-zeile > .ap-symbol { flex: none; color: var(--ap-leise); }
+.ap-pal-zeile.ist-markiert {
+    background: var(--ap-akzent);
+    color: var(--ap-auf-akzent);
+}
+.ap-pal-zeile.ist-markiert > .ap-symbol,
+.ap-pal-zeile.ist-markiert .ap-pal-art { color: var(--ap-auf-akzent); opacity: .8; }
+
+.ap-pal-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--ap-fett-mittel);
+}
+.ap-pal-art {
+    flex: none;
+    font-size: var(--ap-text-xs);
+    color: var(--ap-still);
+}
+
+.ap-pal-leer {
+    padding: var(--ap-raum-5) var(--ap-raum-3);
+    text-align: center;
+    color: var(--ap-leise);
+    font-size: var(--ap-text-m);
+}
+
+/* ── Fuss ──────────────────────────────────────────────────── */
+
+.ap-pal-fuss {
+    display: flex;
+    gap: var(--ap-raum-4);
+    padding: var(--ap-raum-2) var(--ap-raum-4);
+    font-size: var(--ap-text-xs);
+    color: var(--ap-still);
+    background: var(--ap-tafel-tief);
+    border-top: 1px solid var(--ap-kante);
+}
+.ap-pal-fuss .ap-pal-kbd { margin-right: 3px; }
+
+/* ── Tastenuebersicht ──────────────────────────────────────── */
+
+.ap-pal-tasten .ap-pal-zeile { cursor: default; }
+.ap-pal-tasten .ap-pal-zeile:nth-child(odd) { background: var(--ap-tafel-tief); }
+
+@media (prefers-reduced-motion: reduce) {
+    .ap-pal-fenster { animation: none; }
+}

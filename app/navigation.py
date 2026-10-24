@@ -70,7 +70,7 @@ def navigation(tournament=None, zahlen=None):
                    passt_auf=("siegerehrung_admin.urkunden",)),
             _punkt("Organisation", "admin.organisation", "cash-banknote", slug,
                    passt_auf=("admin.cabin_signs",)),
-            _punkt("Design", "admin.design", "palette", slug),
+                _punkt("Design", "admin.design", "palette", slug),
         ]
         punkte = [p for p in punkte if p]
 
@@ -167,3 +167,27 @@ def palette_eintraege(tournament=None, teams=(), spiele=(), themes=()):
             })
 
     return eintraege
+
+
+# Die Leiste unten auf dem Handy. Fuenf Ziele, mehr passt nicht mit
+# dem Daumen – und mehr braucht am Turniertag auch niemand. Alles
+# Weitere steckt hinter "Mehr" in der Schublade.
+UNTEN = [
+    ("Übersicht", "Start", "admin.dashboard", "layout-dashboard"),
+    ("Spielplan", "Spiele", "admin.tournament_admin", "calendar-event"),
+    ("Teams & Gruppen", "Teams", "anmeldung_admin.liste", "users-group"),
+    ("Statistik", "Zahlen", "ereignisse_admin.statistik_admin", "chart-bar"),
+]
+
+
+def unten_punkte(tournament=None):
+    """Navigationspunkte fuer die App-Leiste unten."""
+    if tournament is None:
+        return []
+    punkte = []
+    for name, kurz, endpunkt, icon in UNTEN:
+        p = _punkt(name, endpunkt, icon, tournament.slug)
+        if p:
+            p["kurz"] = kurz
+            punkte.append(p)
+    return punkte
