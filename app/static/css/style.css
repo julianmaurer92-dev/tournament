@@ -10,31 +10,38 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ============================================================
+   BRUECKE auf die neuen Design-Tokens (tokens.css)
+   ------------------------------------------------------------
+   Die alten Variablennamen bleiben gueltig, zeigen aber auf die
+   neuen Farbrollen. Dadurch folgt das gesamte vorhandene CSS den
+   neuen Themes, ohne dass 1800 Zeilen angefasst werden mussten.
+   Neue Regeln sollen direkt die Rollen aus tokens.css verwenden.
+   ============================================================ */
+
 :root {
-    /* Fallbacks (overridden by dynamic-theme style tag) */
-    --color-primary:   #22c55e;
-    --color-secondary: #1a2332;
-    --color-title:     #22c55e;
+    --color-primary:   var(--akzent);
+    --color-secondary: var(--flaeche);
+    --color-title:     var(--akzent);
 
-    /* Fixed palette derived contextually */
-    --bg:             #0b1120;
-    --bg-secondary:   #111827;
-    --border:         #1f2d40;
-    --border-light:   #2a3c55;
+    --bg:             var(--flaeche-tief);
+    --bg-secondary:   var(--flaeche);
+    --border:         var(--rand);
+    --border-light:   var(--rand-stark);
 
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-    --danger:         #ef4444;
-    --warning:        #f59e0b;
+    --live-red:       var(--live);
+    --live-red-glow:  var(--live-leise);
+    --danger:         var(--gefahr);
+    --warning:        var(--warnung);
 
-    --text:           #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted:     #64748b;
+    --text-secondary: var(--text-leise);
+    --text-muted:     var(--text-still);
 
-    --radius:    10px;
-    --radius-sm: 6px;
-    --font:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --radius:    var(--radius-m);
+    --radius-sm: var(--radius-s);
+    --font:      var(--schrift);
 }
+
 
 html { font-size: 15px; }
 
@@ -102,10 +109,10 @@ body {
 }
 
 .panel {
-    background: var(--color-secondary);
-    border-radius: var(--radius);
-    padding: 1rem 1.1rem;
-    border: 1px solid var(--border);
+    background: var(--flaeche);
+    border-radius: var(--radius-m);
+    padding: var(--raum-4) var(--raum-4);
+    border: 1px solid var(--rand);
 }
 
 .panel-title {
@@ -126,25 +133,40 @@ body {
 .match-list { display: flex; flex-direction: column; gap: 0.45rem; }
 
 .match-item {
-    background: color-mix(in srgb, var(--color-secondary) 70%, #fff 5%);
-    border-radius: var(--radius-sm);
-    padding: 0.55rem 0.75rem;
-    display: flex;
+    /* Raster statt Flex: Heim | Ergebnis | Gast in festen Spalten, die
+       Zeitangabe darunter ueber die volle Breite. Vorher quetschte sich
+       die Zeit in die Reihe und brach mitten im Wort um. */
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.15rem 0.35rem;
+    background: var(--flaeche-erhoben);
+    border: 1px solid var(--rand);
+    border-radius: var(--radius-s);
+    padding: 0.55rem 0.75rem;
     font-size: 0.82rem;
-    transition: background 0.15s;
+    transition: background var(--zeit-schnell) var(--kurve);
 }
 
 .match-item:hover { filter: brightness(1.15); }
 
 .match-item .team-name {
     flex: 1; font-weight: 600;
-    word-break: break-word; overflow-wrap: break-word; hyphens: auto;
+    word-break: normal; overflow-wrap: break-word; hyphens: manual;
     line-height: 1.25;
 }
-.match-item .team-name:first-child { text-align: right; padding-right: 0.5rem; }
-.match-item .team-name:last-child  { text-align: left;  padding-left: 0.5rem; }
+.match-item .team-name:first-of-type { text-align: right; padding-right: 0.5rem; }
+.match-item .team-name:last-of-type  { text-align: left;  padding-left: 0.5rem; }
+/* Zeit und Spielfeld: eigene Zeile unter der Begegnung */
+.match-item .match-meta {
+    grid-column: 1 / -1;
+    margin-top: 0.15rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-still);
+}
 
 .match-item .match-score {
     font-weight: 800; padding: 0 0.4rem;
@@ -239,7 +261,7 @@ body {
 .live-team-name {
     font-size: clamp(0.9rem, 2vw, 1.3rem);
     font-weight: 700; flex: 1;
-    overflow-wrap: break-word; word-break: break-word; hyphens: auto;
+    overflow-wrap: break-word; word-break: normal; hyphens: manual;
     line-height: 1.25;
 }
 .live-team-name:first-child { text-align: right; }
@@ -324,9 +346,9 @@ body {
     font-size: clamp(0.85rem, 1.5vw, 1.1rem);
     font-weight: 700;
     color: var(--text);
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
-    hyphens: auto;
+    hyphens: manual;
     line-height: 1.25;
 }
 
@@ -355,6 +377,17 @@ body {
    ============================================================ */
 
 .standings-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+/* Der Teamname bekommt den ganzen uebrigen Platz, die Zahlenspalten
+   schrumpfen auf ihren Inhalt. Vorher lief die Punktespalte aus der
+   Karte heraus; mit festem Tabellenlayout kollabierte stattdessen der
+   Teamname. Dieser Weg loest beides ohne feste Breiten. */
+.standings-table th:nth-child(2), .standings-table td:nth-child(2) { width: 100%; }
+.standings-table th:nth-child(n+3), .standings-table td:nth-child(n+3) { white-space: nowrap; }
+/* Letzte Spalte (Punkte) nicht an den Kartenrand kleben lassen */
+.standings-table th:last-child, .standings-table td:last-child { padding-right: 0.15rem; }
+/* Schmale Karten: Tabelle darf waagerecht rollen statt abgeschnitten
+   zu werden. Auf dem Handy ist das besser als Zahlen zu verstecken. */
+.standings-group-panel { overflow-x: auto; }
 .standings-table th {
     color: var(--text-muted); font-weight: 700;
     text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.06em;
@@ -366,7 +399,7 @@ body {
 .standings-table tbody tr:last-child td { border-bottom: none; }
 .standings-table tbody tr:hover { background: color-mix(in srgb, var(--color-secondary) 70%, #fff 5%); }
 .standings-table .rank-cell { font-weight: 700; color: var(--text-muted); }
-.standings-table .team-cell { font-weight: 600; word-break: break-word; overflow-wrap: break-word; hyphens: auto; line-height: 1.25; }
+.standings-table .team-cell { font-weight: 600; word-break: normal; overflow-wrap: break-word; hyphens: manual; line-height: 1.25; }
 .standings-table .pts-cell  { font-weight: 800; color: var(--color-primary); }
 .standings-table tbody tr:first-child .team-cell,
 .standings-table tbody tr:first-child .rank-cell { color: var(--color-primary); }
@@ -1653,178 +1686,28 @@ body {
 @media (max-width: 800px) { .admin-grid-2 { grid-template-columns: 1fr; } }
 .badge-price { background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); font-weight: 700; }
 
+
 /* ============================================================
-   THEMES — override structural CSS vars per data-theme
-   Accent colors (--color-primary/secondary/title) are set
-   separately by the dynamic-theme style tag from DB settings.
+   Teamnamen und Wappen (UX-Umbau 24.10.2026)
    ============================================================ */
 
-/* ── Dark Navy (default) ── */
-[data-theme="dark"] {
-    --bg:             #0b1120;
-    --bg-secondary:   #111827;
-    --border:         #1f2d40;
-    --border-light:   #2a3c55;
-    --text:           #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted:     #64748b;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
+/* Vereinsnamen sind Eigennamen: Umbruch nur an Leerzeichen.
+   Die Ursache lag an vier Stellen weiter oben (hyphens:auto und
+   word-break:break-word) und ist dort behoben. */
 
-/* ── Midnight — near-black, sleek ── */
-[data-theme="midnight"] {
-    --bg:             #07080c;
-    --bg-secondary:   #0e0f14;
-    --border:         #18191f;
-    --border-light:   #22242e;
-    --text:           #e8eaf2;
-    --text-secondary: #8b8fa8;
-    --text-muted:     #52556a;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.18);
+.cp-wappen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border-radius: var(--radius-s);
+    object-fit: contain;
+    background: var(--flaeche-gedrueckt);
+    font-weight: var(--gewicht-fett);
+    color: var(--text-leise);
+    overflow: hidden;
 }
-
-/* ── Slate — GitHub-style dark gray ── */
-[data-theme="slate"] {
-    --bg:             #0d1117;
-    --bg-secondary:   #161b22;
-    --border:         #21262d;
-    --border-light:   #30363d;
-    --text:           #e6edf3;
-    --text-secondary: #8b949e;
-    --text-muted:     #6e7681;
-    --live-red:       #f85149;
-    --live-red-glow:  rgba(248,81,73,0.18);
-}
-
-/* ── Ocean — deep blue ── */
-[data-theme="ocean"] {
-    --bg:             #050f1e;
-    --bg-secondary:   #0b1929;
-    --border:         #112236;
-    --border-light:   #1a3350;
-    --text:           #ddeeff;
-    --text-secondary: #6d9fc4;
-    --text-muted:     #3e6a8a;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
-
-/* ── Crimson — dark red dramatic ── */
-[data-theme="crimson"] {
-    --bg:             #0c0707;
-    --bg-secondary:   #160b0b;
-    --border:         #2a1212;
-    --border-light:   #3a1a1a;
-    --text:           #f5ecec;
-    --text-secondary: #b08888;
-    --text-muted:     #7a5555;
-    --live-red:       #f87171;
-    --live-red-glow:  rgba(248,113,113,0.2);
-}
-
-/* ── Light — clean white for bright screens ── */
-[data-theme="light"] {
-    --bg:             #f1f5f9;
-    --bg-secondary:   #ffffff;
-    --border:         #cbd5e1;
-    --border-light:   #94a3b8;
-    --text:           #0f172a;
-    --text-secondary: #475569;
-    --text-muted:     #94a3b8;
-    --live-red:       #dc2626;
-    --live-red-glow:  rgba(220,38,38,0.12);
-}
-/* Light theme: invert some hardcoded dark assumptions */
-[data-theme="light"] .panel,
-[data-theme="light"] .live-card,
-[data-theme="light"] .next-match-card,
-[data-theme="light"] .standings-table thead tr,
-[data-theme="light"] .bracket-match {
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-[data-theme="light"] .match-item {
-    background: #ffffff;
-    border: 1px solid var(--border);
-}
-[data-theme="light"] .live-badge {
-    background: var(--live-red);
-}
-[data-theme="light"] .standings-table tbody tr:hover {
-    background: rgba(0,0,0,0.04);
-}
-[data-theme="light"] .admin-header,
-[data-theme="light"] .admin-container .admin-panel {
-    background: #ffffff;
-    border-color: var(--border);
-}
-
-/* ── Navy — Vereinsblau mit Gold-Akzent ── */
-[data-theme="navy"] {
-    --bg:             #010f1f;
-    --bg-secondary:   #081e35;
-    --border:         #102b4e;
-    --border-light:   #193d6e;
-    --text:           #d4e8ff;
-    --text-secondary: #7aabcc;
-    --text-muted:     #4a7aaa;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
-
-/* ── Forest — Dunkelgrün, satt ── */
-[data-theme="forest"] {
-    --bg:             #050e08;
-    --bg-secondary:   #0c1a10;
-    --border:         #152819;
-    --border-light:   #1e3c25;
-    --text:           #e0f5e8;
-    --text-secondary: #7ab88a;
-    --text-muted:     #4a7a58;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
-
-/* ── Amber — Warmes Bernstein/Gold ── */
-[data-theme="amber"] {
-    --bg:             #120d00;
-    --bg-secondary:   #1e1500;
-    --border:         #2e1f00;
-    --border-light:   #402c00;
-    --text:           #fff3d4;
-    --text-secondary: #c4963a;
-    --text-muted:     #8a6520;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
-
-/* ── Violet — Tiefviolett/Royal ── */
-[data-theme="violet"] {
-    --bg:             #09071a;
-    --bg-secondary:   #100e28;
-    --border:         #1c1840;
-    --border-light:   #28225a;
-    --text:           #ede8ff;
-    --text-secondary: #9b94d8;
-    --text-muted:     #5e5898;
-    --live-red:       #ef4444;
-    --live-red-glow:  rgba(239,68,68,0.2);
-}
-
-/* Anmeldekarte auf der Startseite (Nachtschicht 2026-10-24) */
-.card-anmeldung .tournament-card-icon { color: #3b82f6; }
-.card-anmeldung { border-color: rgba(59, 130, 246, 0.3); }
-.card-anmeldung:hover { border-color: #3b82f6; }
-
-/* Anstosszeit und Spielfeld in den Spiellisten (Nachtschicht 2026-10-24) */
-.match-meta {
-    display: block;
-    width: 100%;
-    margin-top: 0.2rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    opacity: 0.55;
-    text-align: center;
-}
+.cp-wappen--s  { width: 1.5rem;  height: 1.5rem;  font-size: .7rem; }
+.cp-wappen--m  { width: 2rem;    height: 2rem;    font-size: .85rem; }
+.cp-wappen--l  { width: 3rem;    height: 3rem;    font-size: 1.1rem; }
+.cp-wappen--xl { width: 4.5rem;  height: 4.5rem;  font-size: 1.6rem; }
