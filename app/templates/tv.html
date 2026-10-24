@@ -1,7 +1,11 @@
-{% from '_bausteine.html' import icon %}<!DOCTYPE html>
+{% from '_anpfiff.html' import symbol as icon %}<!DOCTYPE html>
+{# Auf dem Beamer gilt "Anzeigetafel", sobald das Turnier kein
+   eigenes Theme gesetzt hat: reines Schwarz, ein leuchtender Akzent,
+   alles eine Nummer groesser. Wer ein Theme ausgewaehlt hat, bekommt
+   seines - die Entscheidung gehoert dem Verein. #}
 <html lang="de"
-      data-theme="{{ cp_theme }}"
-      data-schema="{{ cp_schema }}"
+      data-theme="{{ cp_theme if cp_theme_gesetzt else 'anzeigetafel' }}"
+      data-schema="{{ cp_schema if cp_theme_gesetzt else 'dunkel' }}"
       {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
 <head>
     <meta charset="UTF-8">
@@ -9,9 +13,10 @@
     <title>{{ site_settings.tournament_name }} – Beamer</title>
     <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/praesentation.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/anpfiff-schriften.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-bausteine.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-beamer.css') }}">
     {% if cp_vereinsfarbe %}
     <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
     {% endif %}
@@ -24,20 +29,23 @@
            Varianten, auch "Papier" (sehr hell) und "Stadion"
            (hoechster Kontrast) – ohne die 400 Zeilen darunter
            anzufassen. */
+        /* Die alten Variablennamen dieser Seite zeigen auf die
+           Anpfiff-Rollen. So wirkt die Gestaltungssprache, ohne dass
+           die 400 Zeilen darunter angefasst werden muessen.
+           --text wird NICHT neu gesetzt: Es kommt aus anpfiff.css,
+           und ein Verweis auf sich selbst macht die Schrift unsichtbar. */
         :root {
-            --primary: var(--akzent);
-            --title:   var(--akzent);
-            --bg:      var(--flaeche-tief);
-            --bg2:     var(--flaeche);
-            --bg3:     var(--flaeche-erhoben);
-            /* --text kommt direkt aus tokens.css. Es hier noch einmal
-               auf sich selbst zu setzen waere ein Zirkelbezug und
-               machte die Schrift unsichtbar. */
-            --muted:   var(--text-leise);
-            --border:  var(--rand);
+            --primary: var(--ap-akzent);
+            --title:   var(--ap-akzent);
+            --bg:      var(--ap-grund);
+            --bg2:     var(--ap-tafel);
+            --bg3:     var(--ap-tafel-kopf);
+            --text:    var(--ap-schrift-farbe);
+            --muted:   var(--ap-leise);
+            --border:  var(--ap-kante);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; hyphens: none; }
-        html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+        html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--ap-schrift); overflow: hidden; }
 
         /* ── Wrapper: full viewport as flex column ── */
         #tv-wrap { display: flex; flex-direction: column; height: 100vh; }
@@ -203,21 +211,21 @@
             <div id="tv-title">{{ site_settings.tournament_name }}</div>
         </div>
         <div id="tv-clock">--:--</div>
-        <div style="display:flex;align-items:center;gap:0.6rem" class="pr-nur-bedienung">
+        <div style="display:flex;align-items:center;gap:0.6rem" class="ap-bm-nur-bedienung">
             <a href="{{ url_for('main.tv_landing') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem">{{ icon('trophy') }} Übersicht</a>
             <a href="{{ url_for('main.tv_speisekarte') }}" style="font-size:0.82rem;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem">{{ icon('clipboard-list') }} Speisekarte</a>
-            <button type="button" id="pr-start" class="pr-start">
+            <button type="button" id="ap-bm-start" class="ap-bm-start">
                 {{ icon('player-play') }} Präsentieren
             </button>
         </div>
     </div>
 
     <!-- Nur im Praesentationsmodus sichtbar -->
-    <div class="pr-leiste">
-        <span class="pr-seitenname" id="pr-seitenname">Live</span>
-        <span class="pr-punkte" id="pr-punkte"></span>
-        <span class="pr-fortschritt"><span class="pr-balken" id="pr-balken"></span></span>
-        <span class="pr-pause" id="pr-pause"></span>
+    <div class="ap-bm-leiste">
+        <span class="ap-bm-seitenname" id="ap-bm-seitenname">Live</span>
+        <span class="ap-bm-punkte" id="ap-bm-punkte"></span>
+        <span class="ap-bm-fortschritt"><span class="ap-bm-balken" id="ap-bm-balken"></span></span>
+        <span class="ap-bm-pause" id="ap-bm-pause"></span>
     </div>
 
     <div id="tv-announcement"></div>
@@ -258,13 +266,13 @@
     </div>
 </div>
 
-<div class="pr-willkommen" id="pr-willkommen" role="button" tabindex="0">
+<div class="ap-bm-willkommen" id="ap-bm-willkommen" role="button" tabindex="0">
     <h1>{{ site_settings.tournament_name }}</h1>
     <p>Zum Starten der Präsentation irgendwo klicken<br>
        oder eine beliebige <kbd>Taste</kbd> drücken.</p>
 </div>
 
-<div class="pr-hilfe" id="pr-hilfe" aria-hidden="true">
+<div class="ap-bm-hilfe" id="ap-bm-hilfe" aria-hidden="true">
     <span><kbd>←</kbd> <kbd>→</kbd> blättern</span>
     <span><kbd>Leer</kbd> anhalten</span>
     <span><kbd>Esc</kbd> beenden</span>
@@ -336,7 +344,7 @@ document.addEventListener('keydown', e => {
 // aus zehn Metern nicht zu erkennen.
 const SPRITE = "{{ url_for('static', filename='vendor/tabler-sprite.svg') }}";
 function sym(name, klasse) {
-    return `<svg class="cp-icon ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
+    return `<svg class="ap-symbol ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
 }
 function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
@@ -417,7 +425,7 @@ function renderLive(matches, upcoming, hideResults) {
                          n.group_name || n.final_label || '']
                         .filter(Boolean).join(' · ');
             el.innerHTML = `<div class="no-live">
-                <div class="no-live-icon">${sym('clock', 'cp-icon--xl')}</div>
+                <div class="no-live-icon">${sym('clock', 'ap-symbol--xl')}</div>
                 <div class="no-live-sub">Als Nächstes</div>
                 <div class="no-live-text" style="font-size:clamp(1.6rem,4vw,3.2rem);margin:.4rem 0">
                     ${esc(n.team1 ? n.team1.name : 'offen')}
@@ -428,7 +436,7 @@ function renderLive(matches, upcoming, hideResults) {
             </div>`;
         } else {
             el.innerHTML = `<div class="no-live">
-                <div class="no-live-icon">${sym('check', 'cp-icon--xl')}</div>
+                <div class="no-live-icon">${sym('check', 'ap-symbol--xl')}</div>
                 <div class="no-live-text">Alle Spiele gespielt</div>
                 <div class="no-live-sub">Die Tabellen stehen fest.</div>
             </div>`;
@@ -568,6 +576,6 @@ function renderMatches(upcoming, past, hideResults) {
     el.innerHTML = html || '<div style="color:var(--muted);font-size:0.9rem;padding:1rem 0">Keine Spiele</div>';
 }
 </script>
-<script src="{{ url_for('static', filename='js/cp-praesentation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/anpfiff-beamer.js') }}"></script>
 </body>
 </html>

@@ -169,6 +169,11 @@ def create_app(config_overrides=None):
             "cp_theme": theme,
             "cp_schema": schema,
             "cp_vereinsfarbe": vereinsfarbe,
+            # Hat jemand bewusst ein Theme gewaehlt? Die Beamer-Ansicht
+            # nimmt sonst "Anzeigetafel", weil sie aus zehn Metern
+            # lesbar sein muss.
+            "cp_theme_gesetzt": bool((einstellungen.get("theme") or "").strip()),
+            "cp_themefarbe": None,
         }
 
     @app.context_processor

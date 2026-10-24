@@ -216,7 +216,7 @@
 
 <div id="ph-info-overlay" class="ph-info-overlay" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="ph-info-box">
-        <div class="ph-info-logo">{{ icon('ball-football', 'cp-icon--xl') }}</div>
+        <div class="ph-info-logo">{{ icon('ball-football', 'ap-symbol--xl') }}</div>
         <div class="ph-info-app">CupPlan</div>
         <div class="ph-info-version">Version 1.5 &nbsp;&middot;&nbsp; 16.03.2026</div>
         <div class="ph-info-dev">Maurer Julian</div>
@@ -261,7 +261,7 @@ function switchTab(name) {
 // Symbole aus dem Sprite statt Emoji – siehe Beamer-Ansicht.
     const SPRITE = "{{ url_for('static', filename='vendor/tabler-sprite.svg') }}";
     function sym(name, klasse) {
-        return `<svg class="cp-icon ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
+        return `<svg class="ap-symbol ${klasse || ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="${SPRITE}#i-${name}"></use></svg>`;
     }
     function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 function fmt(s) { const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
@@ -348,7 +348,7 @@ function applyState(s) {
     // Update tab live indicator
     const tabLive = document.getElementById('tab-live');
     tabLive.innerHTML = (liveMatches.length > 0
-        ? '<span class="cp-live-punkt"></span>' : '') + 'Live';
+        ? '<span class="ap-puls"></span>' : '') + 'Live';
 }
 
 // ── Panel: Live ──
@@ -358,7 +358,7 @@ function renderLive(matches, upcoming, finals, hideResults) {
     let html = '';
     if (matches.length === 0) {
         html += `<div class="ph-no-live">
-            <div class="ph-no-live-icon">${sym('ball-football', 'cp-icon--xl')}</div>
+            <div class="ph-no-live-icon">${sym('ball-football', 'ap-symbol--xl')}</div>
             <div class="ph-no-live-text">Kein Spiel aktiv</div>
         </div>`;
     } else {
@@ -509,7 +509,7 @@ function renderMeinTeam(s, hideResults) {
 
     let inhalt = '';
     if (spiele.live) inhalt += zeile(spiele.live,
-        '<span class="cp-live-punkt"></span> Läuft gerade', true);
+        '<span class="ap-puls"></span> Läuft gerade', true);
     if (spiele.naechstes) inhalt += zeile(spiele.naechstes, 'Nächstes Spiel', false);
     if (!inhalt) {
         inhalt = `<div class="mt-spiel"><div class="mt-titel">Keine weiteren Spiele</div>
