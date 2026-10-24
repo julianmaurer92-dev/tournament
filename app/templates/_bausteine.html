@@ -1,0 +1,50 @@
+{# ============================================================
+   CupPlan – Vorlagen-Bausteine
+   ------------------------------------------------------------
+   Makros, die ueberall gleich aussehen sollen. Einbinden mit:
+       {% from "_bausteine.html" import icon, abzeichen, leer %}
+   ============================================================ #}
+
+{% macro icon(name, klasse='', titel=None) -%}
+<svg class="cp-icon {{ klasse }}" aria-hidden="{{ 'false' if titel else 'true' }}"
+     {% if titel %}role="img"{% endif %}>
+    {%- if titel %}<title>{{ titel }}</title>{% endif -%}
+    <use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-{{ name }}"></use>
+</svg>
+{%- endmacro %}
+
+{% macro abzeichen(text, art='neutral', punkt=false) -%}
+<span class="cp-abzeichen cp-abzeichen--{{ art }}">
+    {%- if punkt %}<span class="cp-live-punkt"></span>{% endif -%}
+    {{ text }}
+</span>
+{%- endmacro %}
+
+{# Leerer Zustand – immer mit genau einem naechsten Schritt. #}
+{% macro leer(symbol, titel, text, knopf_text=None, knopf_ziel=None) -%}
+<div class="cp-leer">
+    {{ icon(symbol, 'cp-icon--xl') }}
+    <div class="cp-leer-titel">{{ titel }}</div>
+    <p class="cp-leer-text">{{ text }}</p>
+    {% if knopf_text and knopf_ziel %}
+    <a class="cp-knopf cp-knopf--haupt" href="{{ knopf_ziel }}">{{ knopf_text }}</a>
+    {% endif %}
+</div>
+{%- endmacro %}
+
+{# Teamname: bricht nur an echten Wortgrenzen, nie silbenweise.
+   Behebt "Schuet-zen Hun-der-sin-gen" in den Live-Ansichten. #}
+{% macro teamname(name, klasse='') -%}
+<span class="cp-teamname {{ klasse }}">{{ name }}</span>
+{%- endmacro %}
+
+{# Wappen oder Platzhalter – nie ein kaputtes Bildsymbol. #}
+{% macro wappen(team, groesse='m') -%}
+{% if team and team.logo_url %}
+<img class="cp-wappen cp-wappen--{{ groesse }}" src="{{ team.logo_url }}" alt=""
+     loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(
+         '<span class=\'cp-wappen cp-wappen--{{ groesse }} cp-wappen--leer\'>{{ (team.name or '?')[0]|upper }}</span>'))">
+{% else %}
+<span class="cp-wappen cp-wappen--{{ groesse }} cp-wappen--leer">{{ (team.name if team else '?')[0]|upper }}</span>
+{% endif %}
+{%- endmacro %}
