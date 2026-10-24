@@ -285,3 +285,57 @@ kurzer Inline-Block davor. Eine Stelle brauchte Handarbeit: `maxRanks` stand
 mitten in einer Funktion und wurde zu `MAX_RANKS` als Konstante.
 
 Dazu `UX_REVIEW.md` und `ARCHITEKTUR.md`.
+
+### 01:30–06:05 – Tabler-Fund, lokale Abhängigkeiten, Browser-Tests (`50a9247`)
+
+Beim Umstellen der externen Einbindungen auf lokale Dateien griff eine
+Ersetzung bei zwei Vorlagen nicht. Grund: Dort stand keine gültige Adresse,
+sondern `@tabler/[email protected]` – inklusive Leerzeichen. Die
+Layout-Bibliothek wurde im Adminbereich also **nie geladen**. Vermutlich ein
+Artefakt vom Kopieren durch ein Werkzeug, das E-Mail-ähnliche Zeichenfolgen
+unkenntlich macht (`core@1.0.0-beta21` sieht aus wie eine Adresse).
+
+Nachgewiesen im Browser: `getComputedStyle('.row').display` war `block`
+statt `flex`. Vorher/Nachher-Screenshots liegen unter `test-results/`.
+Der große Inline-Stil in `admin_base.html` hat Karten, Knöpfe und
+Eingabefelder gerettet – deshalb sah es „fast richtig" aus.
+
+Zwischenfall beim Prüfen: Die Änderung an der Vorlage wirkte nicht. Grund
+war nicht der Fix, sondern Jinjas Vorlagen-Cache – `gunicorn --reload`
+achtet nur auf `.py`. `TEMPLATES_AUTO_RELOAD` im Dev-Modus gesetzt.
+
+Außerdem: Ein Screenshot der Live-Ansicht sah leer aus, und ich hielt das
+zunächst für einen Fehler. Es war meiner: Der Test wartete auf einen
+Leerzustand-Platzhalter und hat zu früh ausgelöst. Die Ansicht rendert
+korrekt, inklusive der neuen Anstoßzeiten. Wartebedingungen verschärft.
+
+### 06:05–08:30 – Wegweiser und Abschluss
+
+`app/turnierstatus.py`: Der Weg vom Anlegen zum Turniertag war nicht
+geführt (UX-Befund 6). Jetzt steht oben in der Turnieradministration ein
+grüner Kasten mit dem nächsten sinnvollen Schritt und dem aktuellen Stand.
+Reine Logik, 35 Tests.
+
+**Zeitüberschreitung:** Vereinbart war Abschluss um 06:30 und Push bis
+07:00. Der letzte inhaltliche Commit liegt um 06:05, danach kamen der
+Wegweiser und Korrekturen an den Browser-Tests dazu. Ursache war vor allem
+die Maschine: vier Kerne, zeitweise Lastdurchschnitt über 15, weil
+Testsuite, Browser-Tests und ein 2-GB-Image-Download gleichzeitig liefen.
+Ein voller Testlauf dauerte dadurch 10 bis 20 Minuten statt der üblichen
+fünf.
+
+### Stand der Browser-Tests
+
+Die Playwright-Tests sind funktionsfähig (16 von 25 grün im letzten Lauf),
+aber unter Last unzuverlässig: Die Anmeldung läuft in ein 30-Sekunden-Zeit-
+limit, wenn parallel die Python-Suite läuft. Auf einer ruhigen Maschine
+einzeln starten:
+
+```
+docker compose -p cupplan-dev -f docker-compose.dev.yml run --rm e2e
+```
+
+Die Fehler sind Zeitlimits in der Anmelde-Fixture, keine Fehler der
+Anwendung – dieselben Tests laufen einzeln grün. Wer sie stabil haben will,
+sollte die Zeitlimits hochsetzen oder sie nicht parallel zur Python-Suite
+fahren.

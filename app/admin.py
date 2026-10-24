@@ -34,6 +34,7 @@ from app.finalrunde import (
 )
 from app.security import anmeldebremse
 from app.spielplan import Begegnung, erstelle_spielplan, finde_konflikte
+from app.turnierstatus import fortschritt, naechster_schritt
 from app.socket_events import broadcast_state
 
 # Der Blueprint liegt in app/blueprints.py, damit auch app/backup.py
@@ -364,11 +365,43 @@ def tournament_admin():
         or next((m for m in all_ctrl if m.status == "planned"), None)
         or (all_ctrl[0] if all_ctrl else None)
     )
+    finalspiele = Match.query.filter_by(
+        is_final=True, tournament_id=t.id).all()
+    schiedsrichter = Referee.query.filter_by(tournament_id=t.id).count()
+
+    zahlen = {
+        "phase": phase,
+        "gruppen": len(groups),
+        "teams": len(teams),
+        "teams_ohne_gruppe": sum(1 for te in teams if not te.group_id),
+        "gruppen_mit_zu_wenig_teams": sum(
+            1 for gr in groups
+            if sum(1 for te in teams if te.group_id == gr.id) < 2),
+        "gruppenspiele": len(matches),
+        "gruppenspiele_offen": sum(1 for m in matches
+                                   if m.status != "finished"),
+        "spiele_ohne_zeit": sum(1 for m in matches if not m.scheduled_time),
+        "konflikte": len(finde_konflikte([
+            {"nummer": m.match_order, "anstoss": m.scheduled_time,
+             "feld": m.field or 1, "teams": (m.team1_id, m.team2_id)}
+            for m in matches + finalspiele
+        ])),
+        "schiedsrichter": schiedsrichter,
+        "spiele_ohne_schiedsrichter": sum(
+            1 for m in matches if not m.referee_id),
+        "finalspiele": len(finalspiele),
+        "finalspiele_offen": sum(1 for m in finalspiele
+                                 if m.status != "finished"),
+    }
+
     return render_template(
         "admin/tournament_admin.html",
         tournament=t, phase=phase, settings=settings,
         groups=groups, teams=teams, matches=matches,
         live_matches=live_matches, control_match=control_match,
+        naechster_schritt=naechster_schritt(zahlen),
+        fortschritt=fortschritt(zahlen),
+        zahlen=zahlen,
     )
 
 

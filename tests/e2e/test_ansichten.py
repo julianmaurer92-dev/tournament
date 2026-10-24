@@ -131,13 +131,16 @@ def test_anmeldung_funktioniert_im_browser(seite, admin_seite, erstes_turnier):
 
 def test_adminliste(admin_seite):
     admin_seite.goto(f"{BASIS}/admin/")
-    assert admin_seite.locator(".card").count() > 0
+    # Die Turnierliste nutzt eigene Klassen, keine Tabler-Karten
+    admin_seite.wait_for_selector('form[action*="/admin/tournaments"]',
+                                  timeout=20000)
+    assert "Neues Turnier erstellen" in admin_seite.content()
     bild(admin_seite, "10-admin-turnierliste")
 
 
 @pytest.mark.parametrize("pfad,warten", [
     ("/administration", ".adm-card"),
-    ("/design", ".card, .adm-card"),
+    ("/design", ".ctrl-card"),          # Design nutzt eigene Klassen
     ("/organisation", ".card, table"),
     ("/finals-setup", "body"),
     ("/anmeldungen", ".card"),
