@@ -1,12 +1,14 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Siegerehrung – {{ tournament.name }}{% endblock %}
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('siegerehrung_admin.urkunden', slug=tournament.slug) }}" target="_blank" class="btn btn-primary btn-sm">&#128220; Urkunden drucken</a>
-<a href="{{ url_for('siegerehrung_admin.platzierung_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('siegerehrung_admin.platzierung_csv', slug=tournament.slug) }}"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('download') }} CSV</a>
+<a href="{{ url_for('siegerehrung_admin.urkunden', slug=tournament.slug) }}" target="_blank"
+   class="cp-knopf cp-knopf--haupt cp-knopf--klein">{{ icon('certificate') }} Urkunden drucken</a>
 {% endblock %}
 
 {% block page_content %}

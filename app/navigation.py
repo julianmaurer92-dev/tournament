@@ -12,6 +12,28 @@ Endpunkt der aktuellen Anfrage – nicht die Vorlage.
 from flask import request, url_for
 
 
+# Woerter, unter denen Leute eine Seite suchen, ohne ihren Namen zu
+# kennen. "Wo stelle ich die Spielzeit ein?" fuehrt sonst nirgendwohin,
+# weil kein Menuepunkt "Spielzeit" heisst.
+STICHWORTE = {
+    "Übersicht": "dashboard start heute jetzt laufend",
+    "Spielplan": "spiele paarungen zeiten spielfelder anstoss spielzeit "
+                 "verlängerung gruppen auslosung drucken",
+    "Teams & Gruppen": "mannschaften vereine anmeldungen trikot wappen logo "
+                       "spieler kader",
+    "Schiedsrichter": "pfeifen einsatzplan unparteiische",
+    "Statistik": "torschützen torjäger karten ereignisse tabelle zahlen",
+    "Siegerehrung": "pokal urkunden platzierung sieger medaillen",
+    "Organisation": "kasse startgeld bezahlt quittung speisekarte getränke "
+                    "kabinen kabinenschilder sponsoren",
+    "Design": "theme farben aussehen dunkel hell vereinsfarbe darstellung",
+    "Alle Turniere": "wechseln anderes turnier neu anlegen jahrgang",
+    "Speisekarte": "essen getränke preise kuchen wurst kiosk",
+    "Benutzer": "konten passwort rechte zugang anmelden spielleiter",
+    "Sicherung": "export import backup datei json wiederherstellen kopie",
+}
+
+
 def _punkt(name, endpunkt, icon, slug=None, zahl=None, passt_auf=()):
     """Ein Navigationspunkt. passt_auf: weitere Endpunkte, die hierher gehoeren."""
     try:
@@ -75,24 +97,31 @@ def palette_eintraege(tournament=None, teams=(), spiele=(), themes=()):
         eintraege.append({
             "art": "Seite", "name": punkt["name"],
             "ziel": punkt["ziel"], "icon": punkt["icon"],
+            "stichwort": STICHWORTE.get(punkt["name"], ""),
         })
 
     if tournament is not None:
         slug = tournament.slug
         extra = [
-            ("Spielplan drucken", "admin.schedule_print", "printer"),
-            ("Kabinenschilder drucken", "admin.cabin_signs", "printer"),
-            ("Urkunden drucken", "siegerehrung_admin.urkunden", "certificate"),
-            ("Live-Ansicht öffnen", "main.tournament_view", "world"),
-            ("Beamer-Ansicht öffnen", "main.tournament_tv", "device-tv"),
-            ("Handy-Ansicht öffnen", "main.tournament_phone", "device-mobile"),
-            ("Anmeldeformular öffnen", "anmeldung.anmeldeformular", "user-plus"),
+            ("Spielplan drucken", "admin.schedule_print", "printer", "papier aushang"),
+            ("Kabinenschilder drucken", "admin.cabin_signs", "printer", "umkleide tür"),
+            ("Urkunden drucken", "siegerehrung_admin.urkunden", "certificate",
+             "diplom siegerehrung"),
+            ("Live-Ansicht öffnen", "main.tournament_view", "world",
+             "öffentlich website zuschauer"),
+            ("Beamer-Ansicht öffnen", "main.tournament_tv", "device-tv",
+             "fernseher präsentieren großbild anzeigetafel"),
+            ("Handy-Ansicht öffnen", "main.tournament_phone", "device-mobile",
+             "smartphone mobil eltern"),
+            ("Anmeldeformular öffnen", "anmeldung.anmeldeformular", "user-plus",
+             "melden teilnahme vereine einladen"),
         ]
-        for name, endpunkt, icon in extra:
+        for name, endpunkt, icon, stichwort in extra:
             try:
                 eintraege.append({
                     "art": "Aktion", "name": name,
                     "ziel": url_for(endpunkt, slug=slug), "icon": icon,
+                    "stichwort": stichwort,
                 })
             except Exception:
                 pass
@@ -101,7 +130,7 @@ def palette_eintraege(tournament=None, teams=(), spiele=(), themes=()):
             eintraege.append({
                 "art": "Mannschaft", "name": team.name,
                 "ziel": url_for("admin.tournament_admin", slug=slug) + "#teams",
-                "icon": "users-group",
+                "icon": "users-group", "stichwort": "mannschaft verein team",
             })
 
         for spiel in spiele:
@@ -113,13 +142,16 @@ def palette_eintraege(tournament=None, teams=(), spiele=(), themes=()):
                 "name": f"{t1} – {t2}" + (f" ({zeit})" if zeit else ""),
                 "ziel": url_for("admin.match_control", slug=slug, mid=spiel.id),
                 "icon": "player-play",
+                # Wer die Steuerung sucht, tippt selten die Mannschaftsnamen
+                "stichwort": "spielsteuerung steuerung anpfeifen tor ergebnis "
+                             "spielstand uhr " + f"{t1} {t2}".lower(),
             })
 
         for schluessel, name in themes:
             eintraege.append({
                 "art": "Theme", "name": name,
                 "ziel": url_for("admin.design", slug=slug) + "?theme=" + schluessel,
-                "icon": "palette",
+                "icon": "palette", "stichwort": "theme farben design aussehen",
             })
 
     return eintraege

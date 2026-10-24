@@ -143,12 +143,6 @@
 
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
-<a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="btn btn-outline btn-sm" target="_blank">&#128438; Spielplan</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 <div style="margin-bottom:1rem">
     <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:0.15rem">&#128188; Organisation – {{ tournament.name }}</h2>

@@ -1,11 +1,11 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Admin - Speisekarte{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
-<a href="{{ url_for('main.speisekarte') }}" class="btn btn-outline btn-sm">Oeffentliche Ansicht</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+<a href="{{ url_for('main.speisekarte') }}" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Öffentlich ansehen</a>
 {% endblock %}
 
 {% block page_content %}

@@ -4,20 +4,6 @@
 
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-primary btn-sm">&#9654; Dashboard</a>
-<a href="{{ url_for('admin.design', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#127912; Design</a>
-<a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="btn btn-outline btn-sm" target="_blank">&#128438; Spielplan</a>
-<a href="{{ url_for('admin.organisation', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#128188; Org</a>
-{% if control_match %}
-<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=control_match.id) }}"
-   class="btn btn-sm {% if live_matches %}btn-success{% else %}btn-outline{% endif %}">
-    &#9654; Steuerung{% if live_matches|length > 1 %} ({{ live_matches|length }}){% endif %}
-</a>
-{% endif %}
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block head %}
 <style>
 .admin-section-title {

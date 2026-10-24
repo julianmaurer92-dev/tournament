@@ -1,5 +1,6 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Dashboard – {{ tournament.name }}{% endblock %}
 
 {% block head %}
@@ -206,20 +207,14 @@
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
-<a href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#9881; Administration</a>
-<div class="live-nav-group">
-    <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" target="_blank">&#128187; Web</a>
-    <a href="{{ url_for('main.tournament_phone', slug=tournament.slug) }}" target="_blank">&#128241;</a>
-    <a href="{{ url_for('main.tournament_tv', slug=tournament.slug) }}" target="_blank">&#128250;</a>
-</div>
+<a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Live-Ansicht</a>
 {% if control_match %}
 <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=control_match.id) }}"
-   class="btn btn-sm {% if live_matches %}btn-success{% else %}btn-outline{% endif %}">
-    &#9654; Steuerung{% if live_matches|length > 1 %} ({{ live_matches|length }}){% endif %}
+   class="cp-knopf cp-knopf--haupt cp-knopf--klein">
+    {{ icon('player-play') }} Steuerung{% if live_matches|length > 1 %} ({{ live_matches|length }}){% endif %}
 </a>
 {% endif %}
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
 {% endblock %}
 
 {% block page_content %}

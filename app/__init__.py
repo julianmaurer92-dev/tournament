@@ -182,14 +182,15 @@ def create_app(config_overrides=None):
         """
         from flask import request
         from flask_login import current_user
-        from app.navigation import navigation
+        from app.navigation import navigation, palette_eintraege
 
+        leer = {"cp_navigation": [], "cp_turniere": [], "cp_palette": []}
         if not request.blueprint or not request.blueprint.startswith(
                 ("admin", "anmeldung_admin", "ereignisse_admin",
                  "siegerehrung_admin", "schiedsrichter")):
-            return {"cp_navigation": [], "cp_turniere": []}
+            return leer
         if not current_user.is_authenticated:
-            return {"cp_navigation": [], "cp_turniere": []}
+            return leer
 
         from app.models import Tournament
         tournament = getattr(g, "tournament", None)
@@ -202,9 +203,24 @@ def create_app(config_overrides=None):
             turniere = Tournament.query.filter(Tournament.id.in_(ids)).order_by(
                 Tournament.display_order, Tournament.name).all() if ids else []
 
+        # Fuer die Befehlspalette: Mannschaften, Spiele und Themes
+        # des aktuellen Turniers. Zwei schlanke Abfragen – nur Namen
+        # und Kennungen, keine Beziehungen.
+        teams, spiele = (), ()
+        if tournament is not None:
+            from app.models import Team, Match
+            teams = Team.query.filter_by(tournament_id=tournament.id).order_by(
+                Team.name).all()
+            spiele = Match.query.filter_by(tournament_id=tournament.id).order_by(
+                Match.scheduled_time, Match.match_order).all()
+
+        from app.themes import katalog
+        themes = [(t["schluessel"], t["name"]) for t in katalog()]
+
         return {
             "cp_navigation": navigation(tournament),
             "cp_turniere": turniere,
+            "cp_palette": palette_eintraege(tournament, teams, spiele, themes),
         }
 
     @app.context_processor

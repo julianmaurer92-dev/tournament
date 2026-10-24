@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/navigation.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/palette.css') }}">
     {% if cp_vereinsfarbe %}
     <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
     {% endif %}
@@ -132,8 +133,11 @@
 <script src="{{ url_for('static', filename='vendor/tabler.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/cp-basis.js') }}"></script>
 <script src="{{ url_for('static', filename='js/cp-navigation.js') }}"></script>
-{% if cp_palette is defined %}
-<script>const CP_PALETTE = {{ cp_palette | tojson }};</script>
+{% if cp_palette %}
+<script>
+const CP_PALETTE = {{ cp_palette | tojson }};
+const CP_SPRITE = {{ url_for('static', filename='vendor/tabler-sprite.svg') | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/cp-palette.js') }}"></script>
 {% endif %}
 {% block scripts %}{% endblock %}

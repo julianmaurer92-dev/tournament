@@ -1,12 +1,14 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Statistik – {{ tournament.name }}{% endblock %}
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('ereignisse_admin.torschuetzen_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
-<a href="{{ url_for('ereignisse.statistik_seite', slug=tournament.slug) }}" target="_blank" class="btn btn-outline btn-sm">Öffentliche Ansicht &#8599;</a>
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('ereignisse_admin.torschuetzen_csv', slug=tournament.slug) }}"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('download') }} CSV</a>
+<a href="{{ url_for('ereignisse.statistik_seite', slug=tournament.slug) }}" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Öffentlich ansehen</a>
 {% endblock %}
 
 {% block page_content %}
