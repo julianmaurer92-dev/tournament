@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -59,20 +60,20 @@
 </head>
 <body>
 <header>
-    <a href="{{ url_for('main.phone_landing') }}" class="ph-back">&larr; Uebersicht</a>
-    <span id="ph-title">&#127860; Speisekarte</span>
+    <a href="{{ url_for('main.phone_landing') }}" class="ph-back">&larr; Übersicht</a>
+    <span id="ph-title">{{ icon('tools-kitchen-2') }} Speisekarte</span>
 </header>
 
 <div class="menu-container">
     {% if not speisen and not getraenke %}
     <div class="ph-empty">
-        <div class="ph-empty-icon">&#127860;</div>
-        <p>Noch keine Speisekarte verfuegbar</p>
+        <div class="ph-empty-icon">{{ icon('tools-kitchen-2') }}</div>
+        <p>Noch keine Speisekarte verfügbar</p>
     </div>
     {% else %}
         {% if speisen %}
         <div class="menu-section">
-            <div class="menu-section-title">&#127828; Speisen</div>
+            <div class="menu-section-title">{{ icon('tools-kitchen-2') }} Speisen</div>
             {% for item in speisen %}
             <div class="menu-item">
                 <div class="menu-item-info">
@@ -91,7 +92,7 @@
 
         {% if getraenke %}
         <div class="menu-section">
-            <div class="menu-section-title">&#127866; Getraenke</div>
+            <div class="menu-section-title">{{ icon('beer') }} Getränke</div>
             {% for item in getraenke %}
             <div class="menu-item">
                 <div class="menu-item-info">

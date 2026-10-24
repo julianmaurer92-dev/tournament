@@ -183,7 +183,7 @@ def zuteilen(mid):
         try:
             sid = int(rohwert)
         except (TypeError, ValueError):
-            return jsonify({"error": "Ungueltige Schiedsrichter-ID."}), 400
+            return jsonify({"error": "Ungültige Schiedsrichter-ID."}), 400
         schiri = db.session.get(Referee, sid)
         if not schiri or schiri.tournament_id != t.id:
             return jsonify({"error": "Schiedsrichter nicht gefunden."}), 404

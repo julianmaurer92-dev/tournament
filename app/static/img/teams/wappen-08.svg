@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Vereinswappen 8">
+  <path d="M32 2 60 10v24c0 14-12 24-28 28C16 58 4 48 4 34V10z" fill="#1f2937"/>
+  <path d="M32 8 54 14v20c0 11-9 19-22 22C19 53 10 45 10 34V14z" fill="#f3f4f6"/>
+  <circle cx="32" cy="30" r="9" fill="#1f2937"/>
+  <path d="M32 23l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="#f3f4f6"/>
+</svg>

@@ -1,5 +1,6 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Organisation – {{ tournament.name }}{% endblock %}
 
 {% block head %}
@@ -143,15 +144,9 @@
 
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
-<a href="{{ url_for('admin.schedule_print', slug=tournament.slug) }}" class="btn btn-outline btn-sm" target="_blank">&#128438; Spielplan</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 <div style="margin-bottom:1rem">
-    <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:0.15rem">&#128188; Organisation – {{ tournament.name }}</h2>
+    <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:0.15rem">{{ icon('cash-banknote') }} Organisation – {{ tournament.name }}</h2>
     <p class="text-muted" style="font-size:0.8rem">Startgebühren verwalten &amp; Quittungen drucken</p>
 </div>
 
@@ -178,7 +173,7 @@
 <!-- ── Sidebar: Einstellungen ── -->
 <aside>
     <div class="card">
-        <div class="card-header"><h3 class="card-title">&#9881; Einstellungen</h3></div>
+        <div class="card-header"><h3 class="card-title">{{ icon('settings') }} Einstellungen</h3></div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-12">
@@ -213,7 +208,7 @@
                 </div>
             </div>
             <div class="mt-3 d-flex align-items-center gap-2">
-                <button class="btn btn-primary btn-sm" onclick="saveSettings()">&#10003; Speichern</button>
+                <button class="btn btn-primary btn-sm" onclick="saveSettings()">{{ icon('check') }} Speichern</button>
                 <span id="save-status" class="text-muted" style="font-size:0.78rem"></span>
             </div>
         </div>
@@ -224,19 +219,19 @@
 <main>
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap;gap:0.5rem">
-            <h3 class="card-title">&#128101; Mannschaften</h3>
+            <h3 class="card-title">{{ icon('users-group') }} Mannschaften</h3>
             <span class="badge badge-gray-lt">{{ teams|length }} Teams</span>
             {% if entry_fee %}
             <span class="text-muted" style="font-size:0.75rem">à {{ "%.2f"|format(entry_fee)|replace(".", ",") }} €</span>
             {% endif %}
             <div class="ms-auto d-flex gap-2 flex-wrap">
                 <button class="btn btn-sm btn-outline" onclick="printSelected()" id="btn-print-selected" style="display:none">
-                    &#128438; Ausgewählte drucken (<span id="sel-count">0</span>)
+                    {{ icon('printer') }} Ausgewählte drucken (<span id="sel-count">0</span>)
                 </button>
                 <a href="{{ url_for('admin.receipt_all', slug=tournament.slug) }}"
-                   target="_blank" class="btn btn-sm btn-outline">&#128438; Alle drucken</a>
+                   target="_blank" class="btn btn-sm btn-outline">{{ icon('printer') }} Alle drucken</a>
                 {% if current_user.can_edit() %}
-                <button class="btn btn-sm btn-outline" onclick="markAllPaid()">&#10003; Alle bezahlt</button>
+                <button class="btn btn-sm btn-outline" onclick="markAllPaid()">{{ icon('check') }} Alle bezahlt</button>
                 {% endif %}
             </div>
         </div>
@@ -251,7 +246,7 @@
             <button class="btn btn-xs btn-outline" onclick="selectAll()">Alle auswählen</button>
             <button class="btn btn-xs btn-outline" onclick="selectNone()">Auswahl aufheben</button>
             <button class="btn btn-sm btn-primary ms-auto" onclick="printSelected()">
-                &#128438; Ausgewählte drucken
+                {{ icon('printer') }} Ausgewählte drucken
             </button>
         </div>
 
@@ -291,14 +286,14 @@
                 </div>
 
                 <span class="pay-status {{ 'paid' if is_paid else 'unpaid' }}" id="status-{{ team.id }}">
-                    {{ '✓ Bezahlt' if is_paid else 'Offen' }}
+                    {% if is_paid %}{{ icon('check') }} Bezahlt{% else %}Offen{% endif %}
                 </span>
 
                 <a href="{{ url_for('admin.receipt_single', slug=tournament.slug, tid=team.id) }}"
                    target="_blank"
                    class="pay-print-btn {{ '' if is_paid else 'disabled' }}"
                    id="print-btn-{{ team.id }}"
-                   title="Quittung drucken">&#128438; Quittung</a>
+                   title="Quittung drucken">{{ icon('printer') }} Quittung</a>
             </div>
             {% endfor %}
         </div>

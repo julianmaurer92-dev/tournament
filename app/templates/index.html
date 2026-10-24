@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}{{ site_settings.tournament_name }} - Live{% endblock %}
 
 {% block head %}
@@ -11,14 +12,14 @@
 {% block content %}
 <header class="header">
     <div class="header-inner">
-        <div class="header-logo">&#9917;</div>
+        <div class="header-logo">{{ icon('ball-football') }}</div>
         <div class="header-text">
             <h1 id="tournament-name">{{ site_settings.tournament_name }}</h1>
             <p class="header-sub">Live-Ergebnisse &amp; Tabelle</p>
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem">
-            <a href="{{ url_for('main.landing') }}" class="header-menu-link" title="Turnierübersicht">&#127942; Übersicht</a>
-            <a href="{{ url_for('main.speisekarte') }}" class="header-menu-link" title="Speisekarte">&#127860; Speisekarte</a>
+            <a href="{{ url_for('main.landing') }}" class="header-menu-link" title="Turnierübersicht">{{ icon('trophy') }} Übersicht</a>
+            <a href="{{ url_for('main.speisekarte') }}" class="header-menu-link" title="Speisekarte">{{ icon('tools-kitchen-2') }} Speisekarte</a>
         </div>
     </div>
 </header>
@@ -26,10 +27,10 @@
 <!-- Mobile tab bar (hidden on desktop via CSS) -->
 <nav class="mobile-tabs" id="mobile-tabs">
     <button class="mobile-tab active" data-tab="live" onclick="switchTab('live')">
-        <span class="mobile-tab-dot" id="live-dot"></span>&#9654; Live
+        <span class="mobile-tab-dot" id="live-dot"></span>{{ icon('player-play') }} Live
     </button>
-    <button class="mobile-tab" data-tab="matches" onclick="switchTab('matches')">&#128203; Spiele</button>
-    <button class="mobile-tab" data-tab="table" onclick="switchTab('table')">&#128200; Tabelle</button>
+    <button class="mobile-tab" data-tab="matches" onclick="switchTab('matches')">{{ icon('clipboard-list') }} Spiele</button>
+    <button class="mobile-tab" data-tab="table" onclick="switchTab('table')">{{ icon('chart-bar') }} Tabelle</button>
 </nav>
 
 <div class="layout">
@@ -55,7 +56,7 @@
         <div id="next-match-prep"></div>
         <div id="live-match" class="live-match-container">
             <div class="no-live-match">
-                <div class="no-live-icon">&#9917;</div>
+                <div class="no-live-icon">{{ icon('ball-football') }}</div>
                 <p>Kein Spiel aktiv</p>
                 <p class="no-live-sub">Warte auf den Anpfiff...</p>
             </div>

@@ -27,7 +27,7 @@ def test_login_mit_falschem_passwort(client):
         "username": "admin", "password": "falsch",
     })
     assert resp.status_code == 200
-    assert b"Ungueltige Anmeldedaten" in resp.data
+    assert "Ungültige Anmeldedaten" in resp.get_data(as_text=True)
 
 
 def test_login_mit_unbekanntem_benutzer(client):
@@ -35,7 +35,7 @@ def test_login_mit_unbekanntem_benutzer(client):
         "username": "gibtsnicht", "password": "x",
     })
     assert resp.status_code == 200
-    assert b"Ungueltige Anmeldedaten" in resp.data
+    assert "Ungültige Anmeldedaten" in resp.get_data(as_text=True)
 
 
 def test_benutzer_ohne_passwort_kann_sich_nicht_anmelden(app, client):
@@ -46,7 +46,7 @@ def test_benutzer_ohne_passwort_kann_sich_nicht_anmelden(app, client):
     resp = client.post("/admin/login", data={
         "username": "oauth-only", "password": "",
     })
-    assert b"Ungueltige Anmeldedaten" in resp.data
+    assert "Ungültige Anmeldedaten" in resp.get_data(as_text=True)
 
 
 def test_admin_bereich_ohne_login_leitet_um(client):

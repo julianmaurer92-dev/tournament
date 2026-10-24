@@ -93,7 +93,7 @@ def login():
                 f"{gesperrt // 60} Minuten gesperrt.", "error",
             )
         else:
-            flash("Ungueltige Anmeldedaten.", "error")
+            flash("Ungültige Anmeldedaten.", "error")
     return render_template("admin/login.html")
 
 
@@ -216,10 +216,14 @@ def create_tournament():
     num_fields = request.form.get("num_fields", "1").strip()
     if num_fields in FELD_OPTIONEN:
         set_setting(t.id, "num_fields", num_fields)
-    hide_table = "1" if request.form.get("hide_table") == "1" else "0"
-    set_setting(t.id, "hide_table", hide_table)
-    hide_scores = "1" if request.form.get("hide_scores") == "1" else "0"
-    set_setting(t.id, "hide_scores", hide_scores)
+    # Nur schreiben, wenn das Formular die Haken ueberhaupt mitschickt.
+    # Sonst setzte jedes Speichern der Turnierdaten die Einstellung
+    # "Tabelle ausblenden" still zurueck – man aenderte das Datum und
+    # die Tabelle stand wieder oeffentlich im Netz.
+    for schluessel in ("hide_table", "hide_scores"):
+        if schluessel in request.form:
+            set_setting(t.id, schluessel,
+                        "1" if request.form.get(schluessel) == "1" else "0")
     # Timer settings (form sends minutes, store as seconds)
     try:
         timer_regular_min = float(request.form.get("timer_regular_min", "").strip() or "10")
@@ -266,10 +270,14 @@ def edit_tournament(tid):
     num_fields = request.form.get("num_fields", "").strip()
     if num_fields in FELD_OPTIONEN:
         set_setting(t.id, "num_fields", num_fields)
-    hide_table = "1" if request.form.get("hide_table") == "1" else "0"
-    set_setting(t.id, "hide_table", hide_table)
-    hide_scores = "1" if request.form.get("hide_scores") == "1" else "0"
-    set_setting(t.id, "hide_scores", hide_scores)
+    # Nur schreiben, wenn das Formular die Haken ueberhaupt mitschickt.
+    # Sonst setzte jedes Speichern der Turnierdaten die Einstellung
+    # "Tabelle ausblenden" still zurueck – man aenderte das Datum und
+    # die Tabelle stand wieder oeffentlich im Netz.
+    for schluessel in ("hide_table", "hide_scores"):
+        if schluessel in request.form:
+            set_setting(t.id, schluessel,
+                        "1" if request.form.get(schluessel) == "1" else "0")
     db.session.commit()
     flash(f"Turnier '{t.name}' aktualisiert.", "success")
     next_page = request.args.get("next", "")
@@ -290,7 +298,7 @@ def delete_tournament(tid):
     TournamentSettings.query.filter_by(tournament_id=tid).delete()
     db.session.delete(t)
     db.session.commit()
-    flash("Turnier geloescht.", "success")
+    flash("Turnier gelöscht.", "success")
     return redirect(url_for("admin.tournament_list"))
 
 
@@ -606,9 +614,14 @@ def schedule_print():
 @login_required
 @tournament_required
 def design():
+    from app.themes import aufloesen, katalog
     t = g.tournament
     settings = get_all_settings(t.id)
-    return render_template("admin/design.html", settings=settings, tournament=t)
+    theme, schema = aufloesen(settings.get("theme"))
+    return render_template(
+        "admin/design.html", settings=settings, tournament=t,
+        themes=katalog(), aktuelles_theme=theme, aktuelles_schema=schema,
+    )
 
 
 @admin_bp.route("/t/<slug>/api/settings", methods=["POST"])
@@ -620,7 +633,7 @@ def update_settings():
     t = g.tournament
     data = request.get_json(silent=True)
     if data is None:
-        return jsonify({"error": "Ungueltige JSON-Anfrage"}), 400
+        return jsonify({"error": "Ungültige JSON-Anfrage"}), 400
     allowed_keys = {
         "tournament_name", "color_title", "color_primary", "color_secondary",
         "default_timer_regular", "default_timer_extra", "hide_results", "hide_table", "hide_scores", "theme",
@@ -634,7 +647,7 @@ def update_settings():
             continue
         value = str(data[key]).strip()
         if key.startswith("color_") and not _HEX_RE.match(value):
-            return jsonify({"error": f"Ungueltige Farbe fuer {key}"}), 400
+            return jsonify({"error": f"Ungültige Farbe für {key}"}), 400
         if key == "tournament_name" and (len(value) < 1 or len(value) > 100):
             return jsonify({"error": "Name muss 1-100 Zeichen lang sein"}), 400
         if key.startswith("default_timer_"):
@@ -643,17 +656,21 @@ def update_settings():
                 if int_val < 60 or int_val > 5400:
                     return jsonify({"error": f"{key}: Wert muss zwischen 60 und 5400 Sekunden liegen"}), 400
             except ValueError:
-                return jsonify({"error": f"{key}: Ungueltige Zahl"}), 400
+                return jsonify({"error": f"{key}: Ungültige Zahl"}), 400
         if key == "hide_results" and value not in ("0", "1"):
             return jsonify({"error": "hide_results muss 0 oder 1 sein"}), 400
         if key in ("hide_table", "hide_scores") and value not in ("0", "1"):
             return jsonify({"error": f"{key} muss 0 oder 1 sein"}), 400
-        _valid_themes = {"dark", "midnight", "slate", "ocean", "crimson", "light"}
-        if key == "theme" and value not in _valid_themes:
-            return jsonify({"error": f"Ungueltiges Theme: {value}"}), 400
+        if key == "theme":
+            # Vorher stand hier eine feste Liste mit sechs Namen, obwohl die
+            # Designseite zehn anbot – "navy", "forest", "amber" und "violet"
+            # liessen sich gar nicht speichern. Jetzt entscheidet das
+            # Theme-Modul, und zwar fuer alte wie neue Schreibweisen.
+            from app.themes import aufloesen, speicherwert
+            value = speicherwert(*aufloesen(value))
         _valid_final_modes = {"", "semi_final", "direct_final", "classic_ko", "free_ko", "custom"}
         if key == "final_mode" and value not in _valid_final_modes:
-            return jsonify({"error": "Ungueltiger Finalrundentyp"}), 400
+            return jsonify({"error": "Ungültiger Finalrundentyp"}), 400
         if key == "num_fields" and value not in FELD_OPTIONEN:
             return jsonify({"error": "num_fields muss zwischen 1 und 6 liegen"}), 400
         set_setting(t.id, key, value)
@@ -763,7 +780,7 @@ def start_final_round():
     mode = data.get("mode")
     config = data.get("config", {})
     if mode not in ("classic_ko", "semi_final", "direct_final", "free_ko", "rank_vs_rank", "custom"):
-        return jsonify({"error": "Ungueltiger Modus"}), 400
+        return jsonify({"error": "Ungültiger Modus"}), 400
     set_setting(t.id, "final_mode", mode)
     try:
         if mode == "classic_ko":
@@ -946,7 +963,7 @@ def delete_group(gid):
     db.session.delete(group)
     db.session.commit()
     broadcast_state(t.id)
-    flash("Gruppe geloescht.", "success")
+    flash("Gruppe gelöscht.", "success")
     return redirect(url_for("admin.dashboard", slug=t.slug))
 
 
@@ -1019,7 +1036,7 @@ def delete_team(tid):
     db.session.delete(team)
     db.session.commit()
     broadcast_state(t.id)
-    flash("Team geloescht.", "success")
+    flash("Team gelöscht.", "success")
     return redirect(url_for("admin.dashboard", slug=t.slug))
 
 
@@ -1031,7 +1048,7 @@ def import_teams_csv():
     t = g.tournament
     phase = get_setting(t.id, "tournament_phase", "GROUP_STAGE")
     if phase != "GROUP_STAGE":
-        return jsonify({"error": "Nur in der Gruppenphase moeglich"}), 400
+        return jsonify({"error": "Nur in der Gruppenphase möglich"}), 400
 
     data = request.get_json()
     csv_text = data.get("csv", "").strip()
@@ -1292,7 +1309,7 @@ def delete_match(mid):
     db.session.delete(match)
     db.session.commit()
     broadcast_state(t.id)
-    flash("Spiel geloescht.", "success")
+    flash("Spiel gelöscht.", "success")
     return redirect(url_for("admin.dashboard", slug=t.slug))
 
 
@@ -1409,7 +1426,7 @@ def generate_round_robin():
     t = g.tournament
     phase = get_setting(t.id, "tournament_phase", "GROUP_STAGE")
     if phase != "GROUP_STAGE":
-        return jsonify({"error": "Nur in der Gruppenphase moeglich"}), 400
+        return jsonify({"error": "Nur in der Gruppenphase möglich"}), 400
 
     groups = Group.query.filter_by(tournament_id=t.id).order_by(
         Group.display_order, Group.name).all()
@@ -1576,11 +1593,40 @@ def match_control(mid):
         prev_match_id = match_ids[idx - 1] if idx > 0 else None
         next_match_id = match_ids[idx + 1] if idx >= 0 and idx < len(match_ids) - 1 else None
 
+    # Naechstes noch nicht gespieltes Spiel – Ziel von "Beenden & weiter".
+    # Bewusst das naechste GEPLANTE, nicht einfach das naechste in der
+    # Liste: Wer ein Spiel nachtraegt, will danach nicht wieder in einem
+    # bereits beendeten landen.
+    naechstes_offenes = next(
+        (m for m in all_matches
+         if m.id != mid and m.status == "planned"
+         and (not parallel_match or m.id != parallel_match.id)),
+        None)
+
+    # Spielernamen je Mannschaft fuer die Torschuetzen-Schnellauswahl.
+    # Team.players ist ein Textfeld – eine Zeile oder ein Komma je Spieler.
+    def _spieler(team):
+        if not team:
+            return []
+        namen = []
+        for zeile in (team.players or "").replace(",", "\n").split("\n"):
+            name = zeile.strip()
+            if name:
+                namen.append(name)
+        return namen[:14]      # mehr passt nicht auf einen Handybildschirm
+
+    spieler = {}
+    for m in filter(None, [match, parallel_match]):
+        for team in (m.team1, m.team2):
+            if team:
+                spieler[team.id] = _spieler(team)
+
     return render_template(
         "admin/match_control.html",
         match=match, extra_time=extra_time,
         prev_match_id=prev_match_id, next_match_id=next_match_id,
         tournament=t, parallel_match=parallel_match, num_fields=num_fields,
+        naechstes_offenes=naechstes_offenes, spieler=spieler,
     )
 
 
@@ -1592,7 +1638,7 @@ def delete_all_matches():
     t = g.tournament
     phase = get_setting(t.id, "tournament_phase", "GROUP_STAGE")
     if phase != "GROUP_STAGE":
-        return jsonify({"error": "Nur in der Gruppenphase moeglich"}), 400
+        return jsonify({"error": "Nur in der Gruppenphase möglich"}), 400
     Match.query.filter_by(tournament_id=t.id, is_final=False).delete()
     db.session.commit()
     broadcast_state(t.id)
@@ -1689,7 +1735,7 @@ def update_status(mid):
     data = request.get_json()
     new_status = data.get("status")
     if new_status not in ("planned", "live", "finished"):
-        return jsonify({"error": "Ungueltiger Status"}), 400
+        return jsonify({"error": "Ungültiger Status"}), 400
     if new_status == "live":
         num_fields = int(get_setting(t.id, "num_fields") or 1)
         live_count = Match.query.filter(
@@ -1701,7 +1747,7 @@ def update_status(mid):
             return jsonify({"error": f"Bereits {live_count} Spiel(e) live (max. {num_fields} Felder)"}), 400
     if new_status == "finished" and match.is_final and match.next_match_id:
         if match.score_team1 == match.score_team2:
-            return jsonify({"error": "Finalspiele duerfen nicht unentschieden enden"}), 400
+            return jsonify({"error": "Finalspiele dürfen nicht unentschieden enden"}), 400
     match.status = new_status
     if new_status == "finished":
         match.timer_running = False
@@ -1757,7 +1803,7 @@ def control_timer(mid):
         if data.get("is_extra_time"):
             match.is_extra_time = True
     else:
-        return jsonify({"error": "Ungueltige Aktion"}), 400
+        return jsonify({"error": "Ungültige Aktion"}), 400
 
     db.session.commit()
     broadcast_state(t.id)
@@ -1803,7 +1849,7 @@ def announce_next_match(mid):
         # fallback: first planned match overall
         next_m = Match.query.filter_by(status="planned", tournament_id=t.id).order_by(Match.match_order.asc()).first()
     if not next_m:
-        return jsonify({"error": "Kein naechstes Spiel gefunden"}), 404
+        return jsonify({"error": "Kein nächstes Spiel gefunden"}), 404
     t1 = next_m.team1.name if next_m.team1 else "TBD"
     t2 = next_m.team2.name if next_m.team2 else "TBD"
     label = next_m.final_label or (next_m.group.name if next_m.group else "")
@@ -1887,7 +1933,7 @@ def menu_delete(item_id):
     name = item.name
     db.session.delete(item)
     db.session.commit()
-    flash(f"'{name}' geloescht.", "success")
+    flash(f"'{name}' gelöscht.", "success")
     return redirect(url_for("admin.menu_admin"))
 
 
@@ -2046,5 +2092,5 @@ def delete_user(uid):
     username = user.username
     db.session.delete(user)
     db.session.commit()
-    flash(f"Benutzer '{username}' geloescht.", "success")
+    flash(f"Benutzer '{username}' gelöscht.", "success")
     return redirect(url_for("admin.user_list"))

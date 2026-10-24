@@ -1,19 +1,21 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon, karten %}
 {% block title %}Statistik – {{ tournament.name }}{% endblock %}
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('ereignisse_admin.torschuetzen_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
-<a href="{{ url_for('ereignisse.statistik_seite', slug=tournament.slug) }}" target="_blank" class="btn btn-outline btn-sm">Öffentliche Ansicht &#8599;</a>
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('ereignisse_admin.torschuetzen_csv', slug=tournament.slug) }}"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('download') }} CSV</a>
+<a href="{{ url_for('ereignisse.statistik_seite', slug=tournament.slug) }}" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Öffentlich ansehen</a>
 {% endblock %}
 
 {% block page_content %}
 {% if not anzahl_ereignisse %}
 <div class="card">
     <div class="card-body text-center text-muted py-5">
-        <div style="font-size:2rem">&#9917;</div>
+        <div style="font-size:2rem">{{ icon('ball-football') }}</div>
         <p class="mt-2 mb-1">Noch keine Spielereignisse erfasst.</p>
         <p class="small mb-0">
             Tore und Karten trägst du je Spiel ein – über die Spielsteuerung
@@ -34,7 +36,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#9917; Torschützenliste</h3>
+                <h3 class="card-title">{{ icon('ball-football') }} Torschützenliste</h3>
                 <span class="ms-2 text-muted small">{{ torschuetzen | length }} Spieler</span>
             </div>
             {% if not torschuetzen %}
@@ -66,7 +68,7 @@
     <div class="col-lg-6">
         <div class="card mb-3">
             <div class="card-header">
-                <h3 class="card-title">&#129309; Fair-Play-Wertung</h3>
+                <h3 class="card-title">{{ icon('users-group') }} Fair-Play-Wertung</h3>
                 <span class="ms-2 text-muted small">wenige Strafpunkte = besser</span>
             </div>
             <div class="table-responsive">
@@ -115,7 +117,7 @@
                             <td class="fw-semibold">{{ e.player_name }}</td>
                             <td class="text-muted">{{ e.team_name or '–' }}</td>
                             <td style="white-space:nowrap">
-                                {{ '🟨' * e.gelb }}{{ '🟨🟥' * e.gelb_rot }}{{ '🟥' * e.rot }}
+                                {{ karten(e.gelb, e.gelb_rot, e.rot) }}
                             </td>
                         </tr>
                         {% endfor %}

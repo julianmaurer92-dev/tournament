@@ -1,19 +1,19 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Admin - Speisekarte{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
-<a href="{{ url_for('main.speisekarte') }}" class="btn btn-outline btn-sm">Oeffentliche Ansicht</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+<a href="{{ url_for('main.speisekarte') }}" target="_blank"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('world') }} Öffentlich ansehen</a>
 {% endblock %}
 
 {% block page_content %}
 <div class="card mb-3">
     <div class="card-header">
-        <h3 class="card-title">&#127860; Neuen Eintrag hinzufuegen</h3>
+        <h3 class="card-title">{{ icon('tools-kitchen-2') }} Neuen Eintrag hinzufügen</h3>
         <div class="card-options">
-            <button class="btn btn-sm btn-outline" onclick="openMenuImpModal('speisekarte')">&#8593; CSV importieren</button>
+            <button class="btn btn-sm btn-outline" onclick="openMenuImpModal('speisekarte')">{{ icon('arrow-up') }} CSV importieren</button>
         </div>
     </div>
     <div class="card-body">
@@ -21,8 +21,8 @@
             <div class="row g-2">
                 <div class="col-md-2">
                     <select class="form-select" name="category">
-                        <option value="speise">&#127828; Speise</option>
-                        <option value="getraenk">&#127866; Getraenk</option>
+                        <option value="speise">{{ icon('tools-kitchen-2') }} Speise</option>
+                        <option value="getraenk">{{ icon('beer') }} Getränk</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -35,7 +35,7 @@
                     <input type="text" class="form-control" name="description" placeholder="Beschreibung (optional)">
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">&#43; Hinzufuegen</button>
+                    <button type="submit" class="btn btn-primary w-100">&#43; Hinzufügen</button>
                 </div>
             </div>
         </form>
@@ -45,7 +45,7 @@
 <!-- Bulk action toolbar -->
 <div id="bulk-toolbar" class="bulk-toolbar" style="display:none">
     <span id="bulk-count" class="bulk-count"></span>
-    <button class="btn btn-sm btn-danger" onclick="bulkDelete()">&#128465; Auswahl loeschen</button>
+    <button class="btn btn-sm btn-danger" onclick="bulkDelete()">{{ icon('trash') }} Auswahl löschen</button>
     <button class="btn btn-sm btn-outline" onclick="clearSelection()">Abbrechen</button>
 </div>
 
@@ -54,8 +54,8 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#127828; Speisen</h3>
-                <span class="ms-2 text-muted small">{{ speisen | length }} Eintraege</span>
+                <h3 class="card-title">{{ icon('tools-kitchen-2') }} Speisen</h3>
+                <span class="ms-2 text-muted small">{{ speisen | length }} Einträge</span>
             </div>
             {% if speisen %}
             <div class="table-responsive">
@@ -79,7 +79,7 @@
                                 <input type="checkbox" class="form-check-input item-cb" value="{{ item.id }}"
                                        onchange="onCbChange()">
                             </td>
-                            <td class="drag-handle" title="Verschieben">&#8597;</td>
+                            <td class="drag-handle" title="Verschieben">{{ icon('arrows-sort') }}</td>
                             <td>
                                 <div class="fw-semibold">{{ item.name }}</div>
                                 {% if item.description %}
@@ -98,7 +98,7 @@
                                     <button class="btn btn-sm" onclick="toggleMenuEdit({{ item.id }})">Bearbeiten</button>
                                     <form method="POST" action="{{ url_for('admin.menu_delete', item_id=item.id) }}"
                                           style="display:inline" onsubmit="return confirm('Eintrag loeschen?')">
-                                        <button type="submit" class="btn btn-sm btn-danger">Loeschen</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
                                     </form>
                                 </div>
                             </td>
@@ -135,7 +135,7 @@
             </div>
             {% else %}
             <div class="card-body text-center text-muted py-4">
-                <div style="font-size:2rem;margin-bottom:0.5rem">&#127828;</div>
+                <div style="font-size:2rem;margin-bottom:0.5rem">{{ icon('tools-kitchen-2') }}</div>
                 Noch keine Speisen eingetragen.
             </div>
             {% endif %}
@@ -146,8 +146,8 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#127866; Getraenke</h3>
-                <span class="ms-2 text-muted small">{{ getraenke | length }} Eintraege</span>
+                <h3 class="card-title">{{ icon('beer') }} Getränke</h3>
+                <span class="ms-2 text-muted small">{{ getraenke | length }} Einträge</span>
             </div>
             {% if getraenke %}
             <div class="table-responsive">
@@ -171,7 +171,7 @@
                                 <input type="checkbox" class="form-check-input item-cb" value="{{ item.id }}"
                                        onchange="onCbChange()">
                             </td>
-                            <td class="drag-handle" title="Verschieben">&#8597;</td>
+                            <td class="drag-handle" title="Verschieben">{{ icon('arrows-sort') }}</td>
                             <td>
                                 <div class="fw-semibold">{{ item.name }}</div>
                                 {% if item.description %}
@@ -190,7 +190,7 @@
                                     <button class="btn btn-sm" onclick="toggleMenuEdit({{ item.id }})">Bearbeiten</button>
                                     <form method="POST" action="{{ url_for('admin.menu_delete', item_id=item.id) }}"
                                           style="display:inline" onsubmit="return confirm('Eintrag loeschen?')">
-                                        <button type="submit" class="btn btn-sm btn-danger">Loeschen</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
                                     </form>
                                 </div>
                             </td>
@@ -227,8 +227,8 @@
             </div>
             {% else %}
             <div class="card-body text-center text-muted py-4">
-                <div style="font-size:2rem;margin-bottom:0.5rem">&#127866;</div>
-                Noch keine Getraenke eingetragen.
+                <div style="font-size:2rem;margin-bottom:0.5rem">{{ icon('beer') }}</div>
+                Noch keine Getränke eingetragen.
             </div>
             {% endif %}
         </div>
@@ -243,7 +243,7 @@
     <div class="imp-box">
         <div class="imp-hd">
             <span id="menu-imp-title"></span>
-            <button class="btn btn-sm btn-outline" onclick="closeMenuImpModal()" style="padding:0.15rem 0.5rem">&#10005;</button>
+            <button class="btn btn-sm btn-outline" onclick="closeMenuImpModal()" style="padding:0.15rem 0.5rem">{{ icon('x') }}</button>
         </div>
         <div id="menu-imp-hint" class="imp-hint"></div>
         <label style="font-size:0.72rem;font-weight:600;color:var(--text-muted,#94a3b8);margin-bottom:0.3rem;display:block">
@@ -252,11 +252,11 @@
         <textarea id="menu-imp-ta" class="imp-ta"></textarea>
         <div class="imp-footer">
             <label class="btn btn-sm btn-outline" style="cursor:pointer">
-                &#128194; Datei laden
+                {{ icon('folder') }} Datei laden
                 <input type="file" accept=".csv,.txt" style="display:none" onchange="menuImpFileLoad(this)">
             </label>
             <button class="btn btn-sm btn-outline" onclick="closeMenuImpModal()">Abbrechen</button>
-            <button class="btn btn-sm btn-primary" onclick="runMenuImport()">&#8593; Importieren</button>
+            <button class="btn btn-sm btn-primary" onclick="runMenuImport()">{{ icon('arrow-up') }} Importieren</button>
             <span id="menu-imp-status" class="imp-status"></span>
         </div>
     </div>

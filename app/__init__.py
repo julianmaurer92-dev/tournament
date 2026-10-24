@@ -141,6 +141,89 @@ def create_app(config_overrides=None):
         }
 
     @app.context_processor
+    def inject_theme():
+        """Theme, Schema und Vereinsfarbe fuer jede Vorlage.
+
+        Eine Stelle statt zehn: Vorher setzte jede Vorlage data-theme
+        selbst, der Adminbereich sogar fest auf "dark". Jetzt gilt die
+        Turniereinstellung ueberall – Web, Handy, TV und Adminvorschau.
+        """
+        from app.farben import als_css, taugt_als_akzent
+        from app.models import get_all_settings
+        from app.themes import aufloesen
+
+        tournament = getattr(g, "tournament", None)
+        einstellungen = (get_all_settings(tournament.id) if tournament
+                         else dict(SETTINGS_DEFAULTS))
+        theme, schema = aufloesen(einstellungen.get("theme"))
+
+        # Vereinsfarbe nur uebernehmen, wenn sie sich ueberhaupt abhebt.
+        # Eine unsichtbare Farbe ist schlimmer als der Theme-Akzent.
+        farbe = (einstellungen.get("color_primary") or "").strip()
+        vereinsfarbe = ""
+        if farbe and taugt_als_akzent(farbe,
+                                      "#ffffff" if schema == "hell" else "#111827"):
+            vereinsfarbe = als_css(farbe, schema)
+
+        return {
+            "cp_theme": theme,
+            "cp_schema": schema,
+            "cp_vereinsfarbe": vereinsfarbe,
+        }
+
+    @app.context_processor
+    def inject_navigation():
+        """Navigationspunkte und Turnierliste fuer den Adminbereich.
+
+        An einer Stelle statt in jeder Vorlage. Nur fuer angemeldete
+        Benutzer und nur fuer Admin-Routen – die oeffentlichen Seiten
+        brauchen das nicht und sollen keine zusaetzlichen Abfragen
+        ausloesen.
+        """
+        from flask import request
+        from flask_login import current_user
+        from app.navigation import navigation, palette_eintraege
+
+        leer = {"cp_navigation": [], "cp_turniere": [], "cp_palette": []}
+        if not request.blueprint or not request.blueprint.startswith(
+                ("admin", "anmeldung_admin", "ereignisse_admin",
+                 "siegerehrung_admin", "schiedsrichter")):
+            return leer
+        if not current_user.is_authenticated:
+            return leer
+
+        from app.models import Tournament
+        tournament = getattr(g, "tournament", None)
+
+        if current_user.role == "superadmin":
+            turniere = Tournament.query.order_by(
+                Tournament.display_order, Tournament.name).all()
+        else:
+            ids = [a.tournament_id for a in current_user.tournament_access.all()]
+            turniere = Tournament.query.filter(Tournament.id.in_(ids)).order_by(
+                Tournament.display_order, Tournament.name).all() if ids else []
+
+        # Fuer die Befehlspalette: Mannschaften, Spiele und Themes
+        # des aktuellen Turniers. Zwei schlanke Abfragen – nur Namen
+        # und Kennungen, keine Beziehungen.
+        teams, spiele = (), ()
+        if tournament is not None:
+            from app.models import Team, Match
+            teams = Team.query.filter_by(tournament_id=tournament.id).order_by(
+                Team.name).all()
+            spiele = Match.query.filter_by(tournament_id=tournament.id).order_by(
+                Match.scheduled_time, Match.match_order).all()
+
+        from app.themes import katalog
+        themes = [(t["schluessel"], t["name"]) for t in katalog()]
+
+        return {
+            "cp_navigation": navigation(tournament),
+            "cp_turniere": turniere,
+            "cp_palette": palette_eintraege(tournament, teams, spiele, themes),
+        }
+
+    @app.context_processor
     def inject_sicherheitswarnungen():
         """Warnungen nur fuer angemeldete Superadmins einblenden."""
         from flask_login import current_user

@@ -1,5 +1,6 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}CupPlan{% endblock %}
 
 {% block head %}
@@ -102,17 +103,6 @@
 </style>
 {% endblock %}
 
-{% block navbar_items %}
-{% if current_user.role == "superadmin" %}
-<a href="{{ url_for('admin.user_list') }}" class="btn btn-outline btn-sm">&#128100; Benutzer</a>
-<a href="{{ url_for('admin.menu_admin') }}" class="btn btn-outline btn-sm">&#127860; Speisekarte</a>
-<a href="{{ url_for('admin.export_import_page') }}" class="btn btn-outline btn-sm">&#128190; Export/Import</a>
-{% endif %}
-<a href="{{ url_for('main.landing') }}" class="btn btn-outline btn-sm" target="_blank">&#127760; Live-Ansicht</a>
-<span class="role-chip role-{{ current_user.role }}">{{ current_user.role }}</span>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 
 {% if current_user.role == "superadmin" %}
@@ -145,7 +135,7 @@
             </div>
             <div class="row g-3 align-items-center mb-2">
                 <div class="col-auto">
-                    <span class="text-muted" style="font-size:0.82rem">&#9201; Spielzeit:</span>
+                    <span class="text-muted" style="font-size:0.82rem">{{ icon('clock') }} Spielzeit:</span>
                 </div>
                 <div class="col-auto" style="display:flex;align-items:center;gap:0.4rem">
                     <input type="number" class="form-control form-control-sm" name="timer_regular_min"
@@ -153,7 +143,7 @@
                     <span class="text-muted" style="font-size:0.8rem">Min</span>
                 </div>
                 <div class="col-auto">
-                    <span class="text-muted" style="font-size:0.82rem">&#43; Verlaengerung:</span>
+                    <span class="text-muted" style="font-size:0.82rem">&#43; Verlängerung:</span>
                 </div>
                 <div class="col-auto" style="display:flex;align-items:center;gap:0.4rem">
                     <input type="number" class="form-control form-control-sm" name="timer_extra_min"
@@ -161,7 +151,7 @@
                     <span class="text-muted" style="font-size:0.8rem">Min</span>
                 </div>
                 <div class="col-auto">
-                    <span class="text-muted" style="font-size:0.82rem">&#9881; Spielfelder:</span>
+                    <span class="text-muted" style="font-size:0.82rem">{{ icon('settings') }} Spielfelder:</span>
                 </div>
                 <div class="col-auto">
                     <select class="form-select form-select-sm" name="num_fields" style="width:auto">
@@ -176,7 +166,7 @@
             </div>
             <div class="row g-3 align-items-center">
                 <div class="col-auto">
-                    <span class="text-muted" style="font-size:0.82rem">&#127942; Finalrundentyp:</span>
+                    <span class="text-muted" style="font-size:0.82rem">{{ icon('trophy') }} Finalrundentyp:</span>
                 </div>
                 <div class="col-md-4">
                     <select class="form-select form-select-sm" name="final_mode">
@@ -190,7 +180,7 @@
                     </select>
                 </div>
                 <div class="col-auto">
-                    <span class="text-muted" style="font-size:0.78rem">Kann spaeter geaendert werden.</span>
+                    <span class="text-muted" style="font-size:0.78rem">Kann später geändert werden.</span>
                 </div>
             </div>
             <div class="row g-3 align-items-center mt-1">
@@ -217,7 +207,7 @@
     {% for t in tournaments %}
     <div class="tcard" id="tcard-{{ t.id }}">
         <div class="tcard-top">
-            <div class="tcard-icon">&#9917;</div>
+            <div class="tcard-icon">{{ icon('ball-football') }}</div>
             <div class="tcard-info">
                 <div class="tcard-name">{{ t.name }}</div>
                 {% if t.description %}
@@ -228,18 +218,18 @@
 
         <div class="tcard-meta">
             {% if t.event_date %}
-            <span class="badge badge-blue-lt">&#128197; {{ t.event_date.strftime('%d.%m.%Y') }}</span>
+            <span class="badge badge-blue-lt">{{ icon('calendar-event') }} {{ t.event_date.strftime('%d.%m.%Y') }}</span>
             {% endif %}
             <span class="tcard-slug">/t/{{ t.slug }}/</span>
         </div>
 
         <div class="tcard-actions">
-            <a href="{{ url_for('admin.dashboard', slug=t.slug) }}" class="btn btn-primary btn-sm">&#9654; Dashboard</a>
+            <a href="{{ url_for('admin.dashboard', slug=t.slug) }}" class="btn btn-primary btn-sm">{{ icon('player-play') }} Dashboard</a>
             {% if current_user.role == "superadmin" %}
-            <button class="btn btn-sm btn-outline" onclick="toggleEdit({{ t.id }})">&#9998; Bearbeiten</button>
+            <button class="btn btn-sm btn-outline" onclick="toggleEdit({{ t.id }})">{{ icon('pencil') }} Bearbeiten</button>
             <form method="POST" action="{{ url_for('admin.delete_tournament', tid=t.id) }}"
                   style="display:inline" onsubmit="return confirm('Turnier und alle Daten unwiderruflich loeschen?')">
-                <button type="submit" class="btn btn-sm btn-danger">&#215; Loeschen</button>
+                <button type="submit" class="btn btn-sm btn-danger">&#215; Löschen</button>
             </form>
             {% endif %}
         </div>
@@ -269,7 +259,7 @@
                 </div>
                 <div class="row g-2 align-items-center mb-2">
                     <div class="col-auto">
-                        <span class="text-muted" style="font-size:0.8rem">&#127942; Finalrundentyp:</span>
+                        <span class="text-muted" style="font-size:0.8rem">{{ icon('trophy') }} Finalrundentyp:</span>
                     </div>
                     <div class="col-md-5">
                         <select class="form-select form-select-sm" name="final_mode">
@@ -283,7 +273,7 @@
                         </select>
                     </div>
                     <div class="col-auto">
-                        <span class="text-muted" style="font-size:0.8rem">&#9881; Felder:</span>
+                        <span class="text-muted" style="font-size:0.8rem">{{ icon('settings') }} Felder:</span>
                     </div>
                     <div class="col-auto">
                         <select class="form-select form-select-sm" name="num_fields" style="width:auto">
@@ -323,7 +313,7 @@
 
 {% else %}
 <div style="text-align:center;padding:4rem 2rem;color:var(--text-muted,#6b7280)">
-    <div style="font-size:3.5rem;margin-bottom:1rem">&#9917;</div>
+    <div style="font-size:3.5rem;margin-bottom:1rem">{{ icon('ball-football') }}</div>
     <div style="font-weight:700;font-size:1.1rem;color:var(--text,#f1f5f9);margin-bottom:0.4rem">Noch keine Turniere vorhanden</div>
     {% if current_user.role == "superadmin" %}
     <div style="font-size:0.88rem">Erstelle dein erstes Turnier oben.</div>

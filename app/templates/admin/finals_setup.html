@@ -8,17 +8,12 @@
 
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Dashboard</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 <div class="finals-setup-grid">
 
     <!-- Left: Mode Selection -->
     <div class="finals-modes">
-        <h3 class="ctrl-label">Modus waehlen</h3>
+        <h3 class="ctrl-label">Modus wählen</h3>
 
         <div class="mode-card ctrl-card" data-mode="classic_ko" onclick="selectMode('classic_ko')">
             <h3>Klassische KO-Runde</h3>
@@ -55,7 +50,7 @@
     <div class="finals-config">
         <div id="config-panel">
             <div class="ctrl-card">
-                <p class="empty-hint">Bitte einen Modus auswaehlen...</p>
+                <p class="empty-hint">Bitte einen Modus auswählen...</p>
             </div>
         </div>
 
@@ -80,7 +75,7 @@
                 </tbody>
             </table>
             {% else %}
-            <p class="empty-hint">Keine Teams verfuegbar.</p>
+            <p class="empty-hint">Keine Teams verfügbar.</p>
             {% endif %}
         </div>
     </div>

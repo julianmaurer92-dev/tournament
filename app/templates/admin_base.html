@@ -1,354 +1,146 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
-<html lang="de" data-bs-theme="dark" data-theme="dark">
+<html lang="de"
+      data-bs-theme="{{ 'light' if cp_schema == 'hell' else 'dark' }}"
+      data-theme="{{ cp_theme }}"
+      data-schema="{{ cp_schema }}"
+      {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
     <title>{% block title %}CupPlan{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabler.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        /* ── Design tokens ── */
-        :root {
-            --tblr-font-sans-serif: 'Inter', sans-serif;
-            --color-primary:   #22c55e;
-            --color-secondary: #1a2332;
-            --color-title:     #22c55e;
-
-            /* Unified control sizing */
-            --ctrl-h:       2.25rem;   /* height for inputs AND buttons */
-            --ctrl-h-sm:    1.9rem;    /* height for -sm variants */
-            --ctrl-fs:      0.875rem;  /* font-size for controls */
-            --ctrl-fs-sm:   0.8rem;
-            --ctrl-px:      0.85rem;   /* horizontal padding */
-            --ctrl-px-sm:   0.65rem;
-            --ctrl-radius:  8px;       /* unified border-radius */
-            --label-fs:     0.72rem;   /* form label font-size */
-        }
-
-        /* ── Base ── */
-        body, .page-wrapper { background: var(--bg, #0b1120) !important; }
-
-        /* ── Navbar ── */
-        .navbar {
-            background: var(--bg-secondary, #111827) !important;
-            border-bottom: 1px solid var(--border, #1e293b);
-            padding: 0.55rem 0;
-        }
-        .navbar-brand a {
-            text-decoration: none;
-            color: var(--text, #f1f5f9) !important;
-            font-weight: 700;
-            font-size: 1rem;
-        }
-        .navbar-toggler { border-color: var(--border, #1e293b); }
-        .navbar-toggler-icon { filter: invert(1); }
-
-        /* ── Cards ── */
-        .card {
-            background: var(--bg-secondary, #111827) !important;
-            border: 1px solid var(--border, #1e293b) !important;
-            border-radius: 12px !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-        .card-header {
-            background: transparent !important;
-            border-bottom: 1px solid var(--border, #1e293b) !important;
-            padding: 0.85rem 1.4rem !important;
-            display: flex;
-            align-items: center;
-        }
-        .card-title {
-            color: var(--text, #f1f5f9) !important;
-            font-weight: 600;
-            font-size: 0.95rem !important;
-            margin: 0;
-        }
-        .card-subtitle {
-            font-size: var(--label-fs);
-            color: var(--text-muted, #64748b);
-        }
-        .card-body { padding: 1.1rem 1.4rem !important; }
-
-        /* ── Alerts ── */
-        .alert-success { background: rgba(34,197,94,0.12)  !important; border-color: rgba(34,197,94,0.3)  !important; color: #4ade80 !important; font-size: var(--ctrl-fs); }
-        .alert-danger  { background: rgba(239,68,68,0.12)  !important; border-color: rgba(239,68,68,0.3)  !important; color: #f87171 !important; font-size: var(--ctrl-fs); }
-        .alert-info    { background: rgba(59,130,246,0.12) !important; border-color: rgba(59,130,246,0.3) !important; color: #60a5fa !important; font-size: var(--ctrl-fs); }
-        .btn-close { filter: invert(1); }
-
-        /* ── Form labels ── */
-        .form-label {
-            font-size: var(--label-fs) !important;
-            font-weight: 600 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted, #64748b) !important;
-            margin-bottom: 0.35rem !important;
-        }
-        .text-muted { color: var(--text-muted, #64748b) !important; font-size: var(--ctrl-fs); }
-
-        /* ── Inputs & Selects – unified height/radius/font ── */
-        .form-control,
-        .form-select,
-        input[type="text"],
-        input[type="date"],
-        input[type="number"],
-        input[type="password"],
-        input[type="email"],
-        select, textarea {
-            height: var(--ctrl-h) !important;
-            font-size: var(--ctrl-fs) !important;
-            padding: 0 var(--ctrl-px) !important;
-            background: #0c1726 !important;
-            border: 1px solid var(--border, #1e293b) !important;
-            border-radius: var(--ctrl-radius) !important;
-            color: var(--text, #f1f5f9) !important;
-            line-height: 1;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        textarea {
-            height: auto !important;
-            padding: 0.6rem var(--ctrl-px) !important;
-            line-height: 1.5;
-        }
-        .form-control-sm,
-        .form-select-sm {
-            height: var(--ctrl-h-sm) !important;
-            font-size: var(--ctrl-fs-sm) !important;
-            padding: 0 var(--ctrl-px-sm) !important;
-        }
-        input:focus, select:focus, textarea:focus,
-        .form-control:focus, .form-select:focus {
-            border-color: var(--color-primary, #22c55e) !important;
-            box-shadow: 0 0 0 3px rgba(34,197,94,0.12) !important;
-            outline: none;
-        }
-        input::placeholder, textarea::placeholder { color: var(--text-muted, #64748b) !important; }
-
-        /* ── Buttons – unified height/radius/font ── */
-        .btn {
-            height: var(--ctrl-h) !important;
-            font-size: var(--ctrl-fs) !important;
-            padding: 0 var(--ctrl-px) !important;
-            border-radius: var(--ctrl-radius) !important;
-            font-weight: 600;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-            transition: opacity 0.15s, transform 0.1s;
-        }
-        .btn:hover { opacity: 0.88; }
-        .btn:active { transform: translateY(1px); }
-        .btn-sm {
-            height: var(--ctrl-h-sm) !important;
-            font-size: var(--ctrl-fs-sm) !important;
-            padding: 0 var(--ctrl-px-sm) !important;
-        }
-        .btn-xs {
-            height: 1.6rem !important;
-            font-size: 0.75rem !important;
-            padding: 0 0.55rem !important;
-        }
-        /* Color variants */
-        .btn-primary   { background: var(--color-primary, #22c55e) !important; border-color: var(--color-primary, #22c55e) !important; color: #052e16 !important; }
-        .btn-danger    { background: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; }
-        .btn-success   { background: #22c55e !important; border-color: #22c55e !important; color: #052e16 !important; }
-        .btn-outline   { background: transparent !important; border: 1px solid var(--border, #1e293b) !important; color: var(--text, #f1f5f9) !important; }
-        .btn-outline:hover { border-color: var(--color-primary, #22c55e) !important; color: var(--color-primary, #22c55e) !important; opacity: 1; }
-
-        /* ── Table ── */
-        .table {
-            color: var(--text, #f1f5f9);
-            --tblr-table-bg: transparent;
-            --tblr-table-hover-bg: rgba(255,255,255,0.03);
-            --tblr-table-border-color: var(--border, #1e293b);
-            font-size: var(--ctrl-fs);
-        }
-        .table th {
-            color: var(--text-muted, #64748b);
-            font-size: var(--label-fs) !important;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            border-bottom: 1px solid var(--border, #1e293b) !important;
-            background: transparent;
-            padding: 0.6rem 1.1rem !important;
-        }
-        .table td {
-            padding: 0.7rem 1.1rem !important;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--border, #1e293b);
-            color: var(--text, #f1f5f9);
-            font-size: var(--ctrl-fs);
-        }
-        .table tbody tr:last-child td { border-bottom: none; }
-        .table-hover tbody tr:hover td { background: rgba(255,255,255,0.03); }
-        .card-table .table { margin-bottom: 0; }
-        .card-table .table th:first-child,
-        .card-table .table td:first-child { padding-left: 1.25rem !important; }
-        .card-table .table th:last-child,
-        .card-table .table td:last-child  { padding-right: 1.25rem !important; }
-
-        /* ── Badges ── */
-        .badge {
-            font-size: var(--label-fs) !important;
-            font-weight: 600 !important;
-            padding: 0.3em 0.65em !important;
-            border-radius: 5px;
-        }
-        .badge-green-lt  { background: rgba(34,197,94,0.12);  color: #4ade80;  border: 1px solid rgba(34,197,94,0.2); }
-        .badge-blue-lt   { background: rgba(59,130,246,0.12); color: #60a5fa;  border: 1px solid rgba(59,130,246,0.2); }
-        .badge-gray-lt   { background: rgba(107,114,128,0.12);color: #9ca3af;  border: 1px solid rgba(107,114,128,0.2); }
-        .badge-red-lt    { background: rgba(239,68,68,0.12);  color: #f87171;  border: 1px solid rgba(239,68,68,0.2); }
-        .badge-yellow-lt { background: rgba(234,179,8,0.12);  color: #facc15;  border: 1px solid rgba(234,179,8,0.2); }
-
-        /* ── Utility ── */
-        .btn-list { display: flex; gap: 0.4rem; align-items: center; flex-wrap: nowrap; }
-        .status-dot-live     { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
-        .status-dot-planned  { background: #6b7280; }
-        .status-dot-finished { background: #3b82f6; }
-
-        /* code/slug chips */
-        code {
-            font-size: var(--ctrl-fs-sm) !important;
-            color: var(--text-muted, #64748b);
-            background: rgba(255,255,255,0.05);
-            padding: 2px 8px;
-            border-radius: 5px;
-            border: 1px solid var(--border, #1e293b);
-        }
-
-        /* ── Version badge ── */
-        .version-badge {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted, #64748b);
-            border: 1px solid var(--border, #1e293b);
-            border-radius: 5px;
-            padding: 2px 7px;
-            cursor: default;
-            white-space: nowrap;
-        }
-        .version-badge:hover { color: var(--color-primary, #22c55e); border-color: var(--color-primary, #22c55e); }
-
-        /* ── Responsive ── */
-        @media (max-width: 767px) {
-            .navbar-collapse { padding: 0.5rem 0; }
-            .navbar-nav.flex-row { flex-wrap: wrap; gap: 0.4rem !important; }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navigation.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/palette.css') }}">
+    {% if cp_vereinsfarbe %}
+    <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
 <body class="admin-page">
-    <div class="wrapper">
-        <header class="navbar navbar-expand-md d-print-none">
-            <div class="container-xl">
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-brand">
-                    <a href="{{ url_for('admin.tournament_list') }}">
-                        &#9917; {% block navbar_brand %}CupPlan{% endblock %}
-                    </a>
-                </div>
-                <div class="collapse navbar-collapse" id="navbar-menu">
-                    <div class="navbar-nav flex-row order-md-last ms-auto"
-                         style="gap:0.5rem;padding:0.25rem 0;align-items:center">
-                        {% block navbar_items %}{% endblock %}
-                        <span class="version-badge" onclick="document.getElementById('version-modal').classList.add('open')" title="Versionsinformationen">&#8505; v1.5</span>
-                    </div>
-                </div>
-            </div>
+<a class="cp-sprung" href="#inhalt">Zum Inhalt springen</a>
+
+{# Seiten, die den vollen Bildschirm brauchen (Spielsteuerung,
+   Praesentation), setzen ohne_rahmen auf true. Alles andere bekommt
+   die gemeinsame Navigation. #}
+{% block vollbild %}
+<div class="nav-layout">
+
+    {# ── Seitenleiste (Desktop) / Kopf (Handy) ─────────────── #}
+    <aside class="nav-leiste" id="nav-leiste">
+        <a class="nav-marke" href="{{ url_for('admin.tournament_list') }}">
+            {{ icon('ball-football', 'cp-icon--l') }}
+            <span>CupPlan</span>
+        </a>
+
+        {% if current_tournament %}
+        <div class="nav-turnier">
+            <div class="nav-turnier-name">{{ current_tournament.name }}</div>
+            {% if cp_turniere and cp_turniere|length > 1 %}
+            <select class="nav-turnier-wahl" aria-label="Turnier wechseln"
+                    onchange="if(this.value) location.href=this.value">
+                {% for t in cp_turniere %}
+                <option value="{{ url_for('admin.dashboard', slug=t.slug) }}"
+                        {% if t.id == current_tournament.id %}selected{% endif %}>{{ t.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <nav class="nav-punkte" aria-label="Bereiche">
+            {% for punkt in cp_navigation %}
+            <a class="nav-punkt {% if punkt.aktiv %}ist-aktiv{% endif %}"
+               href="{{ punkt.ziel }}"
+               {% if punkt.aktiv %}aria-current="page"{% endif %}>
+                {{ icon(punkt.icon) }}
+                <span>{{ punkt.name }}</span>
+                {% if punkt.zahl %}<span class="nav-zahl">{{ punkt.zahl }}</span>{% endif %}
+            </a>
+            {% endfor %}
+        </nav>
+
+        <div class="nav-fuss">
+            <button type="button" class="nav-punkt" onclick="cp.palette && cp.palette.oeffnen()">
+                {{ icon('search') }}
+                <span>Suchen</span>
+                <kbd class="nav-kbd">⌘K</kbd>
+            </button>
+            <a class="nav-punkt" href="{{ url_for('admin.logout') }}">
+                {{ icon('logout') }}
+                <span>Abmelden</span>
+            </a>
+            <div class="nav-version">v1.5</div>
+        </div>
+    </aside>
+
+    {# ── Inhalt ────────────────────────────────────────────── #}
+    <div class="nav-inhalt">
+        <header class="nav-kopf">
+            <button type="button" class="cp-knopf cp-knopf--still cp-knopf--icon nav-auf"
+                    aria-label="Menü" aria-expanded="false" id="nav-auf">
+                {{ icon('menu-2') }}
+            </button>
+            <div class="nav-kopf-titel">{% block kopf_titel %}{{ self.title() }}{% endblock %}</div>
+            <div class="nav-kopf-aktionen">{% block navbar_items %}{% endblock %}</div>
         </header>
 
-        <div class="page-wrapper">
-            <div class="page-body">
-                <div class="container-xl" style="padding-top:1.5rem;padding-bottom:3rem">
-                    {% if sicherheitswarnungen %}
-                    <div class="alert alert-warning alert-dismissible mb-3" role="alert">
-                        <div class="d-flex">
-                            <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">&#9888;</div>
-                            <div>
-                                <h4 class="alert-title">Sicherheitshinweis zur Konfiguration</h4>
-                                <ul class="mb-0" style="padding-left:1.1rem">
-                                    {% for warnung in sicherheitswarnungen %}
-                                    <li>{{ warnung }}</li>
-                                    {% endfor %}
-                                </ul>
-                                <div class="text-muted mt-2" style="font-size:.85rem">
-                                    Dieser Hinweis erscheint nur für Superadmins und verschwindet,
-                                    sobald die Werte in der <code>.env</code> gesetzt sind.
-                                </div>
-                            </div>
+        <main class="nav-haupt" id="inhalt">
+            {% if sicherheitswarnungen %}
+            <div class="alert alert-warning alert-dismissible mb-3" role="alert">
+                <div class="d-flex">
+                    <div style="font-size:1.4rem;line-height:1;margin-right:.75rem">{{ icon('alert-triangle') }}</div>
+                    <div>
+                        <h4 class="alert-title">Sicherheitshinweis zur Konfiguration</h4>
+                        <ul class="mb-0" style="padding-left:1.1rem">
+                            {% for warnung in sicherheitswarnungen %}<li>{{ warnung }}</li>{% endfor %}
+                        </ul>
+                        <div class="text-muted mt-2" style="font-size:.85rem">
+                            Dieser Hinweis erscheint nur für Superadmins und verschwindet,
+                            sobald die Werte in der <code>.env</code> gesetzt sind.
                         </div>
-                        <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
                     </div>
-                    {% endif %}
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                    <div class="mb-3">
-                        {% for category, message in messages %}
-                        <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible" role="alert">
-                            <div>{{ message }}</div>
-                            <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% block page_content %}{% endblock %}
                 </div>
+                <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
             </div>
-        </div>
-    </div>
-    <script src="{{ url_for('static', filename='vendor/tabler.min.js') }}"></script>
-    {% block scripts %}{% endblock %}
+            {% endif %}
 
-<!-- Version Modal -->
-<div id="version-modal" class="ver-overlay" onclick="if(event.target===this)this.classList.remove('open')">
-    <div class="ver-box">
-        <div class="ver-logo">&#9917;</div>
-        <div class="ver-app">CupPlan</div>
-        <div class="ver-version">Version 1.5</div>
-        <div class="ver-divider"></div>
-        <div class="ver-author">Maurer Julian</div>
-        <div class="ver-role">Designer &amp; Developer</div>
-        <div class="ver-date">Erstellt am 15.03.2026 um 21:47 Uhr</div>
-        <button class="ver-close" onclick="document.getElementById('version-modal').classList.remove('open')">Schlie&szlig;en</button>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-3">
+                {% for category, message in messages %}
+                <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible" role="alert">
+                    <div>{{ message }}</div>
+                    <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {% block page_content %}{% endblock %}
+        </main>
     </div>
 </div>
-<style>
-.ver-overlay {
-    position: fixed; inset: 0; z-index: 99999;
-    background: rgba(0,0,0,0.7);
-    display: none; align-items: center; justify-content: center;
-}
-.ver-overlay.open { display: flex; }
-.ver-box {
-    background: var(--bg-secondary, #111827);
-    border: 1px solid var(--border, #1e293b);
-    border-radius: 16px;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    width: 100%; max-width: 320px;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
-}
-.ver-logo { font-size: 3rem; line-height: 1; margin-bottom: 0.5rem; }
-.ver-app { font-size: 1.3rem; font-weight: 800; color: var(--color-primary, #22c55e); margin-bottom: 0.15rem; }
-.ver-version { font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #64748b); margin-bottom: 1rem; }
-.ver-divider { height: 1px; background: var(--border, #1e293b); margin: 0 auto 1rem; }
-.ver-author { font-size: 1.05rem; font-weight: 700; color: var(--text, #f1f5f9); margin-bottom: 0.2rem; }
-.ver-role { font-size: 0.78rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.75rem; }
-.ver-date { font-size: 0.72rem; color: var(--text-muted, #64748b); margin-bottom: 1.5rem; }
-.ver-close {
-    background: transparent; border: 1px solid var(--border, #1e293b);
-    color: var(--text-muted, #94a3b8); border-radius: 8px;
-    padding: 0.4rem 1.2rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
-}
-.ver-close:hover { border-color: var(--color-primary, #22c55e); color: var(--color-primary, #22c55e); }
-</style>
+{% endblock %}
+
+<div class="cp-toasts" id="cp-toasts" role="status" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='vendor/tabler.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cp-basis.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cp-navigation.js') }}"></script>
+{% if cp_palette %}
+<script>
+const CP_PALETTE = {{ cp_palette | tojson }};
+const CP_SPRITE = {{ url_for('static', filename='vendor/tabler-sprite.svg') | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/cp-palette.js') }}"></script>
+{% endif %}
+{% block scripts %}{% endblock %}
 </body>
 </html>
