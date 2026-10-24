@@ -376,3 +376,31 @@
     transition: top var(--zeit-schnell) var(--kurve);
 }
 .cp-sprung:focus { top: var(--raum-4); }
+
+/* ── Vereinswappen ─────────────────────────────────────────── */
+/* Gehoert zu den Bausteinen, nicht in die oeffentliche style.css:
+   der Adminbereich laedt die nicht, und dort fehlte die Groesse. */
+.cp-wappen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border-radius: var(--radius-s);
+    object-fit: contain;
+    background: var(--flaeche-gedrueckt);
+    font-weight: var(--gewicht-fett);
+    color: var(--text-leise);
+    overflow: hidden;
+}
+.cp-wappen--s  { width: 1.5rem;  height: 1.5rem;  font-size: .7rem; }
+.cp-wappen--m  { width: 2rem;    height: 2rem;    font-size: .85rem; }
+.cp-wappen--l  { width: 3rem;    height: 3rem;    font-size: 1.1rem; }
+.cp-wappen--xl { width: 4.5rem;  height: 4.5rem;  font-size: 1.6rem; }
+
+/* Teamnamen: Umbruch nur an Leerzeichen, nie silbenweise */
+.cp-teamname {
+    hyphens: manual;
+    -webkit-hyphens: manual;
+    overflow-wrap: break-word;
+    word-break: normal;
+}

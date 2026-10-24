@@ -1,495 +1,166 @@
 {% extends "admin_base.html" %}
+{% from "_bausteine.html" import icon, wappen %}
 
-{% block title %}Spielsteuerung - {{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}{% endblock %}
+{% set gegner = (match.team1.name if match.team1 else 'Offen') ~ ' – ' ~ (match.team2.name if match.team2 else 'Offen') %}
+{% block title %}Spielsteuerung · {{ gegner }}{% endblock %}
+{% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block head %}
 <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
-<style>
-{% if parallel_match %}
-/* ── Dual-field layout ── */
-.dual-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    align-items: start;
-}
-.dual-col-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-}
-.dual-col-header.field-1 {
-    background: rgba(34,197,94,0.08);
-    border: 1px solid rgba(34,197,94,0.2);
-    color: #4ade80;
-}
-.dual-col-header.field-2 {
-    background: rgba(251,191,36,0.08);
-    border: 1px solid rgba(251,191,36,0.2);
-    color: #fbbf24;
-}
-@media (max-width: 900px) {
-    .dual-layout { grid-template-columns: 1fr; }
-}
-{% endif %}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/spielsteuerung.css') }}">
 {% endblock %}
 
-{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+{# Die Steuerung bekommt den ganzen Bildschirm, ohne Seitenleiste und
+   Kopfzeile: am Spielfeldrand zaehlt jeder Pixel, und man will sich
+   hier nicht verklicken. Zurueck geht es ueber den Pfeil links oben. #}
+{% block vollbild %}{% block page_content %}
 
-{% block navbar_items %}<a href="{{ url_for('ereignisse_admin.spiel_ereignisse', slug=tournament.slug, mid=match.id) }}" class="btn btn-outline btn-sm">&#9917; Ereignisse</a>
-
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
-{% if parallel_match %}
-<span class="badge badge-yellow-lt" style="font-size:0.75rem">&#9617; 2 Felder aktiv</span>
-{% endif %}
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
-{% block page_content %}
-
-{% if parallel_match %}
-{% set pmatch = parallel_match %}
-<!-- ══ DUAL FIELD VIEW ══════════════════════════════════════════ -->
-
-<!-- Prev/Next navigation -->
-<div class="match-nav mb-3">
-    {% if prev_match_id %}
-    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=prev_match_id) }}" class="match-nav-btn">&#9664; Vorheriges</a>
-    {% else %}
-    <span class="match-nav-btn disabled">&#9664; Vorheriges</span>
+{% macro spielkarte(m, haupt=true) %}
+<div class="st-stand" data-spiel="{{ m.id }}">
+    {% for seite, team, gegen in [('1', m.team1, m.team2), ('2', m.team2, m.team1)] %}
+    {% if seite == '2' %}
+    <div class="st-trenner" aria-hidden="true">:</div>
     {% endif %}
-    <span class="match-nav-current">
-        F{{ match.field or 1 }}: {{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}
-        {% if parallel_match %}
-        &nbsp;|&nbsp; F{{ parallel_match.field or 2 }}: {{ parallel_match.team1.name if parallel_match.team1 else 'TBD' }} vs {{ parallel_match.team2.name if parallel_match.team2 else 'TBD' }}
+    <div class="st-seitecard">
+        {{ wappen(team, 'l') }}
+        <div class="st-teamname">{{ team.name if team else 'Noch offen' }}</div>
+        <div class="st-tore cp-zahl" data-tore="{{ seite }}"
+             aria-label="Tore {{ team.name if team else 'Team ' ~ seite }}">
+            {{ m.score_team1 if seite == '1' else m.score_team2 }}
+        </div>
+        <button type="button" class="st-plus"
+                data-tor="{{ m.id }}"
+                data-team="{{ team.id if team else '' }}"
+                data-teamname="{{ team.name if team else '' }}"
+                data-seite="{{ seite }}"
+                {% if not team %}disabled{% endif %}
+                aria-label="Tor für {{ team.name if team else 'dieses Team' }}">+</button>
+        <button type="button" class="st-minus"
+                data-minus="{{ m.id }}" data-seite="{{ seite }}"
+                aria-label="Ein Tor weniger für {{ team.name if team else 'dieses Team' }}">&minus;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+<div class="st-seite">
+
+    <div class="st-kopf">
+        <a class="cp-knopf cp-knopf--still cp-knopf--icon"
+           href="{{ url_for('admin.dashboard', slug=tournament.slug) }}"
+           aria-label="Zurück zum Dashboard">{{ icon('arrow-left') }}</a>
+        <div class="st-kopf-mitte">
+            <div class="st-spielnr">
+                Spiel {{ match.match_order }}
+                {%- if num_fields|int > 1 %} · Feld {{ match.field or 1 }}{% endif %}
+            </div>
+            <div class="st-kontext">
+                {%- if match.final_label %}{{ match.final_label }}
+                {%- elif match.group %}{{ match.group.name }}
+                {%- else %}Gruppenspiel{% endif %}
+                {%- if match.scheduled_time %} · {{ match.scheduled_time.strftime('%H:%M') }} Uhr{% endif %}
+            </div>
+        </div>
+        <a class="cp-knopf cp-knopf--still cp-knopf--icon"
+           href="{{ url_for('ereignisse_admin.spiel_ereignisse', slug=tournament.slug, mid=match.id) }}"
+           aria-label="Alle Ereignisse dieses Spiels">{{ icon('list-details') }}</a>
+    </div>
+
+    <div class="st-verbindung" id="st-verbindung" role="status">
+        {{ icon('alert-triangle') }}
+        <span id="st-verbindung-text">Keine Verbindung – Änderungen werden nicht gespeichert.</span>
+    </div>
+
+    <div class="st-uhr">
+        <div class="st-zeit cp-zahl" id="st-zeit" data-zustand="gestoppt"
+             role="timer" aria-live="off">--:--</div>
+        <div class="st-phase" id="st-phase">
+            {%- if match.status == 'finished' %}Beendet
+            {%- elif match.is_penalty %}Neunmeterschießen
+            {%- elif match.is_extra_time %}Verlängerung
+            {%- elif match.status == 'live' %}Läuft
+            {%- else %}Noch nicht angepfiffen{% endif %}
+        </div>
+    </div>
+
+    {% if parallel_match %}
+    <div class="st-doppel">
+        <div>
+            <div class="st-feldmarke">{{ icon('soccer-field') }} Feld {{ match.field or 1 }}</div>
+            {{ spielkarte(match) }}
+        </div>
+        <div>
+            <div class="st-feldmarke">{{ icon('soccer-field') }} Feld {{ parallel_match.field or 2 }}</div>
+            {{ spielkarte(parallel_match, false) }}
+        </div>
+    </div>
+    {% else %}
+    {{ spielkarte(match) }}
+    {% endif %}
+
+    <div class="st-aktionen {% if match.status == 'finished' %}st-aktionen--eins{% endif %}">
+        {% if match.status != 'finished' %}
+        <button type="button" class="cp-knopf cp-knopf--haupt" id="st-starten">
+            {{ icon('player-play') }}<span id="st-starten-text">Anpfiff</span>
+        </button>
         {% endif %}
-    </span>
-    {% if next_match_id %}
-    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=next_match_id) }}" class="match-nav-btn">Nächstes &#9654;</a>
-    {% else %}
-    <span class="match-nav-btn disabled">Nächstes &#9654;</span>
-    {% endif %}
-</div>
-
-<!-- Shared Timer (both fields) -->
-<div class="ctrl-card" style="margin-bottom:0.75rem">
-    <h3 class="ctrl-label" style="text-align:center">
-        &#9203; Gemeinsamer Timer &mdash; Feld {{ match.field or 1 }} &amp; Feld {{ pmatch.field or 2 }}
-    </h3>
-    <div id="timer-display" class="timer-huge" style="text-align:center">{{ '%02d' | format(match.timer_remaining // 60) }}:{{ '%02d' | format(match.timer_remaining % 60) }}</div>
-    <div class="ctrl-buttons" style="justify-content:center">
-        <button id="btn-start" class="btn btn-lg btn-accent" onclick="bothTimer('start')">&#9654; Beide starten</button>
-        <button id="btn-pause" class="btn btn-lg btn-outline" onclick="bothTimer('pause')">&#9646;&#9646; Pause</button>
-        <button id="btn-reset" class="btn btn-lg btn-outline" onclick="bothTimer('reset')">&#8634; Reset</button>
-    </div>
-    <div class="timer-set-row" style="justify-content:center">
-        <label>Dauer (Min):</label>
-        <input type="number" id="timer-minutes" value="{{ match.timer_duration // 60 }}" min="1" max="90" class="input-narrow">
-        <button class="btn btn-xs btn-outline" onclick="bothSetDuration()">Setzen</button>
-        <button class="btn btn-xs btn-accent" onclick="bothSetExtraTime()" title="Verlängerung">&#9201; VL ({{ extra_time // 60 }} Min)</button>
-    </div>
-</div>
-
-<!-- Two-column: scores + status -->
-<div class="dual-layout">
-
-    <!-- ── Feld 1 ── -->
-    <div>
-        <div class="dual-col-header field-{{ match.field or 1 }}">
-            &#9679; Feld {{ match.field or 1 }} &mdash; {{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}
-        </div>
-
-        <!-- Score -->
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Ergebnis</h3>
-            <div class="score-control">
-                <div class="team-score-col">
-                    {% if match.team1 and match.team1.logo_url %}
-                    <img class="team-logo team-logo-lg" src="{{ match.team1.logo_url }}" alt="" onerror="this.style.display='none'">
-                    {% endif %}
-                    <span class="team-label">{{ match.team1.name if match.team1 else 'TBD' }}</span>
-                    <div class="score-row">
-                        <button class="btn btn-round btn-danger" onclick="changeScore(1,-1)">&minus;</button>
-                        <span id="score1" class="score-big">{{ match.score_team1 }}</span>
-                        <button class="btn btn-round btn-accent" onclick="changeScore(1,1)">+</button>
-                    </div>
-                </div>
-                <div class="score-divider"><span>:</span></div>
-                <div class="team-score-col">
-                    {% if match.team2 and match.team2.logo_url %}
-                    <img class="team-logo team-logo-lg" src="{{ match.team2.logo_url }}" alt="" onerror="this.style.display='none'">
-                    {% endif %}
-                    <span class="team-label">{{ match.team2.name if match.team2 else 'TBD' }}</span>
-                    <div class="score-row">
-                        <button class="btn btn-round btn-danger" onclick="changeScore(2,-1)">&minus;</button>
-                        <span id="score2" class="score-big">{{ match.score_team2 }}</span>
-                        <button class="btn btn-round btn-accent" onclick="changeScore(2,1)">+</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status badge only -->
-        <div style="text-align:center;padding:0.5rem 0">
-            <span id="match-status" class="status-badge-lg status-{{ match.status }}">
-                {% if match.status == 'planned' %}Geplant{% elif match.status == 'live' %}Live{% else %}Beendet{% endif %}
+        <button type="button" class="cp-knopf {% if match.status == 'finished' %}cp-knopf--haupt{% endif %}"
+                id="st-weiter">
+            <span class="st-weiter">
+                <span>{% if match.status == 'finished' %}Nächstes Spiel{% else %}Beenden &amp; weiter{% endif %}</span>
+                {% if naechstes_offenes %}
+                <small>{{ naechstes_offenes.team1.name if naechstes_offenes.team1 else '?' }}
+                       – {{ naechstes_offenes.team2.name if naechstes_offenes.team2 else '?' }}</small>
+                {% endif %}
             </span>
-        </div>
+        </button>
     </div>
 
-    <!-- ── Feld 2 ── -->
-    <div>
-        <div class="dual-col-header field-{{ pmatch.field or 2 }}">
-            &#9679; Feld {{ pmatch.field or 2 }} &mdash; {{ pmatch.team1.name if pmatch.team1 else 'TBD' }} vs {{ pmatch.team2.name if pmatch.team2 else 'TBD' }}
-        </div>
-
-        <!-- Score -->
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Ergebnis</h3>
-            <div class="score-control">
-                <div class="team-score-col">
-                    {% if pmatch.team1 and pmatch.team1.logo_url %}
-                    <img class="team-logo team-logo-lg" src="{{ pmatch.team1.logo_url }}" alt="" onerror="this.style.display='none'">
-                    {% endif %}
-                    <span class="team-label">{{ pmatch.team1.name if pmatch.team1 else 'TBD' }}</span>
-                    <div class="score-row">
-                        <button class="btn btn-round btn-danger" onclick="pChangeScore(1,-1)">&minus;</button>
-                        <span id="p-score1" class="score-big">{{ pmatch.score_team1 }}</span>
-                        <button class="btn btn-round btn-accent" onclick="pChangeScore(1,1)">+</button>
-                    </div>
-                </div>
-                <div class="score-divider"><span>:</span></div>
-                <div class="team-score-col">
-                    {% if pmatch.team2 and pmatch.team2.logo_url %}
-                    <img class="team-logo team-logo-lg" src="{{ pmatch.team2.logo_url }}" alt="" onerror="this.style.display='none'">
-                    {% endif %}
-                    <span class="team-label">{{ pmatch.team2.name if pmatch.team2 else 'TBD' }}</span>
-                    <div class="score-row">
-                        <button class="btn btn-round btn-danger" onclick="pChangeScore(2,-1)">&minus;</button>
-                        <span id="p-score2" class="score-big">{{ pmatch.score_team2 }}</span>
-                        <button class="btn btn-round btn-accent" onclick="pChangeScore(2,1)">+</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status badge only -->
-        <div style="text-align:center;padding:0.5rem 0">
-            <span id="p-match-status" class="status-badge-lg status-{{ pmatch.status }}">
-                {% if pmatch.status == 'planned' %}Geplant{% elif pmatch.status == 'live' %}Live{% else %}Beendet{% endif %}
-            </span>
-        </div>
-    </div>
-
-</div><!-- /dual-layout -->
-
-<!-- Shared: Finish + Announcement -->
-<div class="ctrl-card" style="margin-top:0.75rem">
-    <h3 class="ctrl-label" style="text-align:center">Spielende &amp; Status</h3>
-    <div class="ctrl-buttons" style="justify-content:center;flex-wrap:wrap;gap:0.5rem">
-        <button class="btn btn-lg btn-danger" onclick="bothFinish()">&#9632; Beide beenden</button>
-        <button class="btn btn-sm btn-outline" onclick="setStatus('finished')" title="Nur Feld {{ match.field or 1 }} beenden">Feld {{ match.field or 1 }} beenden</button>
-        <button class="btn btn-sm btn-outline" onclick="pSetStatus('finished')" title="Nur Feld {{ pmatch.field or 2 }} beenden">Feld {{ pmatch.field or 2 }} beenden</button>
-    </div>
-    <div style="border-top:1px solid var(--border,#1e293b);margin-top:0.75rem;padding-top:0.75rem">
-        <div class="ctrl-buttons" style="justify-content:center;flex-wrap:wrap;gap:0.5rem">
-            <button class="btn btn-sm btn-accent" onclick="timerAction('start')" style="font-size:0.78rem">&#9654; F{{ match.field or 1 }} starten</button>
-            <button class="btn btn-sm btn-accent" onclick="pTimerAction('start')" style="font-size:0.78rem">&#9654; F{{ pmatch.field or 2 }} starten</button>
-            <button class="btn btn-sm btn-outline" onclick="bothTimer('start')" style="opacity:.7;font-size:0.78rem">&#9654;&#9654; Beide starten</button>
-        </div>
-        <div class="ctrl-buttons" style="justify-content:center;flex-wrap:wrap;gap:0.5rem;margin-top:0.4rem">
-            <button class="btn btn-sm btn-outline" onclick="setStatus('planned')" style="opacity:.6;font-size:0.75rem">F{{ match.field or 1 }} → Geplant</button>
-            <button class="btn btn-sm btn-outline" onclick="pSetStatus('planned')" style="opacity:.6;font-size:0.75rem">F{{ pmatch.field or 2 }} → Geplant</button>
-        </div>
+    <div class="st-neben">
+        <button type="button" class="cp-knopf cp-knopf--still" id="st-pause">
+            {{ icon('player-pause') }} Pause
+        </button>
+        <button type="button" class="cp-knopf cp-knopf--still" id="st-verlaengerung">
+            {{ icon('clock') }} Verlängerung
+        </button>
+        <button type="button" class="cp-knopf cp-knopf--still" id="st-neunmeter">
+            {{ icon('ball-football') }} Neunmeter
+        </button>
+        <button type="button" class="cp-knopf cp-knopf--still" id="st-zuruecksetzen">
+            {{ icon('refresh') }} Uhr zurück
+        </button>
+        {% if prev_match_id %}
+        <a class="cp-knopf cp-knopf--still"
+           href="{{ url_for('admin.match_control', slug=tournament.slug, mid=prev_match_id) }}">
+            {{ icon('chevron-right', 'st-spiegel') }} Vorheriges
+        </a>
+        {% endif %}
     </div>
 </div>
 
-<!-- Shared announcement -->
-<div class="ctrl-card" style="margin-top:0.5rem">
-    <h3 class="ctrl-label">Ankündigung</h3>
-    <div id="announce-result" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;min-height:1.2em"></div>
-    <div class="ctrl-buttons">
-        <button class="btn btn-sm btn-outline" onclick="announceNext()">&#9197; Nächstes (F{{ match.field or 1 }})</button>
-        <button class="btn btn-sm btn-outline" onclick="pAnnounceNext()">&#9197; Nächstes (F{{ pmatch.field or 2 }})</button>
-        <button class="btn btn-xs" onclick="clearAnnouncement()" style="opacity:0.6">&#10005; Löschen</button>
+{# Torschuetzen-Auswahl: erscheint direkt nach dem Plus. Ein Tipp auf
+   den Namen traegt Tor und Schuetze zusammen ein – zwei Tipps statt
+   bisher neun Schritten ueber eine eigene Seite. #}
+<div class="st-schuetze" id="st-schuetze" role="dialog" aria-modal="true"
+     aria-labelledby="st-schuetze-titel">
+    <div class="st-schuetze-karte">
+        <div class="cp-sheet-griff"></div>
+        <div class="st-schuetze-titel" id="st-schuetze-titel">Wer hat getroffen?</div>
+        <div class="st-schuetze-unter" id="st-schuetze-unter"></div>
+        <div class="st-spieler" id="st-spieler"></div>
     </div>
 </div>
-
-{% else %}
-<!-- ══ SINGLE FIELD VIEW ══════════════════════════════════════════ -->
-<div class="match-nav mb-3">
-    {% if prev_match_id %}
-    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=prev_match_id) }}" class="match-nav-btn">&#9664; Vorheriges</a>
-    {% else %}
-    <span class="match-nav-btn disabled">&#9664; Vorheriges</span>
-    {% endif %}
-    <span class="match-nav-current">{{ match.team1.name if match.team1 else 'TBD' }} vs {{ match.team2.name if match.team2 else 'TBD' }}</span>
-    {% if next_match_id %}
-    <a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=next_match_id) }}" class="match-nav-btn">Naechstes &#9654;</a>
-    {% else %}
-    <span class="match-nav-btn disabled">Naechstes &#9654;</span>
-    {% endif %}
-</div>
-
-<div class="control-layout">
-    {% include "admin/_match_ctrl_cards.html" with context %}
-</div>
-{% endif %}
 
 <script>
-const MID   = {{ match.id }};
-const SLUG  = '{{ tournament.slug }}';
-const TID   = {{ tournament.id }};
-{% if parallel_match %}
-const PMID  = {{ parallel_match.id }};
-{% endif %}
-
-// ── Primary match ──
-let s1 = {{ match.score_team1 }}, s2 = {{ match.score_team2 }};
-let timerRunning = {{ 'true' if match.timer_running else 'false' }};
-let timerRemaining = {{ match.timer_remaining }};
-let tick = null;
-
-// ── Parallel match ──
-{% if parallel_match %}
-let ps1 = {{ parallel_match.score_team1 }}, ps2 = {{ parallel_match.score_team2 }};
-let pTimerRunning = {{ 'true' if parallel_match.timer_running else 'false' }};
-let pTimerRemaining = {{ parallel_match.timer_remaining }};
-let pTick = null;
-{% endif %}
-
-const socket = io();
-socket.on('connect', () => { socket.emit('join_tournament', {tournament_id: TID}); });
-
-const api = (url, data) => fetch(url, {
-    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data),
-}).then(r => r.json());
-
-// ══ PRIMARY MATCH CONTROLS ══════════════════════════
-
-function swapTeams() {
-    if (!confirm('Heim und Gast tauschen?')) return;
-    api(`/admin/t/${SLUG}/api/matches/${MID}/swap-teams`, {}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        location.reload();
-    });
-}
-
-function changeScore(team, d) {
-    if (team === 1) { s1 = Math.max(0, s1+d); document.getElementById('score1').textContent = s1; api(`/admin/t/${SLUG}/api/matches/${MID}/score`, {score_team1:s1}); }
-    else { s2 = Math.max(0, s2+d); document.getElementById('score2').textContent = s2; api(`/admin/t/${SLUG}/api/matches/${MID}/score`, {score_team2:s2}); }
-}
-
-function timerAction(action) {
-    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        timerRemaining = d.timer_remaining; timerRunning = d.timer_running;
-        updTimer(); updBtns(); updStatus(d.status);
-        document.getElementById('extra-time-badge').style.display = d.is_extra_time ? 'block' : 'none';
-    });
-}
-
-function setDuration() {
-    const m = parseInt(document.getElementById('timer-minutes').value) || 10;
-    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration: m*60}).then(d => {
-        timerRemaining = d.timer_remaining; timerRunning = d.timer_running; updTimer();
-    });
-}
-
-function setExtraTime() {
-    const extraSec = {{ extra_time }};
-    if (!confirm('Verlaengerung (' + (extraSec/60) + ' Min) setzen?')) return;
-    api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration: extraSec, is_extra_time: true}).then(d => {
-        timerRemaining = d.timer_remaining; timerRunning = d.timer_running; updTimer(); updBtns();
-        document.getElementById('extra-time-badge').style.display = d.is_extra_time ? 'block' : 'none';
-    });
-}
-
-function setStatus(status) {
-    api(`/admin/t/${SLUG}/api/matches/${MID}/status`, {status}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        updStatus(d.status);
-        if (d.status === 'finished') { timerRunning = false; updBtns(); }
-    });
-}
-
-function setPhase(phase) {
-    api(`/admin/t/${SLUG}/api/matches/${MID}/set-phase`, {phase}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        document.getElementById('extra-time-badge').style.display = d.is_extra_time ? 'inline-flex' : 'none';
-        document.getElementById('penalty-badge').style.display = d.is_penalty ? 'inline-flex' : 'none';
-        const btns = {normal: 'phase-btn-normal', extra_time: 'phase-btn-extra', penalty: 'phase-btn-penalty'};
-        Object.entries(btns).forEach(([p, id]) => {
-            const btn = document.getElementById(id);
-            const active = p === phase;
-            btn.className = btn.className.replace(/btn-(accent|danger|outline)/g,
-                active ? (p === 'penalty' ? 'btn-danger' : 'btn-accent') : 'btn-outline');
-        });
-    });
-}
-
-function announceNext() {
-    api(`/admin/t/${SLUG}/api/matches/${MID}/announce-next`, {}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        document.getElementById('announce-result').textContent = '✓ ' + d.announcement;
-    });
-}
-
-function clearAnnouncement() {
-    fetch(`/admin/t/${SLUG}/api/settings`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({announcement: ''})
-    }).then(() => { document.getElementById('announce-result').textContent = 'Geloescht'; });
-}
-
-function updTimer() {
-    const m = Math.floor(timerRemaining/60), s = timerRemaining%60;
-    document.getElementById('timer-display').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-}
-function updBtns() {
-    document.getElementById('btn-start').disabled = timerRunning;
-    document.getElementById('btn-pause').disabled = !timerRunning;
-}
-function updStatus(st) {
-    const el = document.getElementById('match-status');
-    el.textContent = st==='planned'?'Geplant':st==='live'?'Live':'Beendet';
-    el.className = 'status-badge-lg status-'+st;
-}
-
-(function startTick() {
-    tick = setInterval(() => {
-        if (timerRunning && timerRemaining > 0) { timerRemaining--; updTimer(); if (timerRemaining<=0) { timerRunning=false; updBtns(); } }
-    }, 1000);
-})();
-
-// ══ PARALLEL MATCH CONTROLS ══════════════════════════
-{% if parallel_match %}
-
-function pChangeScore(team, d) {
-    if (team === 1) { ps1 = Math.max(0, ps1+d); document.getElementById('p-score1').textContent = ps1; api(`/admin/t/${SLUG}/api/matches/${PMID}/score`, {score_team1:ps1}); }
-    else { ps2 = Math.max(0, ps2+d); document.getElementById('p-score2').textContent = ps2; api(`/admin/t/${SLUG}/api/matches/${PMID}/score`, {score_team2:ps2}); }
-}
-
-function pTimerAction(action) {
-    api(`/admin/t/${SLUG}/api/matches/${PMID}/timer`, {action}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        pUpdStatus(d.status);
-    });
-}
-
-function pSetStatus(status) {
-    api(`/admin/t/${SLUG}/api/matches/${PMID}/status`, {status}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        pUpdStatus(d.status);
-    });
-}
-
-function pAnnounceNext() {
-    api(`/admin/t/${SLUG}/api/matches/${PMID}/announce-next`, {}).then(d => {
-        if (d.error) { alert(d.error); return; }
-        document.getElementById('announce-result').textContent = '✓ ' + d.announcement;
-    });
-}
-
-function pUpdStatus(st) {
-    const el = document.getElementById('p-match-status');
-    el.textContent = st==='planned'?'Geplant':st==='live'?'Live':'Beendet';
-    el.className = 'status-badge-lg status-'+st;
-}
-
-// ── Shared timer: controls BOTH matches simultaneously ──
-function bothTimer(action) {
-    Promise.all([
-        api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action}),
-        api(`/admin/t/${SLUG}/api/matches/${PMID}/timer`, {action}),
-    ]).then(([d1, d2]) => {
-        if (d1.error) { alert(d1.error); return; }
-        timerRemaining = d1.timer_remaining;
-        timerRunning   = d1.timer_running;
-        updTimer(); updBtns();
-        updStatus(d1.status);
-        pUpdStatus(d2.status);
-    });
-}
-
-function bothSetDuration() {
-    const m = parseInt(document.getElementById('timer-minutes').value) || 10;
-    const duration = m * 60;
-    Promise.all([
-        api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration}),
-        api(`/admin/t/${SLUG}/api/matches/${PMID}/timer`, {action:'set', duration}),
-    ]).then(([d1]) => {
-        timerRemaining = d1.timer_remaining;
-        timerRunning   = d1.timer_running;
-        updTimer();
-    });
-}
-
-function bothFinish() {
-    Promise.all([
-        api(`/admin/t/${SLUG}/api/matches/${MID}/status`, {status: 'finished'}),
-        api(`/admin/t/${SLUG}/api/matches/${PMID}/status`, {status: 'finished'}),
-    ]).then(([d1, d2]) => {
-        if (d1.error) { alert(d1.error); return; }
-        timerRunning = false; updBtns();
-        updStatus('finished');
-        pUpdStatus('finished');
-    });
-}
-
-function bothSetExtraTime() {
-    const extraSec = {{ extra_time }};
-    if (!confirm('Verlängerung (' + (extraSec/60) + ' Min) für beide Felder setzen?')) return;
-    Promise.all([
-        api(`/admin/t/${SLUG}/api/matches/${MID}/timer`, {action:'set', duration: extraSec, is_extra_time: true}),
-        api(`/admin/t/${SLUG}/api/matches/${PMID}/timer`, {action:'set', duration: extraSec, is_extra_time: true}),
-    ]).then(([d1]) => {
-        timerRemaining = d1.timer_remaining;
-        timerRunning   = d1.timer_running;
-        updTimer(); updBtns();
-    });
-}
-
-{% endif %}
-
-// ══ WEBSOCKET STATE SYNC ══════════════════════════
-
-socket.on('state_update', st => {
-    // Primary match
-    let found = null;
-    if (st.live_match && st.live_match.id === MID) found = st.live_match;
-    if (!found && st.live_matches) found = st.live_matches.find(m => m.id === MID);
-    if (!found && st.final_matches) found = st.final_matches.find(m => m.id === MID);
-    if (found) {
-        s1=found.score_team1; s2=found.score_team2;
-        document.getElementById('score1').textContent=s1;
-        document.getElementById('score2').textContent=s2;
-        timerRemaining=found.timer_remaining; timerRunning=found.timer_running;
-        updTimer(); updBtns(); updStatus(found.status);
-    }
-
-{% if parallel_match %}
-    // Parallel match
-    let pfound = null;
-    if (st.live_matches) pfound = st.live_matches.find(m => m.id === PMID);
-    if (!pfound && st.final_matches) pfound = st.final_matches.find(m => m.id === PMID);
-    if (pfound) {
-        ps1=pfound.score_team1; ps2=pfound.score_team2;
-        document.getElementById('p-score1').textContent=ps1;
-        document.getElementById('p-score2').textContent=ps2;
-        pUpdStatus(pfound.status);
-    }
-{% endif %}
-});
-
-updBtns();
+const SLUG = {{ tournament.slug | tojson }};
+const SPIEL_ID = {{ match.id }};
+const TURNIER_ID = {{ tournament.id }};
+const PARALLEL_ID = {{ parallel_match.id if parallel_match else 'null' }};
+const SPIELER = {{ spieler | tojson }};
+const EXTRA_ZEIT = {{ extra_time }};
+const NAECHSTES = {{ naechstes_offenes.id if naechstes_offenes else 'null' }};
+const STAND_URL = {{ url_for('admin.dashboard', slug=tournament.slug) | tojson }};
+const STEUERUNG_URL = {{ (url_for('admin.match_control', slug=tournament.slug, mid=0)[:-1]) | tojson }};
 </script>
-{% endblock %}
+<script src="{{ url_for('static', filename='js/admin/spielsteuerung.js') }}"></script>
+{% endblock %}{% endblock %}

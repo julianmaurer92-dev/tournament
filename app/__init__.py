@@ -172,6 +172,42 @@ def create_app(config_overrides=None):
         }
 
     @app.context_processor
+    def inject_navigation():
+        """Navigationspunkte und Turnierliste fuer den Adminbereich.
+
+        An einer Stelle statt in jeder Vorlage. Nur fuer angemeldete
+        Benutzer und nur fuer Admin-Routen – die oeffentlichen Seiten
+        brauchen das nicht und sollen keine zusaetzlichen Abfragen
+        ausloesen.
+        """
+        from flask import request
+        from flask_login import current_user
+        from app.navigation import navigation
+
+        if not request.blueprint or not request.blueprint.startswith(
+                ("admin", "anmeldung_admin", "ereignisse_admin",
+                 "siegerehrung_admin", "schiedsrichter")):
+            return {"cp_navigation": [], "cp_turniere": []}
+        if not current_user.is_authenticated:
+            return {"cp_navigation": [], "cp_turniere": []}
+
+        from app.models import Tournament
+        tournament = getattr(g, "tournament", None)
+
+        if current_user.role == "superadmin":
+            turniere = Tournament.query.order_by(
+                Tournament.display_order, Tournament.name).all()
+        else:
+            ids = [a.tournament_id for a in current_user.tournament_access.all()]
+            turniere = Tournament.query.filter(Tournament.id.in_(ids)).order_by(
+                Tournament.display_order, Tournament.name).all() if ids else []
+
+        return {
+            "cp_navigation": navigation(tournament),
+            "cp_turniere": turniere,
+        }
+
+    @app.context_processor
     def inject_sicherheitswarnungen():
         """Warnungen nur fuer angemeldete Superadmins einblenden."""
         from flask_login import current_user

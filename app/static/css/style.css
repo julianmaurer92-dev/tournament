@@ -1695,19 +1695,3 @@ body {
    Die Ursache lag an vier Stellen weiter oben (hyphens:auto und
    word-break:break-word) und ist dort behoben. */
 
-.cp-wappen {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    border-radius: var(--radius-s);
-    object-fit: contain;
-    background: var(--flaeche-gedrueckt);
-    font-weight: var(--gewicht-fett);
-    color: var(--text-leise);
-    overflow: hidden;
-}
-.cp-wappen--s  { width: 1.5rem;  height: 1.5rem;  font-size: .7rem; }
-.cp-wappen--m  { width: 2rem;    height: 2rem;    font-size: .85rem; }
-.cp-wappen--l  { width: 3rem;    height: 3rem;    font-size: 1.1rem; }
-.cp-wappen--xl { width: 4.5rem;  height: 4.5rem;  font-size: 1.6rem; }

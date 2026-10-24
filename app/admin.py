@@ -1576,11 +1576,40 @@ def match_control(mid):
         prev_match_id = match_ids[idx - 1] if idx > 0 else None
         next_match_id = match_ids[idx + 1] if idx >= 0 and idx < len(match_ids) - 1 else None
 
+    # Naechstes noch nicht gespieltes Spiel – Ziel von "Beenden & weiter".
+    # Bewusst das naechste GEPLANTE, nicht einfach das naechste in der
+    # Liste: Wer ein Spiel nachtraegt, will danach nicht wieder in einem
+    # bereits beendeten landen.
+    naechstes_offenes = next(
+        (m for m in all_matches
+         if m.id != mid and m.status == "planned"
+         and (not parallel_match or m.id != parallel_match.id)),
+        None)
+
+    # Spielernamen je Mannschaft fuer die Torschuetzen-Schnellauswahl.
+    # Team.players ist ein Textfeld – eine Zeile oder ein Komma je Spieler.
+    def _spieler(team):
+        if not team:
+            return []
+        namen = []
+        for zeile in (team.players or "").replace(",", "\n").split("\n"):
+            name = zeile.strip()
+            if name:
+                namen.append(name)
+        return namen[:14]      # mehr passt nicht auf einen Handybildschirm
+
+    spieler = {}
+    for m in filter(None, [match, parallel_match]):
+        for team in (m.team1, m.team2):
+            if team:
+                spieler[team.id] = _spieler(team)
+
     return render_template(
         "admin/match_control.html",
         match=match, extra_time=extra_time,
         prev_match_id=prev_match_id, next_match_id=next_match_id,
         tournament=t, parallel_match=parallel_match, num_fields=num_fields,
+        naechstes_offenes=naechstes_offenes, spieler=spieler,
     )
 
 

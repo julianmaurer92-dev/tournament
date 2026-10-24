@@ -27,10 +27,10 @@ kosten — auf einem Handy am Spielfeldrand mehr als am Schreibtisch.
 | 2 | Team hinzufügen | 4 | 3 | *wird ergänzt* |
 | 3 | Team umbenennen | 5 | 2 | *wird ergänzt* |
 | 4 | Team in andere Gruppe verschieben | 5 | 2 | *wird ergänzt* |
-| 5 | Spiel starten | 4 | 1 | *wird ergänzt* |
-| 6 | Tor eintragen (ohne Torschütze) | 1 | 1 | *wird ergänzt* |
-| 7 | **Tor eintragen mit Torschütze** | **9** | **2** | *wird ergänzt* |
-| 8 | Spiel beenden und nächstes starten | 5 | 1 | *wird ergänzt* |
+| 5 | Spiel starten | 4 | 1 | **1** |
+| 6 | Tor eintragen (ohne Torschütze) | 1 | 1 | **2** |
+| 7 | **Tor eintragen mit Torschütze** | **9** | **2** | **2** |
+| 8 | Spiel beenden und nächstes starten | 5 | 1 | **1** |
 | 9 | Anstoßzeit eines Spiels ändern | – | 2 | *wird ergänzt* |
 | 10 | Ankündigung senden | 4 | 2 | *wird ergänzt* |
 | 11 | Theme wechseln | 4 | 1 | *wird ergänzt* |
@@ -144,3 +144,42 @@ in der Liste suchen. Die App weiß nicht, welches Team mich interessiert.
    meisten.
 3. **„Mein Team" merken: 4 → 0.** Wer einmal sein Team gewählt hat, soll
    dessen nächstes Spiel sofort sehen, ohne zu suchen.
+
+
+---
+
+## Nachher: die Wege im Einzelnen
+
+### 5. Spiel starten — 1 (vorher 4)
+
+Die Spielsteuerung ist jetzt eine Vollbildseite. Der Knopf **„Anpfiff"**
+steht unten in Daumenreichweite. Von der Übersicht aus führt ein Klick auf
+das Spiel direkt hierher.
+
+### 7. Tor eintragen mit Torschütze — 2 (vorher 9)
+
+1. Tipp auf das große **+** der Mannschaft
+2. Tipp auf den Spielernamen
+
+Fertig. Tor und Schütze gehen in **einer** Anfrage an den Server, der
+Spielstand steht sofort im Bild. Zuletzt benutzte Schützen rücken nach
+oben — in einer Mannschaft trifft oft derselbe Spieler mehrfach.
+
+Der Stolperstein von vorher ist weg: Es gibt kein Häkchen
+„Spielstand mitzählen" mehr, das man vergessen kann. Statt des
+Bestätigungsdialogs gibt es **Rückgängig** im Hinweis unten.
+
+Wer keine Spielerliste hinterlegt hat, tippt auf
+„Tor eintragen (keine Spielerliste hinterlegt)" — dann sind es weiterhin
+zwei Tipps, aber ohne Namen. Das ist der Grund, warum Zeile 6
+(Tor **ohne** Schütze) von 1 auf 2 steigt: Der zweite Tipp ist der Preis
+dafür, dass der erste nicht mehr raten muss, ob ein Schütze folgt.
+
+### 8. Spiel beenden und nächstes starten — 1 (vorher 5)
+
+Ein Knopf: **„Beenden & weiter"**. Darunter steht klein, welches Spiel als
+Nächstes kommt. Nach dem Tippen bleiben 2,6 Sekunden zum Zurücknehmen,
+dann wechselt die Seite zur Steuerung des nächsten Spiels.
+
+Bei zwei Spielfeldern werden beide Spiele gemeinsam beendet — sie laufen
+ohnehin parallel.
