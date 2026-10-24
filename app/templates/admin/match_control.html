@@ -1,153 +1,96 @@
-{% extends "admin_base.html" %}
-{% from "_bausteine.html" import icon, wappen %}
+{% extends "anpfiff_huelle.html" %}
+{% from "_anpfiff.html" import symbol, knopf, abzeichen, wappen %}
 
-{% set gegner = (match.team1.name if match.team1 else 'Offen') ~ ' – ' ~ (match.team2.name if match.team2 else 'Offen') %}
-{% block title %}Spielsteuerung · {{ gegner }}{% endblock %}
-{% block navbar_brand %}{{ tournament.name }}{% endblock %}
+{% block title %}Steuerung – {{ tournament.name }}{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-steuerung.css') }}">
 <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/spielsteuerung.css') }}">
 {% endblock %}
 
-{# Die Steuerung bekommt den ganzen Bildschirm, ohne Seitenleiste und
-   Kopfzeile: am Spielfeldrand zaehlt jeder Pixel, und man will sich
-   hier nicht verklicken. Zurueck geht es ueber den Pfeil links oben. #}
-{% block vollbild %}{% block page_content %}
+{# Die Spielsteuerung bekommt die ganze Fläche. Seitenleiste und
+   Kopfzeile wären hier verschenkter Platz – wer hier steht, will
+   genau eine Sache tun. #}
+{% block vollbild %}
 
-{% macro spielkarte(m, haupt=true) %}
-<div class="st-stand" data-spiel="{{ m.id }}">
-    {% for seite, team, gegen in [('1', m.team1, m.team2), ('2', m.team2, m.team1)] %}
-    {% if seite == '2' %}
-    <div class="st-trenner" aria-hidden="true">:</div>
-    {% endif %}
-    <div class="st-seitecard">
-        {{ wappen(team, 'l') }}
-        <div class="st-teamname">{{ team.name if team else 'Noch offen' }}</div>
-        <div class="st-tore cp-zahl" data-tore="{{ seite }}"
-             aria-label="Tore {{ team.name if team else 'Team ' ~ seite }}">
-            {{ m.score_team1 if seite == '1' else m.score_team2 }}
-        </div>
-        <button type="button" class="st-plus"
-                data-tor="{{ m.id }}"
-                data-team="{{ team.id if team else '' }}"
-                data-teamname="{{ team.name if team else '' }}"
-                data-seite="{{ seite }}"
-                {% if not team %}disabled{% endif %}
-                aria-label="Tor für {{ team.name if team else 'dieses Team' }}">+</button>
-        <button type="button" class="st-minus"
-                data-minus="{{ m.id }}" data-seite="{{ seite }}"
-                aria-label="Ein Tor weniger für {{ team.name if team else 'dieses Team' }}">&minus;</button>
+{% macro partie(m, doppel=false) %}
+<div class="{{ 'st-partie' if doppel else 'st-feld' }}" data-spiel="{{ m.id }}">
+    {% if doppel %}
+    <div class="st-partie-kopf">
+        <span>Feld {{ m.field or 1 }}</span>
+        <span class="ap-rechts" data-rolle="abzeichen"></span>
     </div>
-    {% endfor %}
+    {% endif %}
+
+    <div class="st-stand">
+        <div class="st-haelfte">
+            <div class="st-team">{{ wappen(m.team1) }}{{ m.team1.name if m.team1 else 'offen' }}</div>
+            <div class="st-tore" data-rolle="tore1">{{ m.score_team1 or 0 }}</div>
+            <button type="button" class="st-minus" data-rolle="minus1"
+                    aria-label="Ein Tor weniger für {{ m.team1.name if m.team1 else 'Heim' }}">−1</button>
+            <button type="button" class="st-tor-knopf" data-rolle="tor1">Tor</button>
+        </div>
+
+        <div class="st-trenner">:</div>
+
+        <div class="st-haelfte">
+            <div class="st-team">{{ wappen(m.team2) }}{{ m.team2.name if m.team2 else 'offen' }}</div>
+            <div class="st-tore" data-rolle="tore2">{{ m.score_team2 or 0 }}</div>
+            <button type="button" class="st-minus" data-rolle="minus2"
+                    aria-label="Ein Tor weniger für {{ m.team2.name if m.team2 else 'Gast' }}">−1</button>
+            <button type="button" class="st-tor-knopf" data-rolle="tor2">Tor</button>
+        </div>
+    </div>
+
+    <div class="st-aktionen">
+        <button type="button" class="ap-knopf" data-rolle="uhr">
+            {{ symbol('player-play') }}<span data-rolle="uhr-text">Anpfiff</span>
+        </button>
+        <button type="button" class="ap-knopf ap-knopf--haupt" data-rolle="beenden">
+            {{ symbol('player-track-next') }}Beenden &amp; weiter
+        </button>
+    </div>
 </div>
 {% endmacro %}
 
 <div class="st-seite">
 
-    <div class="st-kopf">
-        <a class="cp-knopf cp-knopf--still cp-knopf--icon"
-           href="{{ url_for('admin.dashboard', slug=tournament.slug) }}"
-           aria-label="Zurück zum Dashboard">{{ icon('arrow-left') }}</a>
-        <div class="st-kopf-mitte">
-            <div class="st-spielnr">
-                Spiel {{ match.match_order }}
-                {%- if num_fields|int > 1 %} · Feld {{ match.field or 1 }}{% endif %}
-            </div>
-            <div class="st-kontext">
-                {%- if match.final_label %}{{ match.final_label }}
-                {%- elif match.group %}{{ match.group.name }}
-                {%- else %}Gruppenspiel{% endif %}
-                {%- if match.scheduled_time %} · {{ match.scheduled_time.strftime('%H:%M') }} Uhr{% endif %}
-            </div>
-        </div>
-        <a class="cp-knopf cp-knopf--still cp-knopf--icon"
-           href="{{ url_for('ereignisse_admin.spiel_ereignisse', slug=tournament.slug, mid=match.id) }}"
-           aria-label="Alle Ereignisse dieses Spiels">{{ icon('list-details') }}</a>
-    </div>
-
     <div class="st-verbindung" id="st-verbindung" role="status">
-        {{ icon('alert-triangle') }}
-        <span id="st-verbindung-text">Keine Verbindung – Änderungen werden nicht gespeichert.</span>
+        {{ symbol('alert-triangle') }}
+        <span>Keine Verbindung. Eingaben werden gerade nicht gespeichert.</span>
     </div>
 
-    <div class="st-uhr">
-        <div class="st-zeit cp-zahl" id="st-zeit" data-zustand="gestoppt"
-             role="timer" aria-live="off">--:--</div>
-        <div class="st-phase" id="st-phase">
-            {%- if match.status == 'finished' %}Beendet
-            {%- elif match.is_penalty %}Neunmeterschießen
-            {%- elif match.is_extra_time %}Verlängerung
-            {%- elif match.status == 'live' %}Läuft
-            {%- else %}Noch nicht angepfiffen{% endif %}
+    <header class="st-kopf">
+        <a class="st-zurueck" href="{{ url_for('admin.dashboard', slug=tournament.slug) }}"
+           aria-label="Zurück zur Übersicht">{{ symbol('arrow-left', 'ap-symbol--l') }}</a>
+        <div class="st-wo">
+            {{ match.group.name if match.group else (match.final_label or 'Spiel') }}
+            {%- if num_fields|int > 1 %} · Feld {{ match.field or 1 }}{% endif %}
         </div>
-    </div>
+        <div class="st-uhr" id="st-uhr" data-zustand="bereit">
+            <span class="st-zeit" id="st-zeit">--:--</span>
+        </div>
+    </header>
 
     {% if parallel_match %}
+    {# Zwei Felder: beide Partien gleichzeitig, ohne Umschalten. #}
     <div class="st-doppel">
-        <div>
-            <div class="st-feldmarke">{{ icon('soccer-field') }} Feld {{ match.field or 1 }}</div>
-            {{ spielkarte(match) }}
-        </div>
-        <div>
-            <div class="st-feldmarke">{{ icon('soccer-field') }} Feld {{ parallel_match.field or 2 }}</div>
-            {{ spielkarte(parallel_match, false) }}
+        <div class="st-feld">
+            {{ partie(match, doppel=true) }}
+            {{ partie(parallel_match, doppel=true) }}
         </div>
     </div>
     {% else %}
-    {{ spielkarte(match) }}
+    {{ partie(match) }}
     {% endif %}
 
-    <div class="st-aktionen {% if match.status == 'finished' %}st-aktionen--eins{% endif %}">
-        {% if match.status != 'finished' %}
-        <button type="button" class="cp-knopf cp-knopf--haupt" id="st-starten">
-            {{ icon('player-play') }}<span id="st-starten-text">Anpfiff</span>
-        </button>
-        {% endif %}
-        <button type="button" class="cp-knopf {% if match.status == 'finished' %}cp-knopf--haupt{% endif %}"
-                id="st-weiter">
-            <span class="st-weiter">
-                <span>{% if match.status == 'finished' %}Nächstes Spiel{% else %}Beenden &amp; weiter{% endif %}</span>
-                {% if naechstes_offenes %}
-                <small>{{ naechstes_offenes.team1.name if naechstes_offenes.team1 else '?' }}
-                       – {{ naechstes_offenes.team2.name if naechstes_offenes.team2 else '?' }}</small>
-                {% endif %}
-            </span>
-        </button>
-    </div>
-
-    <div class="st-neben">
-        <button type="button" class="cp-knopf cp-knopf--still" id="st-pause">
-            {{ icon('player-pause') }} Pause
-        </button>
-        <button type="button" class="cp-knopf cp-knopf--still" id="st-verlaengerung">
-            {{ icon('clock') }} Verlängerung
-        </button>
-        <button type="button" class="cp-knopf cp-knopf--still" id="st-neunmeter">
-            {{ icon('ball-football') }} Neunmeter
-        </button>
-        <button type="button" class="cp-knopf cp-knopf--still" id="st-zuruecksetzen">
-            {{ icon('refresh') }} Uhr zurück
-        </button>
-        {% if prev_match_id %}
-        <a class="cp-knopf cp-knopf--still"
-           href="{{ url_for('admin.match_control', slug=tournament.slug, mid=prev_match_id) }}">
-            {{ icon('chevron-right', 'st-spiegel') }} Vorheriges
-        </a>
-        {% endif %}
-    </div>
-</div>
-
-{# Torschuetzen-Auswahl: erscheint direkt nach dem Plus. Ein Tipp auf
-   den Namen traegt Tor und Schuetze zusammen ein – zwei Tipps statt
-   bisher neun Schritten ueber eine eigene Seite. #}
-<div class="st-schuetze" id="st-schuetze" role="dialog" aria-modal="true"
-     aria-labelledby="st-schuetze-titel">
-    <div class="st-schuetze-karte">
-        <div class="cp-sheet-griff"></div>
-        <div class="st-schuetze-titel" id="st-schuetze-titel">Wer hat getroffen?</div>
-        <div class="st-schuetze-unter" id="st-schuetze-unter"></div>
-        <div class="st-spieler" id="st-spieler"></div>
+    <div class="st-feld st-neben" style="flex:none;padding-top:0">
+        {{ knopf('Verlängerung', symbolname='clock', klasse='ap-knopf--klein',
+                 attribute='data-rolle="verlaengerung"') }}
+        {{ knopf('Karte', symbolname='alert-triangle', klasse='ap-knopf--klein',
+                 attribute='data-rolle="karte"') }}
+        {{ knopf('Ereignisse', symbolname='list-details', klasse='ap-knopf--klein',
+                 ziel=url_for('ereignisse_admin.spiel_ereignisse', slug=tournament.slug, mid=match.id)) }}
     </div>
 </div>
 
@@ -159,8 +102,6 @@ const PARALLEL_ID = {{ parallel_match.id if parallel_match else 'null' }};
 const SPIELER = {{ spieler | tojson }};
 const EXTRA_ZEIT = {{ extra_time }};
 const NAECHSTES = {{ naechstes_offenes.id if naechstes_offenes else 'null' }};
-const STAND_URL = {{ url_for('admin.dashboard', slug=tournament.slug) | tojson }};
-const STEUERUNG_URL = {{ (url_for('admin.match_control', slug=tournament.slug, mid=0)[:-1]) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/admin/spielsteuerung.js') }}"></script>
-{% endblock %}{% endblock %}
+<script src="{{ url_for('static', filename='js/admin/anpfiff-steuerung.js') }}"></script>
+{% endblock %}
