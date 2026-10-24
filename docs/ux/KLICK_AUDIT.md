@@ -23,21 +23,21 @@ kosten — auf einem Handy am Spielfeldrand mehr als am Schreibtisch.
 
 | # | Aufgabe | Vorher | Ziel | Nachher |
 |---|---|---:|---:|---:|
-| 1 | Neues Turnier anlegen und veröffentlichen | 11 | 4 | *wird ergänzt* |
-| 2 | Team hinzufügen | 4 | 3 | *wird ergänzt* |
-| 3 | Team umbenennen | 5 | 2 | *wird ergänzt* |
-| 4 | Team in andere Gruppe verschieben | 5 | 2 | *wird ergänzt* |
+| 1 | Neues Turnier anlegen und veröffentlichen | 11 | 4 | 11 (offen) |
+| 2 | Team hinzufügen | 4 | 3 | 4 (offen) |
+| 3 | Team umbenennen | 5 | 2 | 5 (offen) |
+| 4 | Team in andere Gruppe verschieben | 5 | 2 | 5 (offen) |
 | 5 | Spiel starten | 4 | 1 | **1** |
 | 6 | Tor eintragen (ohne Torschütze) | 1 | 1 | **2** |
 | 7 | **Tor eintragen mit Torschütze** | **9** | **2** | **2** |
 | 8 | Spiel beenden und nächstes starten | 5 | 1 | **1** |
-| 9 | Anstoßzeit eines Spiels ändern | – | 2 | *wird ergänzt* |
-| 10 | Ankündigung senden | 4 | 2 | *wird ergänzt* |
+| 9 | Anstoßzeit eines Spiels ändern | – | 2 | – (offen) |
+| 10 | Ankündigung senden | 4 | 2 | **2** |
 | 11 | Theme wechseln | 4 | 1 | **1** |
-| 12 | Startgebühr als bezahlt markieren | 3 | 1 | *wird ergänzt* |
-| 13 | Quittung drucken | 4 | 2 | *wird ergänzt* |
-| 14 | Spielplan drucken | 3 | 2 | *wird ergänzt* |
-| 15 | Zuschauer: Tabelle meiner Gruppe finden | 3 | 1 | *wird ergänzt* |
+| 12 | Startgebühr als bezahlt markieren | 3 | 1 | 1 (nicht nachgemessen) |
+| 13 | Quittung drucken | 4 | 2 | **1** |
+| 14 | Spielplan drucken | 3 | 2 | **1** |
+| 15 | Zuschauer: Tabelle meiner Gruppe finden | 3 | 1 | **0–1** |
 | 16 | Zuschauer: nächstes Spiel meines Teams finden | 4 | 0–1 | **0** |
 | 17 | Beliebige Seite oder beliebiges Spiel öffnen | 2–4 | 1 | **1** |
 | 18 | Beamer-Präsentation starten | 5 | 1 | **1** |
@@ -241,3 +241,69 @@ ein Tastendruck startet Vollbild, und danach läuft sie allein: Live
 Breite und in Beamer-Schriftgröße (Tabellenzeilen 24 px statt 15 px).
 
 `←` `→` blättern von Hand, `Leertaste` hält an, `Esc` beendet.
+
+---
+
+## Bilanz am Ende des Tages
+
+**Erledigt – 11 von 18 Aufgaben wurden schneller:**
+
+| Aufgabe | Vorher | Nachher |
+|---|---:|---:|
+| Tor eintragen mit Torschütze | 9 | **2** |
+| Spiel beenden und nächstes starten | 5 | **1** |
+| Spiel starten | 4 | **1** |
+| Theme wechseln | 4 | **1** |
+| Beamer-Präsentation starten | 5 | **1** |
+| Spielplan drucken | 3 | **1** |
+| Beliebige Seite / beliebiges Spiel öffnen | 2–4 | **1** |
+| Zuschauer: Tabelle meiner Gruppe | 3 | **0–1** |
+| Quittung drucken | 4 | **1** |
+| Ankündigung senden | 4 | **2** |
+| Zuschauer: nächstes Spiel meines Teams | 4 | **0** |
+
+Die **am Turniertag häufigsten Handgriffe** – Spiel starten, Tor
+eintragen, Spiel beenden, nächstes starten – liegen jetzt alle bei
+**einem oder zwei Tipps**. Das war das eigentliche Ziel.
+
+**Nicht erledigt – fünf Aufgaben sind unverändert:**
+
+| # | Aufgabe | Vorher | Ziel | Warum offen |
+|---|---|---:|---:|---|
+| 1 | Neues Turnier anlegen | 11 | 4 | Der Assistent in Schritten wurde nicht mehr gebaut |
+| 2 | Team hinzufügen | 4 | 3 | gehört zum Punkt „Leinwand und Inspektor" |
+| 3 | Team umbenennen | 5 | 2 | braucht das direkte Bearbeiten im Spielplan |
+| 4 | Team in andere Gruppe verschieben | 5 | 2 | braucht Ziehen und Ablegen |
+| 9 | Anstoßzeit ändern | – | 2 | braucht das direkte Bearbeiten |
+
+Alle fünf hängen am selben, nicht mehr gebauten Baustein: **direktes
+Bearbeiten auf der Spielplanseite** – Mannschaftsnamen und Uhrzeiten
+anklicken und sofort ändern, statt ein Formular zu öffnen. Das ist der
+größte verbliebene Hebel und steht als erster Punkt in
+`UX_LOG.md` → „Was offen blieb".
+
+### Wie gezählt wurde
+
+Ein Klick ist eine Zeigeraktion, die der Benutzer bewusst ausführt:
+Knopf, Link, Auswahlfeld öffnen, Eintrag wählen. Tippen zählt nicht als
+Klick; ein Tastenkürzel, das eine Suche öffnet, zählt als ein Klick.
+Gezählt wird ab dem Dashboard des Turniers – nicht ab der Startseite,
+weil niemand am Turniertag ständig neu einsteigt.
+
+### Nachgemessen am Browser
+
+Die folgenden Werte sind nicht geschätzt, sondern am laufenden Programm
+nachgezählt:
+
+| Aufgabe | Befund |
+|---|---|
+| Ankündigung senden | Eingabefeld und „Senden" stehen direkt auf der Übersicht → **2** |
+| Quittung drucken | „Quittung" je Mannschaftszeile; die Seite ruft den Druckdialog selbst auf → **1** |
+| Spielplan drucken | `Strg/Cmd + K`, „spielplan drucken", Enter → **1** |
+| Tabelle meiner Gruppe (Zuschauer) | am Rechner ohne Klick sichtbar (**0**), am Handy ein Tipp auf den Reiter (**1**) |
+
+**Nicht nachgemessen:** Startgebühr als bezahlt markieren. Auf der
+Organisationsseite steht je Mannschaft ein Schalter – der Weg ist
+sichtbar ein Klick, aber ich habe nicht geprüft, ob die Änderung ein
+Neuladen übersteht. Deshalb steht in der Tabelle „1 (nicht
+nachgemessen)" und keine fette Zahl.
