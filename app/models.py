@@ -131,7 +131,7 @@ SETTINGS_DEFAULTS = {
     "hide_results": "0",
     "hide_table": "0",
     "hide_scores": "0",
-    "theme": "dark",
+    "theme": "rasen:hell",
     "num_fields": "1",
     "org_logo_url": "",
     "tournament_rules": "",

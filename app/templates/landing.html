@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 
+{% from '_anpfiff.html' import symbol as icon %}
 {% block title %}Turnierwochenende{% endblock %}
 {% block body_class %}public{% endblock %}
 
 {% block content %}
 <header class="header">
     <div class="header-inner">
-        <div class="header-logo">&#9917;</div>
+        <div class="header-logo">{{ icon('ball-football') }}</div>
         <div class="header-text">
             <h1 id="tournament-name">Turnierwochenende</h1>
-            <p class="header-sub">Turniere auswaehlen</p>
+            <p class="header-sub">Turniere auswählen</p>
         </div>
     </div>
 </header>
@@ -19,7 +20,7 @@
     <div class="tournament-grid">
         {% for t in tournaments %}
         <a href="{{ url_for('main.tournament_view', slug=t.slug) }}" class="tournament-card">
-            <div class="tournament-card-icon">&#9917;</div>
+            <div class="tournament-card-icon">{{ icon('ball-football') }}</div>
             <h2 class="tournament-card-name">{{ t.name }}</h2>
             {% if t.event_date %}
             <p class="tournament-card-date">{{ t.event_date.strftime('%d.%m.%Y') }}</p>
@@ -33,7 +34,7 @@
         {% for eintrag in anmeldungen_offen %}
         <a href="{{ url_for('anmeldung.anmeldeformular', slug=eintrag.tournament.slug) }}"
            class="tournament-card card-anmeldung">
-            <div class="tournament-card-icon">&#128221;</div>
+            <div class="tournament-card-icon">{{ icon('pencil') }}</div>
             <h2 class="tournament-card-name">Anmeldung: {{ eintrag.tournament.name }}</h2>
             <p class="tournament-card-desc">
                 Mannschaft anmelden
@@ -44,17 +45,17 @@
         </a>
         {% endfor %}
         <a href="{{ url_for('main.speisekarte') }}" class="tournament-card card-menu">
-            <div class="tournament-card-icon">&#127860;</div>
-            <h2 class="tournament-card-name">Speisen & Getraenke</h2>
-            <p class="tournament-card-desc">Unser Angebot an Essen und Getraenken</p>
+            <div class="tournament-card-icon">{{ icon('tools-kitchen-2') }}</div>
+            <h2 class="tournament-card-name">Speisen & Getränke</h2>
+            <p class="tournament-card-desc">Unser Angebot an Essen und Getränken</p>
             <span class="tournament-card-link">Speisekarte &rarr;</span>
         </a>
     </div>
     {% else %}
     <div class="landing-empty">
-        <div class="no-live-icon">&#9917;</div>
+        <div class="no-live-icon">{{ icon('ball-football') }}</div>
         <p>Noch keine Turniere erstellt</p>
-        <p class="no-live-sub">Turniere werden in der Adminoberflaeche angelegt.</p>
+        <p class="no-live-sub">Turniere werden in der Adminoberfläche angelegt.</p>
     </div>
     {% endif %}
 </div>

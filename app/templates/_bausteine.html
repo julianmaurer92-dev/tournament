@@ -1,0 +1,36 @@
+{# ============================================================
+   _bausteine.html – Brücke auf „Anpfiff"
+   ------------------------------------------------------------
+   Rund zwanzig Vorlagen binden diese Makros ein. Sie geben jetzt
+   Anpfiff-Markup aus; dadurch sind alle Aufrufe auf einen Schlag
+   richtig, ohne zwanzig Dateien anzufassen.
+
+   Neue Vorlagen binden direkt `_anpfiff.html` ein.
+   ============================================================ #}
+{% from "_anpfiff.html" import symbol, abzeichen as ap_abzeichen,
+   karten as ap_karten, leer as ap_leer, wappen as ap_wappen,
+   teamname as ap_teamname %}
+
+{% macro icon(name, klasse='', titel=None) -%}
+{{ symbol(name, klasse, titel) }}
+{%- endmacro %}
+
+{% macro abzeichen(text, art='neutral', punkt=false) -%}
+{{ ap_abzeichen(text, '' if art == 'neutral' else art, punkt) }}
+{%- endmacro %}
+
+{% macro karten(gelb=0, gelb_rot=0, rot=0) -%}
+{{ ap_karten(gelb, gelb_rot, rot) }}
+{%- endmacro %}
+
+{% macro leer(symbolname, titel, text, knopf_text=None, knopf_ziel=None) -%}
+{{ ap_leer(symbolname, titel, text, knopf_text, knopf_ziel) }}
+{%- endmacro %}
+
+{% macro wappen(team, groesse='') -%}
+{{ ap_wappen(team, groesse) }}
+{%- endmacro %}
+
+{% macro teamname(team, mit_wappen=true) -%}
+{{ ap_teamname(team, mit_wappen) }}
+{%- endmacro %}

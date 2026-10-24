@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% from '_anpfiff.html' import symbol as icon %}
 {% block title %}Speisekarte{% endblock %}
 {% block body_class %}public{% endblock %}
 
@@ -7,9 +8,9 @@
 <header class="header">
     <div class="header-inner">
         <a href="{{ url_for('main.landing') }}" class="header-back">&larr;</a>
-        <div class="header-logo">&#127860;</div>
+        <div class="header-logo">{{ icon('tools-kitchen-2') }}</div>
         <div class="header-text">
-            <h1 id="tournament-name">Speisen & Getraenke</h1>
+            <h1 id="tournament-name">Speisen & Getränke</h1>
         </div>
     </div>
 </header>
@@ -17,14 +18,14 @@
 <div class="menu-container">
     {% if not speisen and not getraenke %}
     <div class="landing-empty">
-        <div class="no-live-icon">&#127860;</div>
-        <p>Noch keine Speisekarte verfuegbar</p>
+        <div class="no-live-icon">{{ icon('tools-kitchen-2') }}</div>
+        <p>Noch keine Speisekarte verfügbar</p>
     </div>
     {% else %}
     <div class="menu-grid">
         {% if speisen %}
         <section class="menu-section">
-            <h2 class="menu-section-title">&#127828; Speisen</h2>
+            <h2 class="menu-section-title">{{ icon('tools-kitchen-2') }} Speisen</h2>
             <div class="menu-items">
                 {% for item in speisen %}
                 <div class="menu-item">
@@ -45,7 +46,7 @@
 
         {% if getraenke %}
         <section class="menu-section">
-            <h2 class="menu-section-title">&#127866; Getraenke</h2>
+            <h2 class="menu-section-title">{{ icon('beer') }} Getränke</h2>
             <div class="menu-items">
                 {% for item in getraenke %}
                 <div class="menu-item">

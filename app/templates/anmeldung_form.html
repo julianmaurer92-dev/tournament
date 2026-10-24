@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Anmeldung – {{ tournament.name }}{% endblock %}
 {% block body_class %}public{% endblock %}
 
@@ -46,7 +47,7 @@
 <header class="header">
     <div class="header-inner">
         <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
-        <div class="header-logo">&#128221;</div>
+        <div class="header-logo">{{ icon('pencil') }}</div>
         <div class="header-text">
             <h1 id="tournament-name">Mannschaft anmelden</h1>
             <p>{{ tournament.name }}</p>

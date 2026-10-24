@@ -1,3 +1,4 @@
+{% from '_anpfiff.html' import symbol as icon %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -69,9 +70,9 @@
 </head>
 <body>
 <div id="tv-header">
-    <span class="tv-header-title">&#9917; Turnierwochenende</span>
+    <span class="tv-header-title">{{ icon('ball-football') }} Turnierwochenende</span>
     <div class="tv-header-links">
-        <a href="{{ url_for('main.tv_speisekarte') }}" class="tv-header-link">&#127860; Speisekarte</a>
+        <a href="{{ url_for('main.tv_speisekarte') }}" class="tv-header-link">{{ icon('tools-kitchen-2') }} Speisekarte</a>
     </div>
 </div>
 
@@ -80,7 +81,7 @@
     <div class="tv-grid">
         {% for t in tournaments %}
         <a href="{{ url_for('main.tournament_tv', slug=t.slug) }}" class="tv-card">
-            <div class="tv-card-icon">&#9917;</div>
+            <div class="tv-card-icon">{{ icon('ball-football') }}</div>
             <div class="tv-card-name">{{ t.name }}</div>
             {% if t.event_date %}
             <div class="tv-card-date">{{ t.event_date.strftime('%d.%m.%Y') }}</div>
@@ -92,15 +93,15 @@
         </a>
         {% endfor %}
         <a href="{{ url_for('main.tv_speisekarte') }}" class="tv-card card-menu">
-            <div class="tv-card-icon">&#127860;</div>
-            <div class="tv-card-name">Speisen &amp; Getraenke</div>
-            <div class="tv-card-desc">Unser Angebot an Essen und Getraenken</div>
+            <div class="tv-card-icon">{{ icon('tools-kitchen-2') }}</div>
+            <div class="tv-card-name">Speisen &amp; Getränke</div>
+            <div class="tv-card-desc">Unser Angebot an Essen und Getränken</div>
             <span class="tv-card-link">Speisekarte &rarr;</span>
         </a>
     </div>
     {% else %}
     <div class="tv-empty">
-        <div class="tv-empty-icon">&#9917;</div>
+        <div class="tv-empty-icon">{{ icon('ball-football') }}</div>
         <p>Noch keine Turniere erstellt</p>
     </div>
     {% endif %}

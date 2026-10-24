@@ -1,19 +1,21 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Siegerehrung – {{ tournament.name }}{% endblock %}
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('siegerehrung_admin.urkunden', slug=tournament.slug) }}" target="_blank" class="btn btn-primary btn-sm">&#128220; Urkunden drucken</a>
-<a href="{{ url_for('siegerehrung_admin.platzierung_csv', slug=tournament.slug) }}" class="btn btn-outline btn-sm">CSV</a>
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('siegerehrung_admin.platzierung_csv', slug=tournament.slug) }}"
+   class="cp-knopf cp-knopf--still cp-knopf--klein">{{ icon('download') }} CSV</a>
+<a href="{{ url_for('siegerehrung_admin.urkunden', slug=tournament.slug) }}" target="_blank"
+   class="cp-knopf cp-knopf--haupt cp-knopf--klein">{{ icon('certificate') }} Urkunden drucken</a>
 {% endblock %}
 
 {% block page_content %}
 {% if not platzierung %}
 <div class="card">
     <div class="card-body text-center text-muted py-5">
-        <div style="font-size:2rem">&#127942;</div>
+        <div style="font-size:2rem">{{ icon('trophy') }}</div>
         <p class="mt-2 mb-0">Noch keine Mannschaften im Turnier.</p>
     </div>
 </div>
@@ -23,7 +25,7 @@
     <div class="col-lg-7">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#127942; Endplatzierung</h3>
+                <h3 class="card-title">{{ icon('trophy') }} Endplatzierung</h3>
                 <span class="ms-2 text-muted small">{{ platzierung | length }} Mannschaften</span>
             </div>
             <div class="table-responsive">
@@ -73,7 +75,7 @@
     <div class="col-lg-5">
         <div class="card mb-3">
             <div class="card-header">
-                <h3 class="card-title">&#128227; Ablauf der Siegerehrung</h3>
+                <h3 class="card-title">{{ icon('speakerphone') }} Ablauf der Siegerehrung</h3>
             </div>
             <div class="card-body">
                 <p class="text-muted small">
@@ -94,7 +96,7 @@
         {% if current_user.can_edit() %}
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">&#128220; Urkunden</h3>
+                <h3 class="card-title">{{ icon('certificate') }} Urkunden</h3>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('siegerehrung_admin.einstellungen_speichern', slug=tournament.slug) }}">

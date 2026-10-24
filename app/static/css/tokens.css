@@ -1,0 +1,392 @@
+/* ============================================================
+   CupPlan – Design-Tokens
+   ------------------------------------------------------------
+   Eine einzige Stelle fuer Farben, Abstaende, Radien, Schatten,
+   Schrift und Bewegung. Vorlagen setzen keine Farben mehr direkt.
+
+   Aufbau:
+     1. Masse, die in jedem Theme gleich sind (Raum, Radien, Zeit)
+     2. Farbrollen – was ein Wert BEDEUTET, nicht wie er aussieht
+     3. Themes: setzen nur die Farbrollen neu
+
+   Farbrollen statt Farbnamen: "--flaeche-erhoben" sagt, wozu der
+   Wert da ist. Ein neues Theme muss deshalb nur ~16 Werte setzen
+   und wirkt sofort in der ganzen App.
+   ============================================================ */
+
+:root {
+    /* ── Raum: eine Skala, keine Zufallswerte ─────────────── */
+    --raum-1: 0.25rem;   /*  4px */
+    --raum-2: 0.5rem;    /*  8px */
+    --raum-3: 0.75rem;   /* 12px */
+    --raum-4: 1rem;      /* 16px */
+    --raum-5: 1.5rem;    /* 24px */
+    --raum-6: 2rem;      /* 32px */
+    --raum-7: 3rem;      /* 48px */
+    --raum-8: 4rem;      /* 64px */
+
+    /* ── Radien ────────────────────────────────────────────── */
+    --radius-s:  8px;
+    --radius-m:  12px;
+    --radius-l:  18px;
+    --radius-xl: 26px;
+    --radius-rund: 999px;
+
+    /* ── Schrift ───────────────────────────────────────────── */
+    --schrift: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --schrift-zahlen: 'Inter', system-ui, sans-serif;
+
+    /* Wenige Groessen, klare Hierarchie. Fliessend zwischen
+       Handy und Desktop, damit nichts umbrechen muss. */
+    --text-xs:  0.75rem;
+    --text-s:   0.8125rem;
+    --text-m:   0.9375rem;
+    --text-l:   1.0625rem;
+    --text-xl:  clamp(1.25rem, 1rem + 1.1vw, 1.5rem);
+    --text-2xl: clamp(1.6rem, 1.2rem + 1.8vw, 2.25rem);
+    --text-3xl: clamp(2.2rem, 1.4rem + 3.4vw, 3.5rem);
+    --text-riesig: clamp(3rem, 1.5rem + 8vw, 7rem);   /* Spielstand, Timer */
+
+    --gewicht-normal: 400;
+    --gewicht-mittel: 550;
+    --gewicht-fett:   700;
+    --gewicht-schwer: 800;
+
+    --zeilen-eng:   1.15;
+    --zeilen-normal: 1.5;
+
+    /* ── Bewegung ──────────────────────────────────────────── */
+    --zeit-schnell: 120ms;
+    --zeit-normal:  200ms;
+    --zeit-ruhig:   320ms;
+    --kurve: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+    /* ── Beruehrziele ──────────────────────────────────────── */
+    --ziel-min: 44px;          /* Mindestgroesse fuer Finger */
+    --ziel-gross: 56px;
+
+    /* ── Ebenen ────────────────────────────────────────────── */
+    --z-inhalt: 1;
+    --z-kopf: 100;
+    --z-inspektor: 200;
+    --z-sheet: 300;
+    --z-palette: 400;
+    --z-toast: 500;
+}
+
+/* ============================================================
+   Farbrollen – Vorgabe (wird von jedem Theme ueberschrieben)
+   ============================================================ */
+
+:root,
+[data-schema="dunkel"] {
+    color-scheme: dark;
+
+    --flaeche-tief:     #0b1120;  /* Seitenhintergrund */
+    --flaeche:          #111827;  /* Karten, Panels */
+    --flaeche-erhoben:  #192338;  /* Hervorgehobene Karten, Sheets */
+    --flaeche-gedrueckt:#0d1424;  /* Eingabefelder, Vertiefungen */
+
+    --rand:        #1f2d40;   /* dekorative Trennlinie */
+    --rand-stark:  #2f4259;   /* staerkere Trennlinie */
+    /* Rahmen von Eingabefeldern und Knoepfen – braucht 3:1 gegen die
+       Flaeche (WCAG 1.4.11). Deshalb eine eigene Rolle: dekorative
+       Linien duerfen leiser sein, Bedienelemente nicht. */
+    --rand-interaktiv: var(--text-still);
+
+    --text:        #f1f5f9;
+    --text-leise:  #9aa8bd;
+    --text-still:  #6b7a90;
+    --text-auf-akzent: #06240f;
+
+    --akzent:        #22c55e;
+    --akzent-leise:  rgba(34, 197, 94, 0.14);
+    --akzent-rand:   rgba(34, 197, 94, 0.38);
+    --akzent-hover:  #3ad673;
+
+    --live:        #f04747;
+    --live-leise:  rgba(240, 71, 71, 0.16);
+    --warnung:     #f0a92b;
+    --warnung-leise: rgba(240, 169, 43, 0.16);
+    --gefahr:      #ef4444;
+    --gefahr-leise: rgba(239, 68, 68, 0.14);
+    --erfolg:      #22c55e;
+    --erfolg-leise: rgba(34, 197, 94, 0.14);
+    --info:        #4c8dff;
+    --info-leise:  rgba(76, 141, 255, 0.14);
+
+    --schatten-s: 0 1px 2px rgba(0,0,0,.35);
+    --schatten-m: 0 4px 16px rgba(0,0,0,.35);
+    --schatten-l: 0 18px 48px rgba(0,0,0,.45);
+    --fokus: 0 0 0 3px var(--akzent-rand);
+}
+
+[data-schema="hell"] {
+    color-scheme: light;
+
+    --flaeche-tief:     #f4f6fa;
+    --flaeche:          #ffffff;
+    --flaeche-erhoben:  #ffffff;
+    --flaeche-gedrueckt:#eef1f6;
+
+    --rand:        #dde3ec;
+    --rand-stark:  #c2cbd9;
+
+    --text:        #111827;
+    --text-leise:  #51607a;
+    --text-still:  #7c8aa3;
+    --text-auf-akzent: #ffffff;
+
+    --akzent-leise:  rgba(0, 0, 0, 0.05);
+    --akzent-rand:   rgba(0, 0, 0, 0.18);
+
+    --schatten-s: 0 1px 2px rgba(16,24,40,.06);
+    --schatten-m: 0 6px 20px rgba(16,24,40,.10);
+    --schatten-l: 0 20px 50px rgba(16,24,40,.16);
+}
+
+/* ============================================================
+   THEMES
+   ------------------------------------------------------------
+   Jedes Theme gibt es hell und dunkel. Gesetzt wird
+   data-theme="<name>" und data-schema="hell|dunkel" am <html>.
+
+   Alle Kombinationen sind gegen WCAG AA geprueft (Text auf
+   Flaeche mind. 4.5:1, grosse Schrift und Raender mind. 3:1) –
+   siehe scripts/kontrast_pruefen.py.
+   ============================================================ */
+
+/* ── Rasen: das Standard-Theme, Gruen wie der Platz ──────── */
+[data-theme="rasen"][data-schema="dunkel"] {
+    --flaeche-tief: #0a1410; --flaeche: #10201a; --flaeche-erhoben: #162c23;
+    --flaeche-gedrueckt: #0c1a15;
+    --rand: #1d3a2d; --rand-stark: #2b5342;
+    --text: #eefaf3; --text-leise: #9ec4b2; --text-still: #6d9281;
+    --akzent: #34d27b; --akzent-hover: #4ee08e; --text-auf-akzent: #06240f;
+    --akzent-leise: rgba(52,210,123,.14); --akzent-rand: rgba(52,210,123,.4);
+}
+[data-theme="rasen"][data-schema="hell"] {
+    --flaeche-tief: #f1f8f3; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #e8f3ec;
+    --rand: #d2e7da; --rand-stark: #a8ccb6;
+    --text: #0c2418; --text-leise: #42705a; --text-still: #6d9281;
+    --akzent: #0d7c42; --akzent-hover: #0a6b39; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(13,124,66,.1); --akzent-rand: rgba(13,124,66,.35);
+}
+
+/* ── Mitternacht: fast schwarz, fuer dunkle Hallen ───────── */
+[data-theme="mitternacht"][data-schema="dunkel"] {
+    --flaeche-tief: #07080c; --flaeche: #0e1016; --flaeche-erhoben: #151823;
+    --flaeche-gedrueckt: #0a0c11;
+    --rand: #1c2030; --rand-stark: #2b3145;
+    --text: #eceefa; --text-leise: #9095ad; --text-still: #666c85;
+    --akzent: #7c8cff; --akzent-hover: #93a0ff; --text-auf-akzent: #080b1a;
+    --akzent-leise: rgba(124,140,255,.15); --akzent-rand: rgba(124,140,255,.42);
+}
+[data-theme="mitternacht"][data-schema="hell"] {
+    --flaeche-tief: #f3f4fb; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #ecedf7;
+    --rand: #dcdeef; --rand-stark: #b6bad6;
+    --text: #15182a; --text-leise: #4c5272; --text-still: #747a97;
+    --akzent: #4452d6; --akzent-hover: #3843bb; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(68,82,214,.1); --akzent-rand: rgba(68,82,214,.35);
+}
+
+/* ── Schiefer: neutrales Grau, maximal ruhig ─────────────── */
+[data-theme="schiefer"][data-schema="dunkel"] {
+    --flaeche-tief: #0d1117; --flaeche: #161b22; --flaeche-erhoben: #1d242e;
+    --flaeche-gedrueckt: #10151c;
+    --rand: #262c36; --rand-stark: #39414f;
+    --text: #e8eef6; --text-leise: #97a3b4; --text-still: #6d7889;
+    --akzent: #4c9aff; --akzent-hover: #67abff; --text-auf-akzent: #06182e;
+    --akzent-leise: rgba(76,154,255,.14); --akzent-rand: rgba(76,154,255,.4);
+}
+[data-theme="schiefer"][data-schema="hell"] {
+    --flaeche-tief: #f4f6f8; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #eceff3;
+    --rand: #dde1e7; --rand-stark: #b7bec8;
+    --text: #141a21; --text-leise: #4d5664; --text-still: #78818f;
+    --akzent: #1769d4; --akzent-hover: #1259b7; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(23,105,212,.1); --akzent-rand: rgba(23,105,212,.35);
+}
+
+/* ── Ozean: kuehles Blau ─────────────────────────────────── */
+[data-theme="ozean"][data-schema="dunkel"] {
+    --flaeche-tief: #06121f; --flaeche: #0c1e30; --flaeche-erhoben: #122a42;
+    --flaeche-gedrueckt: #081829;
+    --rand: #1a3a57; --rand-stark: #27547a;
+    --text: #e8f4ff; --text-leise: #94b6d4; --text-still: #6a8ead;
+    --akzent: #2ec5d8; --akzent-hover: #47d6e7; --text-auf-akzent: #032027;
+    --akzent-leise: rgba(46,197,216,.14); --akzent-rand: rgba(46,197,216,.4);
+}
+[data-theme="ozean"][data-schema="hell"] {
+    --flaeche-tief: #eff7fc; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #e4f0f8;
+    --rand: #cfe3ef; --rand-stark: #a1c5da;
+    --text: #06202e; --text-leise: #3b6880; --text-still: #6a8ead;
+    --akzent: #0b7f91; --akzent-hover: #096a79; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(11,127,145,.1); --akzent-rand: rgba(11,127,145,.35);
+}
+
+/* ── Ziegel: warmes Rot, Vereinsfarben Rot/Weiss ─────────── */
+[data-theme="ziegel"][data-schema="dunkel"] {
+    --flaeche-tief: #180b0c; --flaeche: #241314; --flaeche-erhoben: #31191b;
+    --flaeche-gedrueckt: #1c0f10;
+    --rand: #3d2124; --rand-stark: #5a3135;
+    --text: #fdeeee; --text-leise: #cfa3a5; --text-still: #a27b7e;
+    --akzent: #ff6b5e; --akzent-hover: #ff8578; --text-auf-akzent: #2b0705;
+    --akzent-leise: rgba(255,107,94,.15); --akzent-rand: rgba(255,107,94,.42);
+}
+[data-theme="ziegel"][data-schema="hell"] {
+    --flaeche-tief: #fdf3f2; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #f8e8e6;
+    --rand: #f0d6d3; --rand-stark: #d9aaa5;
+    --text: #27100e; --text-leise: #7a4440; --text-still: #a27b7e;
+    --akzent: #c23a2b; --akzent-hover: #a72e21; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(194,58,43,.1); --akzent-rand: rgba(194,58,43,.35);
+}
+
+/* ── Forst: dunkles Tannengruen ──────────────────────────── */
+[data-theme="forst"][data-schema="dunkel"] {
+    --flaeche-tief: #081512; --flaeche: #0e221d; --flaeche-erhoben: #143029;
+    --flaeche-gedrueckt: #0a1b17;
+    --rand: #1c3a33; --rand-stark: #2a564b;
+    --text: #e9f7f2; --text-leise: #93bcb0; --text-still: #6b9185;
+    --akzent: #c9a227; --akzent-hover: #dcb43b; --text-auf-akzent: #231a02;
+    --akzent-leise: rgba(201,162,39,.16); --akzent-rand: rgba(201,162,39,.42);
+}
+[data-theme="forst"][data-schema="hell"] {
+    --flaeche-tief: #f0f7f4; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #e6f1ec;
+    --rand: #d1e4dc; --rand-stark: #a5c7bb;
+    --text: #09251d; --text-leise: #3d6b5d; --text-still: #6b9185;
+    --akzent: #8a6d09; --akzent-hover: #735a07; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(138,109,9,.1); --akzent-rand: rgba(138,109,9,.35);
+}
+
+/* ── Bernstein: warm, gut bei Sonnenlicht ────────────────── */
+[data-theme="bernstein"][data-schema="dunkel"] {
+    --flaeche-tief: #16100a; --flaeche: #221a10; --flaeche-erhoben: #2f2416;
+    --flaeche-gedrueckt: #1a1409;
+    --rand: #3c2e19; --rand-stark: #574327;
+    --text: #fdf4e6; --text-leise: #cfb68b; --text-still: #a28c6a;
+    --akzent: #ffb340; --akzent-hover: #ffc35f; --text-auf-akzent: #2a1a00;
+    --akzent-leise: rgba(255,179,64,.16); --akzent-rand: rgba(255,179,64,.42);
+}
+[data-theme="bernstein"][data-schema="hell"] {
+    --flaeche-tief: #fdf6ea; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #f8eeda;
+    --rand: #efdfc2; --rand-stark: #d4bb90;
+    --text: #241803; --text-leise: #725a28; --text-still: #a28c6a;
+    --akzent: #a06a00; --akzent-hover: #875900; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(160,106,0,.1); --akzent-rand: rgba(160,106,0,.35);
+}
+
+/* ── Veilchen: kraeftiges Lila ───────────────────────────── */
+[data-theme="veilchen"][data-schema="dunkel"] {
+    --flaeche-tief: #0f0a1c; --flaeche: #19112c; --flaeche-erhoben: #22183a;
+    --flaeche-gedrueckt: #130d22;
+    --rand: #2c2048; --rand-stark: #3f2f66;
+    --text: #f2ecff; --text-leise: #b4a3da; --text-still: #8a7bb0;
+    --akzent: #a78bfa; --akzent-hover: #bca3ff; --text-auf-akzent: #160a30;
+    --akzent-leise: rgba(167,139,250,.16); --akzent-rand: rgba(167,139,250,.42);
+}
+[data-theme="veilchen"][data-schema="hell"] {
+    --flaeche-tief: #f6f2fd; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #efe8fb;
+    --rand: #e2d8f6; --rand-stark: #c0aee6;
+    --text: #180d2e; --text-leise: #58447f; --text-still: #8a7bb0;
+    --akzent: #6b3fd4; --akzent-hover: #5a33b8; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(107,63,212,.1); --akzent-rand: rgba(107,63,212,.35);
+}
+
+/* ── Papier: sehr hell und ruhig, fuer Beamer bei Tageslicht ── */
+[data-theme="papier"][data-schema="hell"] {
+    --flaeche-tief: #faf9f7; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #f1efea;
+    --rand: #e5e2db; --rand-stark: #c4bfb3;
+    --text: #1a1916; --text-leise: #5c584f; --text-still: #85806f;
+    --akzent: #1f6feb; --akzent-hover: #185cc7; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(31,111,235,.09); --akzent-rand: rgba(31,111,235,.33);
+}
+[data-theme="papier"][data-schema="dunkel"] {
+    --flaeche-tief: #16150f; --flaeche: #211f17; --flaeche-erhoben: #2b2820;
+    --flaeche-gedrueckt: #1a1812;
+    --rand: #35322a; --rand-stark: #4d483c;
+    --text: #f6f4ee; --text-leise: #bab4a4; --text-still: #8e8878;
+    --akzent: #74a9ff; --akzent-hover: #8dbaff; --text-auf-akzent: #0a1932;
+    --akzent-leise: rgba(116,169,255,.15); --akzent-rand: rgba(116,169,255,.4);
+}
+
+/* ── Stadion: hoher Kontrast, fuer grosse Entfernung ─────── */
+[data-theme="stadion"][data-schema="dunkel"] {
+    --flaeche-tief: #000000; --flaeche: #0c0c0c; --flaeche-erhoben: #171717;
+    --flaeche-gedrueckt: #070707;
+    --rand: #2a2a2a; --rand-stark: #454545;
+    --text: #ffffff; --text-leise: #c4c4c4; --text-still: #8f8f8f;
+    --akzent: #ffdd00; --akzent-hover: #ffe840; --text-auf-akzent: #1a1600;
+    --akzent-leise: rgba(255,221,0,.16); --akzent-rand: rgba(255,221,0,.45);
+    --live: #ff3b30; --live-leise: rgba(255,59,48,.2);
+}
+[data-theme="stadion"][data-schema="hell"] {
+    --flaeche-tief: #ffffff; --flaeche: #ffffff; --flaeche-erhoben: #ffffff;
+    --flaeche-gedrueckt: #f0f0f0;
+    --rand: #d4d4d4; --rand-stark: #8f8f8f;
+    --text: #000000; --text-leise: #3d3d3d; --text-still: #6b6b6b;
+    --akzent: #0b57d0; --akzent-hover: #0847ad; --text-auf-akzent: #ffffff;
+    --akzent-leise: rgba(11,87,208,.1); --akzent-rand: rgba(11,87,208,.38);
+}
+
+/* ============================================================
+   Vereinsfarbe als Akzent
+   ------------------------------------------------------------
+   Setzt der Veranstalter eine eigene Primaerfarbe, ueberschreibt
+   sie den Theme-Akzent. --text-auf-akzent wird dabei vom Server
+   passend auf Schwarz oder Weiss gesetzt (siehe app/farben.py),
+   damit die Lesbarkeit erhalten bleibt.
+   ============================================================ */
+
+[data-vereinsfarbe="an"] {
+    --akzent:       var(--vereinsfarbe);
+    --akzent-hover: var(--vereinsfarbe-hell);
+    --akzent-leise: var(--vereinsfarbe-leise);
+    --akzent-rand:  var(--vereinsfarbe-rand);
+    --text-auf-akzent: var(--vereinsfarbe-text);
+}
+
+/* ============================================================
+   Bewegung zurueckhaltend, wenn das System es wuenscht
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================================
+   Druck: immer hell und tintensparend, unabhaengig vom Theme
+   ============================================================ */
+
+@media print {
+    :root, [data-schema], [data-theme] {
+        --flaeche-tief: #ffffff;
+        --flaeche: #ffffff;
+        --flaeche-erhoben: #ffffff;
+        --flaeche-gedrueckt: #ffffff;
+        --rand: #d0d0d0;
+        --rand-stark: #9a9a9a;
+        --text: #000000;
+        --text-leise: #333333;
+        --text-still: #666666;
+        --akzent: #000000;
+        --akzent-leise: transparent;
+        --text-auf-akzent: #ffffff;
+        --schatten-s: none;
+        --schatten-m: none;
+        --schatten-l: none;
+    }
+}

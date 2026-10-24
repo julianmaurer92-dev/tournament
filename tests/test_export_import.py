@@ -116,7 +116,7 @@ def test_export_mit_speisekarte(admin_client, simple_tournament, menu_items):
 
 def test_import_falsche_version_wird_abgelehnt(admin_client):
     resp = _import(admin_client, {"version": "99", "tournaments": []}, ["x"])
-    assert "Ungueltiges Exportformat".encode() in resp.data
+    assert "Ungültiges Exportformat" in resp.get_data(as_text=True)
 
 
 def test_import_ohne_datei(admin_client):
@@ -130,7 +130,7 @@ def test_import_kaputtes_json(admin_client):
     resp = admin_client.post("/admin/api/import", data={
         "file": (io.BytesIO(b"{kein json"), "x.json"), "names": ["x"],
     }, content_type="multipart/form-data", follow_redirects=True)
-    assert "Ungueltige JSON-Datei".encode() in resp.data
+    assert "Ungültige JSON-Datei" in resp.get_data(as_text=True)
 
 
 def test_import_ohne_auswahl(admin_client, simple_tournament):

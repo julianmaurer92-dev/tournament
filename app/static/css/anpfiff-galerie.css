@@ -1,0 +1,137 @@
+/* ============================================================
+   ANPFIFF – Theme-Galerie
+   ------------------------------------------------------------
+   Eine Farbe auszuwählen, ohne sie zu sehen, ist Raten. Jede
+   Karte zeigt deshalb eine Miniatur der echten Oberfläche:
+   Beschriftungsstreifen, Spielstand, zwei Tabellenzeilen – in
+   genau den Farben, die das Theme setzt.
+
+   Ein Klick wendet sofort an. Kein Speichern-Knopf: Wer die
+   Wahl sieht, muss sie nicht noch bestätigen.
+   ============================================================ */
+
+.ga-hinweis {
+    max-width: 56ch;
+    margin: 0 0 var(--ap-raum-4);
+    color: var(--ap-leise);
+}
+
+.ga-galerie {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: var(--ap-raum-4);
+}
+
+.ga-karte {
+    /* Browser setzen bei <button> von Haus aus align-items:center.
+       Ohne stretch bleibt die Vorschau schmal statt die Karte zu
+       füllen. */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--ap-raum-3);
+    padding: var(--ap-raum-3);
+    text-align: left;
+    font-family: var(--ap-schrift);
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel);
+    border: 2px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+    cursor: pointer;
+    transition: border-color var(--ap-zeit) var(--ap-kurve),
+                transform var(--ap-zeit) var(--ap-kurve),
+                box-shadow var(--ap-zeit) var(--ap-kurve);
+}
+.ga-karte:hover { transform: translateY(-2px); box-shadow: var(--ap-schatten-m); }
+.ga-karte.ist-gewaehlt {
+    border-color: var(--ap-akzent);
+    box-shadow: 0 0 0 2px var(--ap-akzent);
+}
+
+/* ── Die Miniatur ──────────────────────────────────────────── */
+
+.ga-vorschau {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px;
+    min-height: 9rem;
+    border-radius: var(--ap-rund-m);
+    background: var(--v-grund);
+}
+.ga-v-kopf {
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid color-mix(in srgb, var(--v-akzent) 25%, transparent);
+}
+.ga-v-punkt {
+    width: 11px; height: 11px; flex: none;
+    border-radius: 50%; background: var(--v-akzent);
+}
+.ga-v-streifen {
+    height: 6px; flex: 1; max-width: 62%;
+    border-radius: var(--ap-rund-voll);
+    background: var(--v-akzent); opacity: .85;
+}
+.ga-v-stand {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 0;
+    background: var(--v-tafel);
+    border-radius: 8px;
+}
+.ga-v-zahl {
+    font-family: var(--ap-schrift-zahl);
+    font-size: 1.7rem; font-weight: 800; line-height: 1;
+    color: var(--v-akzent);
+}
+.ga-v-doppel { color: var(--v-akzent); opacity: .45; }
+.ga-v-zeile {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 7px;
+    background: var(--v-tafel);
+    border-radius: 6px;
+}
+.ga-v-zeile--kurz { max-width: 72%; }
+.ga-v-pille {
+    width: 16px; height: 6px; flex: none;
+    border-radius: var(--ap-rund-voll);
+    background: var(--v-akzent);
+}
+
+/* ── Beschriftung ──────────────────────────────────────────── */
+
+.ga-text { display: flex; flex-direction: column; gap: 2px; }
+.ga-name {
+    display: flex; align-items: center; gap: var(--ap-raum-2);
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-l);
+    font-weight: var(--ap-fett-schwer);
+}
+.ga-beschreibung { font-size: var(--ap-text-s); color: var(--ap-leise); line-height: 1.35; }
+.ga-merkmal {
+    align-self: flex-start;
+    margin-top: var(--ap-raum-2);
+    padding: 1px var(--ap-raum-2);
+    font-size: var(--ap-text-xs); font-weight: var(--ap-fett);
+    color: var(--ap-still);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-voll);
+}
+.ga-haken {
+    margin-left: auto; color: var(--ap-akzent);
+    opacity: 0; transition: opacity var(--ap-zeit-kurz) var(--ap-kurve);
+}
+.ga-karte.ist-gewaehlt .ga-haken { opacity: 1; }
+
+/* ── Vereinsfarbe ──────────────────────────────────────────── */
+
+.ga-farbe { display: flex; align-items: center; gap: var(--ap-raum-3); flex-wrap: wrap; }
+.ga-farbwahl {
+    width: 60px; height: 48px; padding: 3px; flex: none;
+    background: var(--ap-tafel-tief);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-m);
+    cursor: pointer;
+}
+.ga-farbtext { width: 9rem; font-family: var(--ap-schrift-zahl); }
+.ga-farbhinweis { font-size: var(--ap-text-s); color: var(--ap-warnung); }

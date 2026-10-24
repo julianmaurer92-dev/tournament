@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% from '_anpfiff.html' import symbol as icon, karten %}
 {% block title %}Statistik – {{ tournament.name }}{% endblock %}
 {% block body_class %}public{% endblock %}
 
@@ -34,7 +35,7 @@
 <header class="header">
     <div class="header-inner">
         <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
-        <div class="header-logo">&#128202;</div>
+        <div class="header-logo">{{ icon('chart-bar') }}</div>
         <div class="header-text">
             <h1 id="tournament-name">Statistik</h1>
             <p>{{ tournament.name }}</p>
@@ -49,13 +50,13 @@
     </div>
     {% elif not anzahl_ereignisse %}
     <div class="st-card st-leer">
-        <div style="font-size:2rem">&#9917;</div>
+        <div style="font-size:2rem">{{ icon('ball-football') }}</div>
         <p>Noch keine Tore oder Karten erfasst.</p>
     </div>
     {% else %}
 
     <div class="st-card">
-        <h2>&#9917; Torschützenliste</h2>
+        <h2>{{ icon('ball-football') }} Torschützenliste</h2>
         {% if torschuetzen %}
         <table class="st-tbl">
             <thead>
@@ -84,7 +85,7 @@
     </div>
 
     <div class="st-card">
-        <h2>&#129309; Fair-Play-Wertung</h2>
+        <h2>{{ icon('users-group') }} Fair-Play-Wertung</h2>
         <table class="st-tbl">
             <thead>
                 <tr><th></th><th>Mannschaft</th><th>Karten</th><th style="text-align:right">Punkte</th></tr>
@@ -94,7 +95,7 @@
                 <tr>
                     <td class="platz">{{ e.platz }}.</td>
                     <td class="name">{{ e.team_name }}</td>
-                    <td class="st-karten">{{ '🟨' * e.gelb }}{{ '🟨🟥' * e.gelb_rot }}{{ '🟥' * e.rot }}</td>
+                    <td class="st-karten">{{ karten(e.gelb, e.gelb_rot, e.rot) }}</td>
                     <td class="zahl">{{ e.strafpunkte }}</td>
                 </tr>
                 {% endfor %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% from '_anpfiff.html' import symbol as icon %}
 {% block title %}Endplatzierung – {{ tournament.name }}{% endblock %}
 {% block body_class %}public{% endblock %}
 
@@ -36,7 +37,7 @@
 <header class="header">
     <div class="header-inner">
         <a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="header-back">&larr;</a>
-        <div class="header-logo">&#127942;</div>
+        <div class="header-logo">{{ icon('trophy') }}</div>
         <div class="header-text">
             <h1 id="tournament-name">Endplatzierung</h1>
             <p>{{ tournament.name }}</p>
@@ -51,7 +52,7 @@
     </div>
     {% elif not platzierung %}
     <div class="pl-card pl-leer">
-        <div style="font-size:2rem">&#127942;</div>
+        <div style="font-size:2rem">{{ icon('trophy') }}</div>
         <p>Noch keine Platzierung vorhanden.</p>
     </div>
     {% else %}

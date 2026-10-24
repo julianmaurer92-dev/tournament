@@ -1,308 +1,121 @@
-{% extends "admin_base.html" %}
+{% extends "anpfiff_huelle.html" %}
+{% from "_anpfiff.html" import symbol, knopf %}
 
-{% block title %}Admin - Design - {{ tournament.name }}{% endblock %}
+{% block title %}Design – {{ tournament.name }}{% endblock %}
 
-{% block navbar_brand %}{{ tournament.name }}{% endblock %}
-
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Dashboard</a>
-<a href="{{ url_for('main.tournament_view', slug=tournament.slug) }}" class="btn btn-outline btn-sm">Live-Ansicht</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anpfiff-galerie.css') }}">
 {% endblock %}
 
-{% block page_content %}
-<div class="design-layout">
+{% block kopf_aktionen %}
+<a class="ap-knopf ap-knopf--klein" target="_blank"
+   href="{{ url_for('main.tournament_view', slug=tournament.slug) }}">
+    {{ symbol('world') }} Live-Ansicht
+</a>
+{% endblock %}
 
-    <!-- Controls -->
-    <div class="design-controls">
+{% block inhalt %}
 
-        <!-- Theme Picker -->
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Stil / Theme</h3>
-            <input type="hidden" id="input-theme" value="{{ settings.theme or 'dark' }}">
-            <div class="theme-grid">
-                <button type="button" class="theme-swatch" data-theme="dark"
-                        data-primary="#22c55e" data-secondary="#1a2332" data-title="#22c55e"
-                        title="Dark Navy">
-                    <span class="swatch-bg" style="background:#0b1120"></span>
-                    <span class="swatch-panel" style="background:#111827;border-color:#1f2d40"></span>
-                    <span class="swatch-accent" style="background:#22c55e"></span>
-                    <span class="swatch-label">Dark Navy</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="midnight"
-                        data-primary="#818cf8" data-secondary="#12121a" data-title="#818cf8"
-                        title="Midnight">
-                    <span class="swatch-bg" style="background:#07080c"></span>
-                    <span class="swatch-panel" style="background:#0e0f14;border-color:#18191f"></span>
-                    <span class="swatch-accent" style="background:#818cf8"></span>
-                    <span class="swatch-label">Midnight</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="slate"
-                        data-primary="#f78166" data-secondary="#1c2128" data-title="#e6edf3"
-                        title="Slate">
-                    <span class="swatch-bg" style="background:#0d1117"></span>
-                    <span class="swatch-panel" style="background:#161b22;border-color:#21262d"></span>
-                    <span class="swatch-accent" style="background:#f78166"></span>
-                    <span class="swatch-label">Slate</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="ocean"
-                        data-primary="#38bdf8" data-secondary="#0f2540" data-title="#38bdf8"
-                        title="Ocean">
-                    <span class="swatch-bg" style="background:#050f1e"></span>
-                    <span class="swatch-panel" style="background:#0b1929;border-color:#112236"></span>
-                    <span class="swatch-accent" style="background:#38bdf8"></span>
-                    <span class="swatch-label">Ocean</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="crimson"
-                        data-primary="#f87171" data-secondary="#1e0a0a" data-title="#f87171"
-                        title="Crimson">
-                    <span class="swatch-bg" style="background:#0c0707"></span>
-                    <span class="swatch-panel" style="background:#160b0b;border-color:#2a1212"></span>
-                    <span class="swatch-accent" style="background:#f87171"></span>
-                    <span class="swatch-label">Crimson</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="light"
-                        data-primary="#2563eb" data-secondary="#e2e8f0" data-title="#1d4ed8"
-                        title="Light">
-                    <span class="swatch-bg" style="background:#f1f5f9"></span>
-                    <span class="swatch-panel" style="background:#ffffff;border-color:#cbd5e1"></span>
-                    <span class="swatch-accent" style="background:#2563eb"></span>
-                    <span class="swatch-label" style="color:#0f172a">Light</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="navy"
-                        data-primary="#e8b84b" data-secondary="#081e35" data-title="#e8b84b"
-                        title="Navy">
-                    <span class="swatch-bg" style="background:#010f1f"></span>
-                    <span class="swatch-panel" style="background:#081e35;border-color:#102b4e"></span>
-                    <span class="swatch-accent" style="background:#e8b84b"></span>
-                    <span class="swatch-label">Navy</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="forest"
-                        data-primary="#4ade80" data-secondary="#0c1a10" data-title="#4ade80"
-                        title="Forest">
-                    <span class="swatch-bg" style="background:#050e08"></span>
-                    <span class="swatch-panel" style="background:#0c1a10;border-color:#152819"></span>
-                    <span class="swatch-accent" style="background:#4ade80"></span>
-                    <span class="swatch-label">Forest</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="amber"
-                        data-primary="#f59e0b" data-secondary="#1e1500" data-title="#fbbf24"
-                        title="Amber">
-                    <span class="swatch-bg" style="background:#120d00"></span>
-                    <span class="swatch-panel" style="background:#1e1500;border-color:#2e1f00"></span>
-                    <span class="swatch-accent" style="background:#f59e0b"></span>
-                    <span class="swatch-label">Amber</span>
-                </button>
-                <button type="button" class="theme-swatch" data-theme="violet"
-                        data-primary="#a78bfa" data-secondary="#100e28" data-title="#a78bfa"
-                        title="Violet">
-                    <span class="swatch-bg" style="background:#09071a"></span>
-                    <span class="swatch-panel" style="background:#100e28;border-color:#1c1840"></span>
-                    <span class="swatch-accent" style="background:#a78bfa"></span>
-                    <span class="swatch-label">Violet</span>
-                </button>
-            </div>
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">
+        Darstellung
+        <div class="ap-rechts ap-segment" role="group" aria-label="Hell oder dunkel">
+            <button type="button" class="ap-segment-knopf" data-schema="hell"
+                    aria-pressed="false">{{ symbol('sun') }} Hell</button>
+            <button type="button" class="ap-segment-knopf" data-schema="dunkel"
+                    aria-pressed="false">{{ symbol('moon') }} Dunkel</button>
         </div>
+    </header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Ein Klick wendet an – sofort und überall: Adminbereich,
+            Live-Ansicht, Handy und Beamer. Jede Karte zeigt eine
+            Miniatur der echten Oberfläche, nicht nur einen Farbfleck.
+        </p>
 
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Turniername</h3>
-            <input type="text" id="input-name" value="{{ settings.tournament_name }}"
-                   class="design-input" maxlength="100" placeholder="Turniername">
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Vereinslogo</h3>
-            <input type="url" id="input-logo-url" value="{{ settings.org_logo_url or '' }}"
-                   class="design-input" placeholder="https://beispiel.de/logo.png">
-            <p class="form-hint" style="margin-top:0.35rem;font-size:0.78rem">
-                URL eines Bildes (PNG, SVG, JPG). Wird auf dem Spielplan, den Quittungen und in der Live-Ansicht angezeigt.
-            </p>
-            <div id="logo-preview" style="margin-top:0.6rem;display:none">
-                <img id="logo-preview-img" src="" alt="Logo"
-                     style="max-height:60px;max-width:160px;border-radius:6px;border:1px solid var(--border,#1e293b);padding:4px;background:rgba(255,255,255,0.05)">
-            </div>
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Turniername - Schriftfarbe</h3>
-            <div class="color-row">
-                <input type="color" id="input-color-title" value="{{ settings.color_title }}" class="color-picker">
-                <input type="text" id="input-color-title-hex" value="{{ settings.color_title }}"
-                       class="color-hex" maxlength="7" pattern="#[0-9a-fA-F]{6}">
-            </div>
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Primaerfarbe (Akzente, Buttons, Badges)</h3>
-            <div class="color-row">
-                <input type="color" id="input-color-primary" value="{{ settings.color_primary }}" class="color-picker">
-                <input type="text" id="input-color-primary-hex" value="{{ settings.color_primary }}"
-                       class="color-hex" maxlength="7" pattern="#[0-9a-fA-F]{6}">
-            </div>
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Sekundaerfarbe (Panels, Hintergrund)</h3>
-            <div class="color-row">
-                <input type="color" id="input-color-secondary" value="{{ settings.color_secondary }}" class="color-picker">
-                <input type="text" id="input-color-secondary-hex" value="{{ settings.color_secondary }}"
-                       class="color-hex" maxlength="7" pattern="#[0-9a-fA-F]{6}">
-            </div>
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Spielzeit-Einstellungen</h3>
-            <div class="timer-settings-row">
-                <div class="timer-setting">
-                    <label class="form-hint">Regulaere Spielzeit</label>
-                    <div class="admin-form-row" style="gap:0.4rem;align-items:center">
-                        <input type="number" id="input-timer-regular" value="{{ (settings.default_timer_regular|int / 60)|int }}" min="1" max="90" class="input-narrow">
-                        <span class="form-hint">Min.</span>
-                    </div>
-                </div>
-                <div class="timer-setting">
-                    <label class="form-hint">Verlaengerung</label>
-                    <div class="admin-form-row" style="gap:0.4rem;align-items:center">
-                        <input type="number" id="input-timer-extra" value="{{ (settings.default_timer_extra|int / 60)|int }}" min="1" max="30" class="input-narrow">
-                        <span class="form-hint">Min.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="ctrl-card">
-            <h3 class="ctrl-label">Turnier-Optionen</h3>
-            <label class="checkbox-label" style="gap:0.6rem;cursor:pointer;font-size:0.9rem">
-                <input type="checkbox" id="input-hide-table" {% if settings.hide_table == '1' %}checked{% endif %}>
-                Tabelle ausblenden
-            </label>
-            <label class="checkbox-label" style="gap:0.6rem;cursor:pointer;font-size:0.9rem">
-                <input type="checkbox" id="input-hide-scores" {% if settings.hide_scores == '1' %}checked{% endif %}>
-                Ergebnisse ausblenden
-            </label>
-            <p class="form-hint" style="margin-top:0.4rem;font-size:0.78rem">
-                Geeignet fuer juengere Jahrgaenge: Spielpaarungen werden angezeigt,
-                aber keine Tore, Punkte oder Platzierungen.
-            </p>
-            <hr style="border-color:var(--border,#1e293b);margin:0.9rem 0">
-            <label class="form-label" style="font-size:0.9rem;margin-bottom:0.5rem">Spielfelder</label>
-            <div class="btn-list" id="field-buttons">
-                <button type="button" id="btn-fields-1"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 1 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('1')">1</button>
-                <button type="button" id="btn-fields-2"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 2 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('2')">2</button>
-                <button type="button" id="btn-fields-3"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 3 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('3')">3</button>
-                <button type="button" id="btn-fields-4"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 4 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('4')">4</button>
-                <button type="button" id="btn-fields-5"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 5 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('5')">5</button>
-                <button type="button" id="btn-fields-6"
-                        class="btn btn-sm {% if (settings.num_fields|int or 1) == 6 %}btn-primary{% else %}btn-outline{% endif %}"
-                        onclick="setNumFields('6')">6</button>
-            </div>
-            <p class="form-hint" style="margin-top:0.4rem;font-size:0.78rem">
-                Anzahl paralleler Spielfelder. Bei mehr als einem Feld koennen
-                mehrere Spiele gleichzeitig live laufen; die Live-Ansicht zeigt
-                die Felder nebeneinander und der Spielplan-Generator verteilt
-                die Partien darauf.
-            </p>
-        </div>
-
-        <div class="design-actions">
-            <button class="btn btn-accent btn-lg" onclick="saveDesign()">Speichern &amp; Anwenden</button>
-            <button class="btn btn-outline" onclick="resetDefaults()">Standard-Werte</button>
-        </div>
-        <div id="save-status" class="save-status"></div>
-    </div>
-
-    <!-- Live preview -->
-    <div class="design-preview">
-        <h3 class="ctrl-label">Vorschau</h3>
-        <div class="preview-frame" id="preview-frame">
-            <div class="preview-header" id="preview-header">
-                <span>&#9917;</span>
-                <span id="preview-name" class="preview-title">{{ settings.tournament_name }}</span>
-            </div>
-            <div class="preview-body" id="preview-body">
-                <div class="preview-panel" id="preview-panel">
-                    <div class="preview-panel-title">TABELLE</div>
-                    <div class="preview-tab active" id="preview-tab">Gruppe A</div>
-                    <div class="preview-row"><span>1.</span> <span>Team Alpha</span> <span class="preview-pts" id="preview-pts">9</span></div>
-                    <div class="preview-row"><span>2.</span> <span>Team Beta</span> <span>6</span></div>
-                    <div class="preview-row"><span>3.</span> <span>Team Gamma</span> <span>3</span></div>
-                </div>
-                <div class="preview-live" id="preview-live">
-                    <span class="preview-badge" id="preview-badge">LIVE</span>
-                    <div class="preview-score">
-                        <span>Team A</span>
-                        <strong id="preview-score-val">2 : 1</strong>
-                        <span>Team B</span>
-                    </div>
-                    <div class="preview-timer">07:23</div>
-                </div>
-            </div>
+        <div class="ga-galerie" id="ga-galerie" role="radiogroup"
+             aria-label="Theme auswählen">
+            {% for t in themes %}
+            <button type="button" class="ga-karte"
+                    role="radio" aria-checked="false"
+                    data-theme="{{ t.schluessel }}"
+                    data-hell='{{ t.vorschau.hell | tojson }}'
+                    data-dunkel='{{ t.vorschau.dunkel | tojson }}'>
+                {# Die Miniatur zeigt genau das, was man auf der echten
+                   Seite sieht: Streifen, Spielstand, zwei Tabellenzeilen. #}
+                <span class="ga-vorschau" aria-hidden="true">
+                    <span class="ga-v-kopf">
+                        <span class="ga-v-punkt"></span>
+                        <span class="ga-v-streifen"></span>
+                    </span>
+                    <span class="ga-v-stand">
+                        <span class="ga-v-zahl">2</span>
+                        <span class="ga-v-doppel">:</span>
+                        <span class="ga-v-zahl">1</span>
+                    </span>
+                    <span class="ga-v-zeile"><span class="ga-v-pille"></span></span>
+                    <span class="ga-v-zeile ga-v-zeile--kurz"><span class="ga-v-pille"></span></span>
+                </span>
+                <span class="ga-text">
+                    <span class="ga-name">
+                        {{ t.name }}{{ symbol('check', 'ga-haken') }}
+                    </span>
+                    <span class="ga-beschreibung">{{ t.beschreibung }}</span>
+                    {% if t.nur_dunkel %}
+                    <span class="ga-merkmal">nur dunkel</span>
+                    {% endif %}
+                </span>
+            </button>
+            {% endfor %}
         </div>
     </div>
-</div>
+</section>
 
-<style>
-.theme-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-.theme-swatch {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.6rem 0.4rem;
-    border-radius: 8px;
-    border: 2px solid var(--border, #2d3748);
-    background: none;
-    cursor: pointer;
-    transition: border-color 0.15s, transform 0.1s;
-}
-.theme-swatch:hover { border-color: var(--color-primary, #22c55e); transform: translateY(-1px); }
-.theme-swatch-active { border-color: var(--color-primary, #22c55e) !important; }
-.swatch-bg {
-    width: 100%;
-    height: 22px;
-    border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.08);
-}
-.swatch-panel {
-    width: 85%;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid;
-    margin-top: -10px;
-    margin-left: 4px;
-}
-.swatch-accent {
-    width: 60%;
-    height: 6px;
-    border-radius: 3px;
-    margin-top: 2px;
-}
-.swatch-label {
-    font-size: 0.7rem;
-    color: var(--text-muted, #9ca3af);
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    margin-top: 2px;
-}
-</style>
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Vereinsfarbe</header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Überschreibt die Akzentfarbe des Themes. Die Schriftfarbe darauf
+            wählt CupPlan selbst nach Kontrast – eine knallgelbe Vereinsfarbe
+            mit weißer Schrift wäre unlesbar. Hebt sich die Farbe zu wenig
+            vom Hintergrund ab, bleibt der Theme-Akzent.
+        </p>
+        <div class="ga-farbe">
+            <input type="color" class="ga-farbwahl" id="ga-farbwahl"
+                   value="{{ settings.color_primary or '#11703f' }}"
+                   aria-label="Vereinsfarbe wählen">
+            <input type="text" class="ap-eingabe ga-farbtext" id="ga-farbtext"
+                   value="{{ settings.color_primary or '#11703f' }}"
+                   aria-label="Vereinsfarbe als Hexwert">
+            {{ knopf('Zurück zum Theme', klasse='ap-knopf--klein',
+                     attribute='id="ga-farbweg"') }}
+            <span class="ga-farbhinweis" id="ga-farbhinweis" role="status"></span>
+        </div>
+    </div>
+</section>
 
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Nicht hier</header>
+    <div class="ap-tafel-inhalt">
+        <p class="ga-hinweis">
+            Ob Tabelle und Ergebnisse öffentlich sichtbar sind, ist keine
+            Frage des Aussehens, sondern eine Turnierentscheidung. Sie steht
+            bei den Turniereinstellungen – an einer Stelle statt an zwei.
+        </p>
+        <a class="ap-knopf" href="{{ url_for('admin.tournament_admin', slug=tournament.slug) }}#einstellungen">
+            {{ symbol('settings') }} Zu den Turniereinstellungen
+        </a>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block skripte %}
 <script>
-const SLUG = '{{ tournament.slug }}';
+const SLUG = {{ tournament.slug | tojson }};
+let AKTUELLES_THEME = {{ aktuelles_theme | tojson }};
+let AKTUELLES_SCHEMA = {{ aktuelles_schema | tojson }};
+const NUR_DUNKEL = {{ (themes | selectattr('nur_dunkel') | map(attribute='schluessel') | list) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/admin/design.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/anpfiff-galerie.js') }}"></script>
 {% endblock %}

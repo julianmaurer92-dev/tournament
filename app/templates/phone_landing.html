@@ -1,3 +1,4 @@
+{% from '_anpfiff.html' import symbol as icon %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -103,9 +104,9 @@
 </head>
 <body>
 <header>
-    <span id="ph-title">&#9917; Turnierwochenende</span>
+    <span id="ph-title">{{ icon('ball-football') }} Turnierwochenende</span>
     <div style="display:flex;align-items:center;gap:0.4rem">
-        <a href="{{ url_for('main.phone_speisekarte') }}" class="ph-header-link" title="Speisekarte">&#127860; Speisekarte</a>
+        <a href="{{ url_for('main.phone_speisekarte') }}" class="ph-header-link" title="Speisekarte">{{ icon('tools-kitchen-2') }} Speisekarte</a>
         <button class="ph-info-btn" onclick="document.getElementById('ph-info-overlay').classList.add('open')" title="Info">&#x2139;</button>
     </div>
 </header>
@@ -114,7 +115,7 @@
     {% if tournaments %}
         {% for t in tournaments %}
         <a href="{{ url_for('main.tournament_phone', slug=t.slug) }}" class="ph-card">
-            <div class="ph-card-icon">&#9917;</div>
+            <div class="ph-card-icon">{{ icon('ball-football') }}</div>
             <div class="ph-card-name">{{ t.name }}</div>
             {% if t.event_date %}
             <div class="ph-card-date">{{ t.event_date.strftime('%d.%m.%Y') }}</div>
@@ -128,7 +129,7 @@
 
         {# ── Speisekarte ── #}
         <a href="{{ url_for('main.phone_speisekarte') }}" class="ph-card card-menu">
-            <div class="ph-card-icon">&#127860;</div>
+            <div class="ph-card-icon">{{ icon('tools-kitchen-2') }}</div>
             <div class="ph-card-name">Speisen &amp; Getr&auml;nke</div>
             <div class="ph-card-desc">Unser Angebot an Essen und Getr&auml;nken</div>
             <span class="ph-card-link">Speisekarte &rarr;</span>
@@ -138,7 +139,7 @@
         {% set has_any_rules = rules_by_tournament.values() | selectattr('__len__') | list | length > 0 %}
         <div class="ph-rules-section" id="rules-accordion">
             <button class="ph-rules-section-hd" onclick="toggleRules()" aria-expanded="false">
-                <span class="ph-rules-section-hd-icon">&#128220;</span>
+                <span class="ph-rules-section-hd-icon">{{ icon('certificate') }}</span>
                 <span class="ph-rules-section-hd-title">Turnierbestimmungen</span>
                 <span class="ph-rules-chevron" id="rules-chevron">&#8250;</span>
             </button>
@@ -162,14 +163,14 @@
         </div>
     {% else %}
     <div class="ph-empty">
-        <div class="ph-empty-icon">&#9917;</div>
+        <div class="ph-empty-icon">{{ icon('ball-football') }}</div>
         <p>Noch keine Turniere erstellt</p>
     </div>
     {% endif %}
 </div>
 <div id="ph-info-overlay" class="ph-info-overlay" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="ph-info-box">
-        <div class="ph-info-logo">&#9917;</div>
+        <div class="ph-info-logo">{{ icon('ball-football') }}</div>
         <div class="ph-info-app">CupPlan</div>
         <div class="ph-info-version">Version 1.5 &nbsp;&middot;&nbsp; 16.03.2026</div>
         <div class="ph-info-dev">Maurer Julian</div>

@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app, db  # noqa: E402
 from app.models import (  # noqa: E402
     Admin, Group, Match, MenuItem, Team, Tournament, TeamPayment,
-    ensure_default_settings, set_setting, slugify,
+    ensure_default_settings, get_setting, set_setting, slugify,
 )
 from app.spielplan import Begegnung, erstelle_spielplan  # noqa: E402
 
@@ -43,6 +43,14 @@ SPEISEN = [
     ("Pommes mit Wiener", "4,00", "fuer die Kleinen"),
     ("Kuchen (Stueck)", "2,00", "von unseren Eltern gebacken"),
     ("Waffel", "2,50", "mit Puderzucker"),
+]
+
+# Spielerlisten je Team – gebraucht fuer die Torschuetzen-Schnellauswahl
+SPIELERNAMEN = [
+    "1 Jonas Weber\n4 Luca Hofmann\n7 Finn Albrecht\n9 Noah Brandt\n11 Elias Kern",
+    "1 Mika Sommer\n3 Leon Haas\n8 Emil Roth\n10 Paul Winter\n14 Ben Schuster",
+    "1 Tim Keller\n5 Jan Lang\n6 Nico Frey\n9 Lias Engel\n12 Theo Marquardt",
+    "1 Max Dietrich\n2 Oskar Bauer\n7 Levi Kraus\n10 Anton Pfeiffer\n13 Milan Ebert",
 ]
 
 GETRAENKE = [
@@ -102,8 +110,11 @@ def build_tournament(name, tag, startzeit, gruppen_namen, teams_pro_gruppe,
         gruppen.append(gr)
         for _ in range(teams_pro_gruppe):
             vname = verein_pool.pop()
+            # Wappen aus den lokalen Testdaten (selbst erzeugte SVGs)
+            logo = f"/static/img/teams/wappen-{(len(alle_teams) % 12) + 1:02d}.svg"
             tm = Team(tournament_id=t.id, name=vname, group_id=gr.id,
-                      players="")
+                      logo_url=logo,
+                      players=SPIELERNAMEN[len(alle_teams) % len(SPIELERNAMEN)])
             db.session.add(tm)
             db.session.commit()
             db.session.add(TeamPayment(
@@ -164,6 +175,85 @@ def build_tournament(name, tag, startzeit, gruppen_namen, teams_pro_gruppe,
     return t
 
 
+def abschliessen(t):
+    """Turnier mit Halbfinale, Finale und Spiel um Platz 3 beenden.
+
+    Damit kommen in den Testdaten auch Podium, Endplatzierung und Urkunden
+    vor – sonst sieht man diese Ansichten nie.
+    """
+    if not t:
+        return
+    from app.models import calculate_overall_rankings
+    rang = calculate_overall_rankings(t.id)
+    if len(rang) < 4:
+        return
+    ids = [r["team"]["id"] for r in rang[:4]]
+    dauer = int(get_setting(t.id, "default_timer_regular", "600"))
+    letzte = max((m.scheduled_time for m in t.matches if m.scheduled_time),
+                 default=datetime.combine(t.event_date or date.today(),
+                                          time(9, 0)))
+    nummer = max((m.match_order for m in t.matches), default=0)
+
+    def finale(team1, team2, s1, s2, runde, label, verlierer=False, versatz=1):
+        nonlocal nummer
+        nummer += 1
+        m = Match(
+            tournament_id=t.id, team1_id=team1, team2_id=team2,
+            score_team1=s1, score_team2=s2, status="finished",
+            is_final=True, final_round=runde, final_position=0,
+            final_label=label, is_loser_match=verlierer,
+            match_order=nummer, field=1,
+            scheduled_time=letzte + timedelta(minutes=20 * versatz),
+            timer_duration=dauer, timer_remaining=0,
+        )
+        db.session.add(m)
+        return m
+
+    finale(ids[0], ids[3], 2, 0, 2, "Halbfinale 1", versatz=1)
+    finale(ids[1], ids[2], 1, 2, 2, "Halbfinale 2", versatz=2)
+    finale(ids[3], ids[1], 1, 0, 1, "Spiel um Platz 3", verlierer=True, versatz=3)
+    finale(ids[0], ids[2], 3, 1, 1, "Finale", versatz=4)
+
+    set_setting(t.id, "final_mode", "semi_final")
+    set_setting(t.id, "tournament_phase", "FINISHED")
+    set_setting(t.id, "urkunde_veranstalter", "SV Winkel e. V.")
+    set_setting(t.id, "urkunde_ort", "Winkel")
+    set_setting(t.id, "urkunde_text",
+                "Herzlichen Dank fuer euren Einsatz und das faire Spiel.")
+    db.session.commit()
+    print(f"  {t.name}: Finalrunde ergaenzt, Turnier beendet")
+
+
+def anmeldung_oeffnen(t):
+    """Vereinsanmeldung eines Turniers oeffnen und Beispiele anlegen."""
+    if not t:
+        return
+    from app.models import Registration
+    set_setting(t.id, "registration_open", "1")
+    set_setting(t.id, "registration_deadline", "2026-11-07")
+    set_setting(t.id, "registration_max_teams", "8")
+    set_setting(t.id, "registration_fee", "25,00")
+    set_setting(t.id, "registration_info",
+                "Bitte 30 Minuten vor Anstoss am Sportheim melden.")
+    beispiele = [
+        ("SV Musterstadt", "Petra Gruber", "gruber@example.org", "offen"),
+        ("TSV Beispielheim", "Ali Demir", "demir@example.org", "offen"),
+        ("FC Probedorf", "Sandra Wolf", "wolf@example.org", "warteliste"),
+    ]
+    for i, (verein, person, mail, status) in enumerate(beispiele):
+        if Registration.query.filter_by(tournament_id=t.id,
+                                        club_name=verein).first():
+            continue
+        db.session.add(Registration(
+            tournament_id=t.id, club_name=verein, contact_name=person,
+            contact_email=mail, contact_phone="0171 2345678",
+            player_count=12, notes="Wir reisen mit dem Bus an.",
+            status=status, token=f"seed-token-{t.id}-{i}",
+        ))
+    db.session.commit()
+    print(f"  {t.name}: Anmeldung geoeffnet, {len(beispiele)} Beispiele")
+
+
 def seed_menu():
     bestehend = {mi.name for mi in MenuItem.query.all()}
     order = 0
@@ -219,8 +309,11 @@ def main():
     app = create_app()
     with app.app_context():
         uri = app.config["SQLALCHEMY_DATABASE_URI"]
-        if "cupplan_dev" not in uri and "sqlite" not in uri:
-            sys.exit(f"ABBRUCH: Datenbank sieht nicht nach Dev aus: {uri}")
+        # Schutz gegen einen versehentlichen Lauf gegen echte Daten:
+        # nur ausdruecklich als Entwicklung gekennzeichnete Datenbanken.
+        ERLAUBT = ("cupplan_dev", "cupplan_ux", "cupplan_design", "sqlite")
+        if not any(kennzeichen in uri for kennzeichen in ERLAUBT):
+            sys.exit(f"ABBRUCH: Datenbank sieht nicht nach Entwicklung aus: {uri}")
 
         print("Seed-Daten fuer CupPlan-Dev")
         if args.reset:
@@ -247,6 +340,11 @@ def main():
             beschreibung="F-Jugend (Jahrgang 2019/2020), Spielrunde ohne Tabelle",
             gespielt_anteil=0.0,
         )
+
+        abschliessen(Tournament.query.filter(
+            Tournament.slug.like("e-jugend%")).first())
+        anmeldung_oeffnen(Tournament.query.filter(
+            Tournament.slug.like("f-jugend%")).first())
 
         seed_menu()
         seed_users()

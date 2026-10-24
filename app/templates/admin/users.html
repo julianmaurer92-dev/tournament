@@ -2,11 +2,6 @@
 
 {% block title %}Benutzerverwaltung{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.tournament_list') }}" class="btn btn-outline btn-sm">&#8592; Turniere</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 <div class="card mb-3">
     <div class="card-header">
@@ -129,7 +124,7 @@
                             {% if user.id != current_user.id %}
                             <form method="POST" action="{{ url_for('admin.delete_user', uid=user.id) }}"
                                   style="display:inline" onsubmit="return confirm('Benutzer {{ user.username }} loeschen?')">
-                                <button type="submit" class="btn btn-sm btn-danger">Loeschen</button>
+                                <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
                             </form>
                             {% endif %}
                         </div>

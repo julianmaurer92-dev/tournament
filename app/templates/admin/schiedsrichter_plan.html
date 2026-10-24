@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -62,7 +63,7 @@
 <body>
 
 <div class="toolbar">
-    <div class="toolbar-title">&#128438; Schiedsrichter-Einsatzplan <span>{{ tournament.name }}</span></div>
+    <div class="toolbar-title">{{ icon('printer') }} Schiedsrichter-Einsatzplan <span>{{ tournament.name }}</span></div>
     <a class="btn btn-ghost" href="{{ url_for('schiedsrichter.uebersicht', slug=tournament.slug) }}">Zurück</a>
     <button class="btn" onclick="window.print()">Drucken</button>
 </div>

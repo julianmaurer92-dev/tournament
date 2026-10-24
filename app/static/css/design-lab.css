@@ -1,0 +1,293 @@
+/* ============================================================
+   Design-Labor – drei Richtungen, dieselbe Maske
+   ------------------------------------------------------------
+   Bewusst in einer Datei und ohne Tokens: Hier geht es ums
+   Vergleichen, nicht ums Bauen. Was gewinnt, wird danach
+   sauber als Token-System neu aufgesetzt.
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Inter, system-ui, sans-serif; }
+
+.lab-kopf {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    padding: .6rem 1rem; font-size: .85rem;
+    background: #111; color: #eee;
+}
+.lab-kopf nav { display: flex; gap: .5rem; margin-left: auto; }
+.lab-kopf a {
+    padding: .25rem .6rem; border-radius: 999px;
+    color: #bbb; text-decoration: none; border: 1px solid #333;
+}
+.lab-kopf a[aria-current] { background: #eee; color: #111; border-color: #eee; }
+
+.probe { padding: 1.25rem; display: grid; gap: 1.5rem; max-width: 56rem; margin: 0 auto; }
+.pr-ueberschrift { font-size: .75rem; text-transform: uppercase; letter-spacing: .14em; margin-bottom: .6rem; }
+.pr-idee { font-size: .9rem; line-height: 1.5; opacity: .75; max-width: 46ch; }
+.bs { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin-bottom: .75rem; }
+
+/* ════════════════════════════════════════════════════════════
+   RICHTUNG 1 · TAFEL
+   Anzeigetafel als Bauprinzip. Dunkel, kantig, Tabellenziffern,
+   jede Flaeche hat einen Beschriftungsstreifen oben.
+   ════════════════════════════════════════════════════════════ */
+
+[data-richtung="tafel"] body, [data-richtung="tafel"] { background: #0b0f14; }
+[data-richtung="tafel"] .probe { color: #e8eef5; }
+[data-richtung="tafel"] .pr-ueberschrift { color: #6b7f94; }
+
+[data-richtung="tafel"] .st,
+[data-richtung="tafel"] .tb,
+[data-richtung="tafel"] .kt {
+    background: #121922;
+    border: 2px solid #24313f;
+    border-radius: 4px;
+    overflow: hidden;
+}
+[data-richtung="tafel"] .st-kopf,
+[data-richtung="tafel"] .tb-kopf,
+[data-richtung="tafel"] .kt-kopf {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .5rem .85rem;
+    background: #1b2635;
+    border-bottom: 2px solid #24313f;
+    font-size: .7rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .16em;
+    color: #8aa0b8;
+}
+[data-richtung="tafel"] .st-uhr {
+    margin-left: auto;
+    font-size: 1.35rem; font-weight: 800; letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    color: #d6f94a;
+}
+[data-richtung="tafel"] .st-status { color: #ff3b57; }
+[data-richtung="tafel"] .st-stand {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; padding: 1rem .85rem;
+}
+[data-richtung="tafel"] .st-team { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; }
+[data-richtung="tafel"] .st-tore {
+    font-size: 4.5rem; font-weight: 800; line-height: .95;
+    font-variant-numeric: tabular-nums; color: #d6f94a;
+}
+[data-richtung="tafel"] .st-mitte { font-size: 2rem; color: #3d4f63; padding: 0 .75rem; }
+[data-richtung="tafel"] .st-plus {
+    width: 100%; min-height: 56px; margin-top: .6rem;
+    font: inherit; font-size: 1.05rem; font-weight: 800;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: #0b0f14; background: #d6f94a;
+    border: 0; border-radius: 3px; cursor: pointer;
+}
+[data-richtung="tafel"] .st-aktionen {
+    display: grid; grid-template-columns: 1fr 1.4fr; gap: .5rem;
+    padding: 0 .85rem .85rem;
+}
+[data-richtung="tafel"] .kn {
+    min-height: 48px; padding: 0 1rem;
+    font: inherit; font-weight: 700; font-size: .9rem;
+    color: #e8eef5; background: #1b2635;
+    border: 2px solid #2f3f52; border-radius: 3px; cursor: pointer;
+}
+[data-richtung="tafel"] .kn--haupt { background: #ff3b57; border-color: #ff3b57; color: #fff; }
+[data-richtung="tafel"] .kn--still { background: transparent; }
+[data-richtung="tafel"] table { width: 100%; border-collapse: collapse; }
+[data-richtung="tafel"] th {
+    padding: .4rem .85rem; text-align: left;
+    font-size: .65rem; text-transform: uppercase; letter-spacing: .1em;
+    color: #6b7f94; border-bottom: 1px solid #24313f;
+}
+[data-richtung="tafel"] td {
+    padding: .55rem .85rem; font-size: 1.05rem; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid #1b2635;
+}
+[data-richtung="tafel"] tr.ist-erster td { color: #d6f94a; }
+[data-richtung="tafel"] .ab {
+    padding: .2rem .6rem; font-size: .7rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em;
+    border: 1px solid #2f3f52; border-radius: 2px; color: #8aa0b8;
+}
+[data-richtung="tafel"] .ab--live { background: #ff3b57; border-color: #ff3b57; color: #fff; }
+[data-richtung="tafel"] .ab--fertig { background: #24313f; color: #c3d3e4; }
+[data-richtung="tafel"] .kt-inhalt { padding: .85rem; font-size: 1rem; }
+[data-richtung="tafel"] .kt-leise { color: #6b7f94; font-size: .85rem; }
+
+/* ════════════════════════════════════════════════════════════
+   RICHTUNG 2 · KREIDE
+   Spielfeldlinien als Gestaltung. Hell auf Gruen, weisse
+   Konturen, alles wirkt aufgezeichnet.
+   ════════════════════════════════════════════════════════════ */
+
+[data-richtung="kreide"] body, [data-richtung="kreide"] {
+    background: #1b7a3f;
+    background-image:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 60px,
+                                   transparent 60px 120px);
+}
+[data-richtung="kreide"] .probe { color: #fff; }
+[data-richtung="kreide"] .pr-ueberschrift { color: rgba(255,255,255,.75); }
+
+[data-richtung="kreide"] .st,
+[data-richtung="kreide"] .tb,
+[data-richtung="kreide"] .kt {
+    border: 3px solid #fff;
+    border-radius: 0;
+    background: rgba(0,0,0,.14);
+}
+[data-richtung="kreide"] .st-kopf,
+[data-richtung="kreide"] .tb-kopf,
+[data-richtung="kreide"] .kt-kopf {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .5rem .85rem;
+    border-bottom: 3px solid #fff;
+    font-size: .72rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .14em;
+}
+[data-richtung="kreide"] .st-uhr {
+    margin-left: auto; font-size: 1.4rem; font-weight: 800;
+    letter-spacing: 0; font-variant-numeric: tabular-nums;
+}
+[data-richtung="kreide"] .st-status { color: #ffe14d; }
+/* Mittelkreis als Zitat des Anstosspunkts */
+[data-richtung="kreide"] .st-stand {
+    position: relative;
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; padding: 1.4rem .85rem;
+}
+[data-richtung="kreide"] .st-stand::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 150px; height: 150px; transform: translate(-50%, -50%);
+    border: 3px solid rgba(255,255,255,.35); border-radius: 50%;
+    pointer-events: none;
+}
+[data-richtung="kreide"] .st-team { font-size: .95rem; font-weight: 800; text-transform: uppercase; }
+[data-richtung="kreide"] .st-tore { font-size: 4.5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+[data-richtung="kreide"] .st-mitte { font-size: 2rem; opacity: .5; padding: 0 1rem; }
+[data-richtung="kreide"] .st-plus {
+    width: 100%; min-height: 56px; margin-top: .6rem;
+    font: inherit; font-size: 1.05rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: #1b7a3f; background: #fff;
+    border: 0; cursor: pointer;
+}
+[data-richtung="kreide"] .st-aktionen {
+    display: grid; grid-template-columns: 1fr 1.4fr; gap: .5rem;
+    padding: 0 .85rem .85rem;
+}
+[data-richtung="kreide"] .kn {
+    min-height: 48px; padding: 0 1rem;
+    font: inherit; font-weight: 800; font-size: .9rem;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: #fff; background: transparent;
+    border: 3px solid #fff; cursor: pointer;
+}
+[data-richtung="kreide"] .kn--haupt { background: #ffe14d; border-color: #ffe14d; color: #14331f; }
+[data-richtung="kreide"] .kn--still { border-color: rgba(255,255,255,.4); }
+[data-richtung="kreide"] table { width: 100%; border-collapse: collapse; }
+[data-richtung="kreide"] th {
+    padding: .4rem .85rem; text-align: left;
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+    border-bottom: 3px solid #fff;
+}
+[data-richtung="kreide"] td {
+    padding: .55rem .85rem; font-size: 1.05rem; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid rgba(255,255,255,.3);
+}
+[data-richtung="kreide"] tr.ist-erster td { background: rgba(255,225,77,.18); }
+[data-richtung="kreide"] .ab {
+    padding: .2rem .6rem; font-size: .7rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em;
+    border: 2px solid #fff;
+}
+[data-richtung="kreide"] .ab--live { background: #ffe14d; border-color: #ffe14d; color: #14331f; }
+[data-richtung="kreide"] .ab--fertig { background: rgba(255,255,255,.2); }
+[data-richtung="kreide"] .kt-inhalt { padding: .85rem; font-size: 1rem; }
+[data-richtung="kreide"] .kt-leise { opacity: .8; font-size: .85rem; }
+
+/* ════════════════════════════════════════════════════════════
+   RICHTUNG 3 · KIOSK
+   Warmes Papierweiss, dicke runde Kacheln, grosse Flaechen.
+   Fuer Handschuhe, Sonne und Helfer, die zum ersten Mal da sind.
+   ════════════════════════════════════════════════════════════ */
+
+[data-richtung="kiosk"] body, [data-richtung="kiosk"] { background: #f6f3ec; }
+[data-richtung="kiosk"] .probe { color: #22201c; }
+[data-richtung="kiosk"] .pr-ueberschrift { color: #7a7266; }
+
+[data-richtung="kiosk"] .st,
+[data-richtung="kiosk"] .tb,
+[data-richtung="kiosk"] .kt {
+    background: #fff;
+    border: 0;
+    border-radius: 22px;
+    box-shadow: 0 2px 0 #e0d9cc, 0 10px 24px rgba(60,50,30,.09);
+    overflow: hidden;
+}
+[data-richtung="kiosk"] .st-kopf,
+[data-richtung="kiosk"] .tb-kopf,
+[data-richtung="kiosk"] .kt-kopf {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .85rem 1.1rem;
+    font-size: .8rem; font-weight: 800;
+    color: #7a7266;
+}
+[data-richtung="kiosk"] .st-uhr {
+    margin-left: auto; font-size: 1.5rem; font-weight: 800;
+    font-variant-numeric: tabular-nums; color: #22201c;
+}
+[data-richtung="kiosk"] .st-status {
+    padding: .2rem .7rem; border-radius: 999px;
+    background: #ffe7e3; color: #c0291c; font-size: .75rem;
+}
+[data-richtung="kiosk"] .st-stand {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; padding: .5rem 1.1rem 1.1rem;
+}
+[data-richtung="kiosk"] .st-team { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+[data-richtung="kiosk"] .st-tore {
+    font-size: 4.5rem; font-weight: 800; line-height: 1;
+    font-variant-numeric: tabular-nums; color: #157a4a;
+}
+[data-richtung="kiosk"] .st-mitte { font-size: 2rem; color: #c9c0b1; padding: 0 1rem; }
+[data-richtung="kiosk"] .st-plus {
+    width: 100%; min-height: 60px; margin-top: .7rem;
+    font: inherit; font-size: 1.1rem; font-weight: 800;
+    color: #fff; background: #157a4a;
+    border: 0; border-radius: 16px; cursor: pointer;
+    box-shadow: 0 3px 0 #0e5a36;
+}
+[data-richtung="kiosk"] .st-aktionen {
+    display: grid; grid-template-columns: 1fr 1.4fr; gap: .6rem;
+    padding: 0 1.1rem 1.1rem;
+}
+[data-richtung="kiosk"] .kn {
+    min-height: 52px; padding: 0 1.2rem;
+    font: inherit; font-weight: 700; font-size: .95rem;
+    color: #22201c; background: #efeae0;
+    border: 0; border-radius: 14px; cursor: pointer;
+}
+[data-richtung="kiosk"] .kn--haupt { background: #157a4a; color: #fff; box-shadow: 0 3px 0 #0e5a36; }
+[data-richtung="kiosk"] .kn--still { background: transparent; box-shadow: inset 0 0 0 2px #ddd5c7; }
+[data-richtung="kiosk"] table { width: 100%; border-collapse: collapse; }
+[data-richtung="kiosk"] th {
+    padding: .3rem 1.1rem .5rem; text-align: left;
+    font-size: .72rem; color: #9a9184; font-weight: 700;
+}
+[data-richtung="kiosk"] td {
+    padding: .7rem 1.1rem; font-size: 1.05rem; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-top: 1px solid #f0ece3;
+}
+[data-richtung="kiosk"] tr.ist-erster td { background: #eefaf2; color: #0e5a36; }
+[data-richtung="kiosk"] .ab {
+    padding: .25rem .8rem; border-radius: 999px;
+    font-size: .78rem; font-weight: 700;
+    background: #efeae0; color: #5e564a;
+}
+[data-richtung="kiosk"] .ab--live { background: #ffe7e3; color: #c0291c; }
+[data-richtung="kiosk"] .ab--fertig { background: #e6f3ec; color: #0e5a36; }
+[data-richtung="kiosk"] .kt-inhalt { padding: 0 1.1rem 1.1rem; font-size: 1.05rem; }
+[data-richtung="kiosk"] .kt-leise { color: #7a7266; font-size: .9rem; }

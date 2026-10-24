@@ -1,3 +1,4 @@
+{% from '_anpfiff.html' import symbol as icon %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -67,21 +68,21 @@
 </head>
 <body>
 <div id="tv-header">
-    <span class="tv-header-title">&#127860; Speisen &amp; Getraenke</span>
-    <a href="{{ url_for('main.tv_landing') }}" class="tv-header-link">&larr; Uebersicht</a>
+    <span class="tv-header-title">{{ icon('tools-kitchen-2') }} Speisen &amp; Getränke</span>
+    <a href="{{ url_for('main.tv_landing') }}" class="tv-header-link">&larr; Übersicht</a>
 </div>
 
 <div class="tv-content">
     {% if not speisen and not getraenke %}
     <div class="tv-empty">
-        <div class="tv-empty-icon">&#127860;</div>
-        <p>Noch keine Speisekarte verfuegbar</p>
+        <div class="tv-empty-icon">{{ icon('tools-kitchen-2') }}</div>
+        <p>Noch keine Speisekarte verfügbar</p>
     </div>
     {% else %}
     <div class="tv-menu-grid">
         {% if speisen %}
         <div>
-            <div class="tv-menu-section-title">&#127828; Speisen</div>
+            <div class="tv-menu-section-title">{{ icon('tools-kitchen-2') }} Speisen</div>
             {% for item in speisen %}
             <div class="tv-menu-item">
                 <div class="tv-menu-item-info">
@@ -100,7 +101,7 @@
 
         {% if getraenke %}
         <div>
-            <div class="tv-menu-section-title">&#127866; Getraenke</div>
+            <div class="tv-menu-section-title">{{ icon('beer') }} Getränke</div>
             {% for item in getraenke %}
             <div class="tv-menu-item">
                 <div class="tv-menu-item-info">

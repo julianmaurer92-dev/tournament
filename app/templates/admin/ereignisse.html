@@ -1,12 +1,12 @@
 {% extends "admin_base.html" %}
 
+{% from '_bausteine.html' import icon %}
 {% block title %}Ereignisse – Spiel {{ match.match_order }}{% endblock %}
 {% block navbar_brand %}{{ tournament.name }}{% endblock %}
 
 {% block navbar_items %}
-<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}" class="btn btn-outline btn-sm">&#9654; Spielsteuerung</a>
-<a href="{{ url_for('ereignisse_admin.statistik_admin', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#128202; Statistik</a>
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
+<a href="{{ url_for('admin.match_control', slug=tournament.slug, mid=match.id) }}"
+   class="cp-knopf cp-knopf--haupt cp-knopf--klein">{{ icon('player-play') }} Zur Spielsteuerung</a>
 {% endblock %}
 
 {% block page_content %}

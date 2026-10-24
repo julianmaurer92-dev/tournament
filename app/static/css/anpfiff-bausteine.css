@@ -1,0 +1,569 @@
+/* ============================================================
+   ANPFIFF – Bausteine
+   ------------------------------------------------------------
+   Alles, was mehr als einmal vorkommt. Klassen beginnen mit
+   "ap-". Keine Farbe steht hier fest; alles kommt aus den
+   Rollen in anpfiff.css.
+
+   Die wichtigste Form ist die TAFEL: eine Fläche mit einem
+   Beschriftungsstreifen oben. Karten, Tabellen, Formulare,
+   der Spielstand – alles ist eine Tafel.
+   ============================================================ */
+
+/* ── Grundlage ─────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    line-height: 1.5;
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-grund);
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--ap-schrift-anzeige);
+    font-weight: var(--ap-fett-schwer);
+    line-height: 1.15;
+    margin: 0;
+    /* Vereinsnamen werden nicht getrennt. "SpVgg Hohen-berg" ist
+       falsch – der Browser kennt die Silben eines Eigennamens nicht. */
+    hyphens: manual;
+}
+
+a { color: var(--ap-akzent); }
+
+/* Tabellenziffern überall, wo Zahlen stehen: Ein Spielstand darf
+   nicht springen, wenn aus der 1 eine 2 wird. */
+.ap-zahl, .ap-tabelle td, .ap-stand-tore, .ap-uhr {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Sichtbarer Fokus ──────────────────────────────────────── */
+
+:focus-visible {
+    outline: 3px solid var(--ap-akzent);
+    outline-offset: 2px;
+    border-radius: var(--ap-rund-s);
+}
+
+/* Sprungmarke für die Tastatur */
+.ap-sprung {
+    position: absolute;
+    left: var(--ap-raum-3); top: calc(-1 * var(--ap-ziel-gross));
+    z-index: 999;
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    font-weight: var(--ap-fett);
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border-radius: var(--ap-rund-m);
+    transition: top var(--ap-zeit) var(--ap-kurve);
+}
+.ap-sprung:focus { top: var(--ap-raum-3); }
+
+.ap-nur-vorlesen {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   DIE TAFEL
+   ------------------------------------------------------------
+   Die Grundform des ganzen Systems. Oben ein Streifen mit einer
+   gesperrten Versalbeschriftung, darunter der Inhalt.
+   ════════════════════════════════════════════════════════════ */
+
+.ap-tafel {
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-l);
+    overflow: hidden;
+}
+.ap-tafel--flach { box-shadow: none; }
+.ap-tafel--erhoben { box-shadow: var(--ap-schatten-m); }
+/* Die Hauptsache auf einer Seite darf den Akzent als Kante tragen */
+.ap-tafel--wichtig { border-color: var(--ap-akzent); }
+
+.ap-tafel-kopf {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    min-height: 40px;
+    padding: var(--ap-raum-2) var(--ap-raum-4);
+    font-size: var(--ap-streifen-groesse);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: var(--ap-streifen-abstand);
+    text-transform: uppercase;
+    color: var(--ap-still);
+    background: var(--ap-tafel-kopf);
+    border-bottom: 1px solid var(--ap-kante);
+}
+.ap-tafel-kopf > .ap-rechts { margin-left: auto; }
+
+.ap-tafel-inhalt { padding: var(--ap-raum-4); }
+.ap-tafel-inhalt--eng { padding: var(--ap-raum-3); }
+.ap-tafel-inhalt--weit { padding: var(--ap-raum-5); }
+.ap-tafel-inhalt--ohne { padding: 0; }
+
+.ap-tafel-fuss {
+    display: flex;
+    align-items: center;
+    gap: var(--ap-raum-2);
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    border-top: 1px solid var(--ap-kreide);
+    background: var(--ap-tafel-tief);
+}
+
+/* ── Kreidelinie: die Signatur ─────────────────────────────── */
+
+.ap-kreidelinie {
+    height: var(--ap-kreide-staerke);
+    border: 0;
+    margin: var(--ap-raum-4) 0;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--ap-kreide) 0 14px,
+        transparent 14px 18px);
+    opacity: .9;
+}
+
+/* ════════════════════════════════════════════════════════════
+   KNÖPFE
+   ------------------------------------------------------------
+   Körperlich durch eine Kante unten statt durch Schlagschatten –
+   das wirkt wie eine Taste und bleibt auch im Druck sauber.
+   ════════════════════════════════════════════════════════════ */
+
+.ap-knopf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ap-raum-2);
+    min-height: var(--ap-ziel);
+    padding: 0 var(--ap-raum-5);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    font-weight: var(--ap-fett);
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-m);
+    cursor: pointer;
+    transition: transform var(--ap-zeit-kurz) var(--ap-kurve),
+                background var(--ap-zeit-kurz) var(--ap-kurve),
+                box-shadow var(--ap-zeit-kurz) var(--ap-kurve);
+}
+.ap-knopf:hover { background: var(--ap-tafel-tief); }
+.ap-knopf:active { transform: translateY(1px); }
+.ap-knopf[disabled] { opacity: .45; cursor: not-allowed; }
+
+.ap-knopf--haupt {
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border-color: var(--ap-akzent);
+    box-shadow: var(--ap-kante-unten) var(--ap-akzent-stark);
+}
+.ap-knopf--haupt:hover { background: var(--ap-akzent-stark); }
+.ap-knopf--haupt:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--ap-akzent-stark);
+}
+
+.ap-knopf--still {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ap-leise);
+}
+.ap-knopf--still:hover { background: var(--ap-tafel-tief); color: var(--ap-schrift-farbe); }
+
+.ap-knopf--gefahr { color: var(--ap-gefahr); border-color: var(--ap-gefahr); }
+.ap-knopf--gefahr:hover { background: var(--ap-gefahr); color: #fff; }
+
+.ap-knopf--gross { min-height: var(--ap-ziel-gross); font-size: var(--ap-text-l); padding: 0 var(--ap-raum-6); }
+.ap-knopf--klein { min-height: 36px; font-size: var(--ap-text-s); padding: 0 var(--ap-raum-3); }
+.ap-knopf--breit { width: 100%; }
+.ap-knopf--symbol { padding: 0; width: var(--ap-ziel); }
+
+/* ── Segment-Umschalter ────────────────────────────────────── */
+
+.ap-segment {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-m);
+}
+.ap-segment-knopf {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ap-raum-2);
+    min-height: 40px;
+    padding: 0 var(--ap-raum-4);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-s);
+    font-weight: var(--ap-fett-mittel);
+    color: var(--ap-leise);
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--ap-rund-m) - 2px);
+    cursor: pointer;
+    transition: background var(--ap-zeit-kurz) var(--ap-kurve),
+                color var(--ap-zeit-kurz) var(--ap-kurve);
+}
+.ap-segment-knopf[aria-pressed="true"],
+.ap-segment-knopf[aria-selected="true"] {
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel);
+    font-weight: var(--ap-fett);
+    box-shadow: var(--ap-schatten-s);
+}
+
+/* ════════════════════════════════════════════════════════════
+   ABZEICHEN UND ZUSTÄNDE
+   ════════════════════════════════════════════════════════════ */
+
+.ap-abzeichen {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ap-raum-2);
+    padding: 3px var(--ap-raum-3);
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett-schwer);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ap-leise);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-voll);
+    white-space: nowrap;
+}
+.ap-abzeichen--live {
+    color: #fff;
+    background: var(--ap-live);
+    border-color: var(--ap-live);
+}
+.ap-abzeichen--fertig {
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border-color: var(--ap-akzent);
+}
+.ap-abzeichen--warnung { color: var(--ap-warnung); border-color: var(--ap-warnung); }
+
+/* Der Live-Punkt pulst – aber nur, wenn das jemand sehen will. */
+.ap-puls {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ap-puls 1.8s ease-in-out infinite;
+}
+@keyframes ap-puls {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .45; transform: scale(.78); }
+}
+
+/* ── Spielkarten (gelb, gelb-rot, rot) ─────────────────────── */
+
+.ap-karten { display: inline-flex; gap: 2px; vertical-align: -0.12em; }
+.ap-karte {
+    display: inline-block;
+    flex: none;
+    width: .62em; min-width: .62em; height: .92em;
+    border-radius: 1.5px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .4);
+}
+.ap-karte--gelb { background: var(--ap-gelb); }
+.ap-karte--rot { background: var(--ap-rot); }
+.ap-karte--gelbrot {
+    background: linear-gradient(135deg, var(--ap-gelb) 0 50%, var(--ap-rot) 50% 100%);
+}
+
+/* ════════════════════════════════════════════════════════════
+   TABELLEN
+   ------------------------------------------------------------
+   Sollen aus zwei Metern lesbar sein (Schreibtisch) und auf dem
+   Beamer aus zehn. Deshalb großzügige Zeilenhöhe und Zahlen in
+   der schmalen Anzeigeschrift.
+   ════════════════════════════════════════════════════════════ */
+
+.ap-tabelle { width: 100%; border-collapse: collapse; }
+.ap-tabelle th {
+    padding: var(--ap-raum-2) var(--ap-raum-4);
+    text-align: left;
+    font-size: var(--ap-text-xs);
+    font-weight: var(--ap-fett);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ap-still);
+    border-bottom: 1px solid var(--ap-kante);
+    white-space: nowrap;
+}
+.ap-tabelle td {
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    border-bottom: 1px solid var(--ap-kreide);
+    vertical-align: middle;
+}
+.ap-tabelle tbody tr:last-child td { border-bottom: 0; }
+.ap-tabelle tbody tr:hover { background: var(--ap-tafel-tief); }
+
+/* Die Mannschaftsspalte nimmt den Rest, die Zahlen bleiben schmal */
+.ap-tabelle .ap-sp-name { width: 100%; font-weight: var(--ap-fett-mittel); }
+.ap-tabelle .ap-sp-zahl {
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-l);
+    font-weight: var(--ap-fett);
+    text-align: right;
+    white-space: nowrap;
+}
+.ap-tabelle .ap-sp-platz {
+    font-family: var(--ap-schrift-zahl);
+    font-size: var(--ap-text-l);
+    color: var(--ap-still);
+    width: 2.5rem;
+}
+.ap-tabelle .ap-sp-punkte { color: var(--ap-tor); font-size: var(--ap-text-xl); }
+/* Tabellenführer */
+.ap-tabelle tr.ist-erster .ap-sp-name,
+.ap-tabelle tr.ist-erster .ap-sp-platz { color: var(--ap-akzent); font-weight: var(--ap-fett-schwer); }
+
+/* ── Wappen ────────────────────────────────────────────────── */
+
+.ap-wappen {
+    width: 1.6em; height: 1.6em;
+    flex: none;
+    object-fit: contain;
+    border-radius: var(--ap-rund-s);
+    background: var(--ap-tafel-tief);
+    vertical-align: -0.35em;
+}
+.ap-wappen--gross { width: 2.6em; height: 2.6em; }
+
+/* ════════════════════════════════════════════════════════════
+   FORMULARE
+   ════════════════════════════════════════════════════════════ */
+
+.ap-feld { display: flex; flex-direction: column; gap: var(--ap-raum-2); }
+.ap-label {
+    font-size: var(--ap-text-s);
+    font-weight: var(--ap-fett);
+    color: var(--ap-leise);
+}
+.ap-eingabe, .ap-auswahl, .ap-textfeld {
+    width: 100%;
+    min-height: var(--ap-ziel);
+    padding: var(--ap-raum-2) var(--ap-raum-3);
+    font-family: var(--ap-schrift);
+    font-size: var(--ap-text-m);
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel-tief);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-m);
+}
+.ap-eingabe:focus, .ap-auswahl:focus, .ap-textfeld:focus {
+    outline: none;
+    border-color: var(--ap-akzent);
+    box-shadow: 0 0 0 3px var(--ap-akzent-leise);
+}
+.ap-textfeld { min-height: 7rem; resize: vertical; line-height: 1.5; }
+.ap-hinweis { font-size: var(--ap-text-s); color: var(--ap-still); }
+
+/* Schalter */
+.ap-schalter { display: inline-flex; align-items: center; gap: var(--ap-raum-3); cursor: pointer; }
+.ap-schalter input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ap-schalter-bahn {
+    position: relative;
+    width: 52px; height: 30px;
+    flex: none;
+    background: var(--ap-tafel-tief);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-voll);
+    transition: background var(--ap-zeit) var(--ap-kurve),
+                border-color var(--ap-zeit) var(--ap-kurve);
+}
+.ap-schalter-bahn::after {
+    content: "";
+    position: absolute; left: 2px; top: 2px;
+    width: 22px; height: 22px;
+    background: var(--ap-leise);
+    border-radius: 50%;
+    transition: transform var(--ap-zeit) var(--ap-kurve),
+                background var(--ap-zeit) var(--ap-kurve);
+}
+.ap-schalter input:checked + .ap-schalter-bahn {
+    background: var(--ap-akzent);
+    border-color: var(--ap-akzent);
+}
+.ap-schalter input:checked + .ap-schalter-bahn::after {
+    transform: translateX(22px);
+    background: var(--ap-auf-akzent);
+}
+.ap-schalter input:focus-visible + .ap-schalter-bahn {
+    outline: 3px solid var(--ap-akzent);
+    outline-offset: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LEERE ZUSTÄNDE UND LADEN
+   ------------------------------------------------------------
+   Ein leerer Bereich sagt immer, was als Nächstes zu tun ist.
+   "Keine Daten" ist keine Auskunft.
+   ════════════════════════════════════════════════════════════ */
+
+.ap-leer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ap-raum-3);
+    padding: var(--ap-raum-7) var(--ap-raum-4);
+    text-align: center;
+    color: var(--ap-leise);
+}
+.ap-leer-titel {
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+    color: var(--ap-schrift-farbe);
+}
+.ap-leer-text { max-width: 40ch; margin: 0; }
+
+.ap-skelett {
+    background: linear-gradient(90deg,
+        var(--ap-tafel-tief) 0%, var(--ap-kreide) 50%, var(--ap-tafel-tief) 100%);
+    background-size: 200% 100%;
+    border-radius: var(--ap-rund-s);
+    animation: ap-schimmer 1.4s ease-in-out infinite;
+}
+@keyframes ap-schimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MELDUNGEN UND SCHUBLADEN
+   ════════════════════════════════════════════════════════════ */
+
+.ap-meldungen {
+    position: fixed;
+    left: 50%; bottom: var(--ap-raum-5);
+    transform: translateX(-50%);
+    z-index: 900;
+    display: flex; flex-direction: column; gap: var(--ap-raum-2);
+    width: min(32rem, calc(100vw - 2 * var(--ap-raum-4)));
+    pointer-events: none;
+}
+.ap-meldung {
+    display: flex; align-items: center; gap: var(--ap-raum-3);
+    padding: var(--ap-raum-3) var(--ap-raum-4);
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel);
+    border: 2px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-m);
+    box-shadow: var(--ap-schatten-l);
+    pointer-events: auto;
+    animation: ap-rein var(--ap-zeit) var(--ap-kurve);
+}
+.ap-meldung--fehler { border-color: var(--ap-gefahr); }
+.ap-meldung-text { flex: 1; min-width: 0; }
+@keyframes ap-rein {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Schublade von unten – auf dem Handy die natürlichste Form,
+   etwas einzublenden, ohne die Seite zu verlassen. */
+.ap-schublade-grund {
+    position: fixed; inset: 0; z-index: 800;
+    display: none;
+    background: rgb(0 0 0 / .5);
+}
+.ap-schublade-grund[data-offen] { display: block; }
+.ap-schublade {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    max-height: 88vh;
+    display: flex; flex-direction: column;
+    background: var(--ap-tafel);
+    border-top: 3px solid var(--ap-akzent);
+    border-radius: var(--ap-rund-xl) var(--ap-rund-xl) 0 0;
+    animation: ap-hoch var(--ap-zeit-lang) var(--ap-kurve);
+}
+@keyframes ap-hoch { from { transform: translateY(100%); } to { transform: none; } }
+.ap-schublade-griff {
+    width: 44px; height: 5px;
+    margin: var(--ap-raum-3) auto var(--ap-raum-2);
+    background: var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-voll);
+    flex: none;
+}
+.ap-schublade-kopf {
+    display: flex; align-items: center; gap: var(--ap-raum-3);
+    padding: 0 var(--ap-raum-4) var(--ap-raum-3);
+}
+.ap-schublade-titel {
+    font-family: var(--ap-schrift-anzeige);
+    font-size: var(--ap-text-xl);
+    font-weight: var(--ap-fett-schwer);
+}
+.ap-schublade-inhalt { overflow-y: auto; padding: 0 var(--ap-raum-4) var(--ap-raum-5); }
+
+/* ── Symbole ───────────────────────────────────────────────── */
+
+.ap-symbol {
+    width: 1.25em; height: 1.25em;
+    min-width: 1.25em; min-height: 1.25em;
+    max-width: none;
+    flex: none;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: -0.22em;
+}
+.ap-symbol--l { width: 1.7em; height: 1.7em; min-width: 1.7em; min-height: 1.7em; }
+.ap-symbol--xl { width: 2.6em; height: 2.6em; min-width: 2.6em; min-height: 2.6em; stroke-width: 1.5; }
+/* Tabler-Knöpfe bringen keinen Abstand mit; reine Leerzeichen
+   verschwinden im Flex-Eltern. */
+.btn > .ap-symbol { margin-right: .4em; }
+.btn > .ap-symbol:only-child { margin-right: 0; }
+
+/* ── Hilfsklassen ──────────────────────────────────────────── */
+
+.ap-reihe { display: flex; align-items: center; gap: var(--ap-raum-3); }
+.ap-reihe--umbruch { flex-wrap: wrap; }
+.ap-stapel { display: flex; flex-direction: column; gap: var(--ap-raum-3); }
+.ap-raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: var(--ap-raum-4);
+}
+.ap-rechts { margin-left: auto; }
+.ap-leise { color: var(--ap-leise); }
+.ap-still { color: var(--ap-still); }
+.ap-klein { font-size: var(--ap-text-s); }
+.ap-anzeige { font-family: var(--ap-schrift-anzeige); font-weight: var(--ap-fett-schwer); }
+
+@media print {
+    .ap-nicht-drucken, .ap-meldungen, .ap-schublade-grund { display: none !important; }
+    .ap-tafel { break-inside: avoid; }
+}
+
+/* ── Warnbanner ────────────────────────────────────────────── */
+/* Fällt auf, ohne zu schreien: Akzent ist die Warnfarbe, aber die
+   Fläche bleibt ruhig – der Hinweis steht oft wochenlang da. */
+
+.ap-warnbanner { border-color: var(--ap-warnung); }
+.ap-warnbanner .ap-tafel-kopf {
+    color: var(--ap-warnung);
+    border-bottom-color: var(--ap-warnung);
+    background: color-mix(in srgb, var(--ap-warnung) 12%, var(--ap-tafel));
+}
+.ap-warnliste { margin: 0; padding-left: 1.2rem; display: grid; gap: var(--ap-raum-2); }
+.ap-warnliste li { line-height: 1.45; }

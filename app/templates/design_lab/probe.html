@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de" data-richtung="{{ richtung }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design-Labor – {{ daten.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/design-lab.css') }}">
+</head>
+<body>
+
+<div class="lab-kopf">
+    <strong>{{ daten.name }}</strong> · {{ daten.kurz }}
+    <nav>
+        {% for schluessel, r in richtungen.items() %}
+        <a href="{{ url_for('design_lab.probe', richtung=schluessel) }}"
+           {% if schluessel == richtung %}aria-current="page"{% endif %}>{{ r.name }}</a>
+        {% endfor %}
+    </nav>
+</div>
+
+<main class="probe">
+
+    <!-- ── 1. Spielsteuerung: die wichtigste Maske am Turniertag ── -->
+    <section class="pr-block">
+        <h2 class="pr-ueberschrift">Spielsteuerung</h2>
+
+        <div class="st">
+            <div class="st-kopf">
+                <span class="st-marke">Gruppe A · Feld 1</span>
+                <span class="st-uhr">3:57</span>
+                <span class="st-status">läuft</span>
+            </div>
+
+            <div class="st-stand">
+                <div class="st-seite">
+                    <div class="st-team">SV Hohenberg</div>
+                    <div class="st-tore">2</div>
+                    <button class="st-plus">Tor</button>
+                </div>
+                <div class="st-mitte">:</div>
+                <div class="st-seite">
+                    <div class="st-team">TSV Oberbach</div>
+                    <div class="st-tore">1</div>
+                    <button class="st-plus">Tor</button>
+                </div>
+            </div>
+
+            <div class="st-aktionen">
+                <button class="kn kn--still">Anhalten</button>
+                <button class="kn kn--haupt">Beenden &amp; weiter</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 2. Tabelle: lesbar aus Entfernung ── -->
+    <section class="pr-block">
+        <h2 class="pr-ueberschrift">Gruppentabelle</h2>
+        <div class="tb">
+            <div class="tb-kopf">Gruppe A</div>
+            <table>
+                <thead><tr><th>#</th><th>Mannschaft</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr></thead>
+                <tbody>
+                    <tr class="ist-erster"><td>1</td><td>TSV Mettenberg</td><td>3</td><td>7:2</td><td>6</td></tr>
+                    <tr><td>2</td><td>TSV Oberbach</td><td>3</td><td>5:4</td><td>6</td></tr>
+                    <tr><td>3</td><td>SpVgg Au</td><td>3</td><td>5:4</td><td>6</td></tr>
+                    <tr><td>4</td><td>FC Rosenheim</td><td>3</td><td>0:7</td><td>0</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ── 3. Bausteine ── -->
+    <section class="pr-block">
+        <h2 class="pr-ueberschrift">Bausteine</h2>
+        <div class="bs">
+            <button class="kn kn--haupt">Hauptaktion</button>
+            <button class="kn">Zweite Wahl</button>
+            <button class="kn kn--still">Still</button>
+            <span class="ab ab--live">Live</span>
+            <span class="ab ab--fertig">Beendet</span>
+            <span class="ab">Geplant</span>
+        </div>
+        <div class="bs">
+            <div class="kt">
+                <div class="kt-kopf">Nächstes Spiel</div>
+                <div class="kt-inhalt">
+                    <strong>SC Weiler</strong> gegen <strong>TuS Lindau</strong><br>
+                    <span class="kt-leise">10:00 Uhr · Feld 1 · Gruppe A</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <p class="pr-idee">{{ daten.idee }}</p>
+</main>
+
+</body>
+</html>

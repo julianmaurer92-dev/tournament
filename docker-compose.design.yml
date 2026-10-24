@@ -1,0 +1,108 @@
+# Entwicklungsinstanz fuer das neue UI (Compose-Projekt: cupplan-design).
+#
+# Teilt sich bewusst NICHTS mit anderen Staenden: eigener Projektname,
+# eigene Container-Namen, eigene Volumes, eigener Port. Auch nicht mit
+# der UX-Instanz auf 8091.
+#
+# Web:  http://localhost:8092
+# DB:   localhost:55434 (postgres, nur fuer Debugging nach aussen geoeffnet)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cupplan-design-db
+    environment:
+      POSTGRES_DB: cupplan_design
+      POSTGRES_USER: cupplan_design
+      POSTGRES_PASSWORD: designpass
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c effective_cache_size=128MB
+      -c max_connections=20
+    volumes:
+      - design-pg-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55434:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cupplan_design"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cupplan-design-web
+    ports:
+      - "8092:5000"
+    environment:
+      - SECRET_KEY=dev-only-not-a-secret
+      - ADMIN_PASSWORD=admin123
+      - CUPPLAN_DESIGN_LAB=1
+      - DATABASE_URL=postgresql://cupplan_design:designpass@db:5432/cupplan_design
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - ADMIN_EMAILS=
+      - CUPPLAN_ENV=dev
+    volumes:
+      # Live-Reload: Quellcode direkt aus dem Dev-Klon
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+      - ./scripts:/app/scripts
+      - ./tests:/app/tests
+      - ./migrations:/app/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Einmal-Container fuer die Testsuite (laeuft gegen SQLite, braucht kein Postgres)
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - SECRET_KEY=test
+      - CUPPLAN_ENV=test
+    volumes:
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+      - ./scripts:/app/scripts
+      - ./tests:/app/tests
+      - ./migrations:/app/migrations
+      - ./pytest.ini:/app/pytest.ini
+    command: ["pytest", "-q"]
+    profiles: ["tools"]
+
+  # Browser-Tests (Playwright). Laeuft gegen den web-Container im selben
+  # Netz, nicht ueber localhost – deshalb http://web:5000.
+  e2e:
+    image: mcr.microsoft.com/playwright/python:v1.49.0-jammy
+    working_dir: /work
+    environment:
+      - CUPPLAN_BASE_URL=http://web:5000
+      - CUPPLAN_ADMIN_USER=admin
+      - CUPPLAN_ADMIN_PASSWORD=admin123
+      - CUPPLAN_DESIGN_LAB=1
+    volumes:
+      - ./tests/e2e:/work/tests/e2e
+      - ./pytest-e2e.ini:/work/pytest.ini
+      - ./test-results:/work/test-results
+      - ./scripts:/work/scripts
+      - ./docs:/work/docs
+    depends_on:
+      - web
+    # pytest-playwright ist im Image nicht enthalten, aber klein.
+    # playwright MUSS auf die Version des Images gepinnt werden – sonst zieht
+    # pip die neueste nach und findet die mitgelieferten Browser nicht mehr
+    # ("Executable doesn't exist at /ms-playwright/...").
+    command: >
+      sh -c "pip install -q 'pytest-playwright==0.5.2' 'playwright==1.49.0' &&
+             pytest -q tests/e2e"
+    profiles: ["tools"]
+
+volumes:
+  design-pg-data:

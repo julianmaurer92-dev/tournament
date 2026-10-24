@@ -1,0 +1,221 @@
+/* ============================================================
+   CupPlan – Beamer-Praesentation
+   ------------------------------------------------------------
+   Die Beamer-Ansicht zeigte bisher immer alle drei Spalten
+   gleichzeitig: Tabelle, Live, Spiele. Auf einem Beamer im Zelt
+   heisst das drei schmale Spalten mit kleiner Schrift – aus zehn
+   Metern Entfernung liest das niemand.
+
+   Im Praesentationsmodus ist immer nur eine Sache zu sehen, dafuer
+   gross, und sie wechselt von selbst weiter. Wie eine Diaschau:
+   Hinstellen, einmal starten, laufen lassen.
+   ============================================================ */
+
+/* ── Der Startknopf in der Kopfzeile ───────────────────────── */
+
+.ap-bm-start {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .9rem;
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--ap-auf-akzent);
+    background: var(--ap-akzent);
+    border: 0;
+    border-radius: var(--ap-rund-m);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ap-bm-start:hover { background: var(--ap-akzent-stark); }
+.ap-bm-start:focus-visible { outline: none; outline: 3px solid var(--ap-akzent); outline-offset: 2px; }
+
+/* ── Laufender Modus ───────────────────────────────────────── */
+
+/* Kopfzeile bleibt – sie traegt Turniername und Uhrzeit, und die
+   will man auf einem Beamer gerade nicht verlieren. Alles, was
+   Bedienung ist, verschwindet. */
+body[data-praesentation] #tv-tabs,
+body[data-praesentation] .ap-bm-nur-bedienung { display: none !important; }
+
+/* Eine Spalte, volle Breite. Dieselbe Umschaltung, die die Ansicht
+   auf dem Handy schon benutzt – nur eben unabhaengig von der
+   Fensterbreite. */
+body[data-praesentation] #tv-main { grid-template-columns: 1fr !important; }
+body[data-praesentation] .tv-col { display: none; }
+body[data-praesentation] .tv-col.tab-active { display: flex; }
+body[data-praesentation] #col-live { border-right: 0; }
+
+/* Groesser werden darf alles, was Inhalt ist. Die Werte sind an
+   einem 1920er Beamer aus etwa zehn Metern ausprobiert. */
+body[data-praesentation] .tv-col-header { font-size: 1.6rem; padding: .8rem 1.5rem; }
+body[data-praesentation] .tv-col-body   { padding: 1rem 2rem; }
+body[data-praesentation] .tv-table td   { font-size: 1.5rem; padding: .55rem .5rem; }
+body[data-praesentation] .tv-table th   { font-size: 1rem; }
+body[data-praesentation] .tv-match-team { font-size: 1.4rem; }
+body[data-praesentation] .tv-group-title { font-size: 1.25rem; }
+body[data-praesentation] #tv-title      { font-size: 2rem; }
+body[data-praesentation] #tv-clock      { font-size: 2.2rem; }
+
+/* ── Titelzeile der aktuellen Seite ────────────────────────── */
+
+.ap-bm-leiste {
+    display: none;
+    align-items: center;
+    gap: 1.25rem;
+    padding: .5rem 1.5rem;
+    background: var(--ap-tafel);
+    border-bottom: 1px solid var(--ap-kante);
+    flex: none;
+}
+body[data-praesentation] .ap-bm-leiste { display: flex; }
+
+.ap-bm-seitenname {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ap-leise);
+}
+
+/* Punkte statt Zahlen: Man soll auf einen Blick sehen, wie viele
+   Seiten es gibt und wo man gerade ist – ohne zu lesen. */
+.ap-bm-punkte { display: flex; gap: .5rem; }
+.ap-bm-punkt {
+    width: .6rem; height: .6rem;
+    border-radius: 50%;
+    background: var(--ap-kante-aktiv);
+}
+.ap-bm-punkt.ist-aktiv { background: var(--ap-akzent); }
+
+/* Der Fortschrittsbalken beantwortet die Frage "wann kommt das
+   naechste Bild?", ohne dass jemand fragen muss. */
+.ap-bm-fortschritt {
+    flex: 1;
+    height: 4px;
+    border-radius: var(--ap-rund-rund);
+    background: var(--ap-tafel-tief);
+    overflow: hidden;
+}
+.ap-bm-balken {
+    height: 100%;
+    width: 0;
+    background: var(--ap-akzent);
+    border-radius: var(--ap-rund-rund);
+}
+.ap-bm-pause {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--ap-warnung);
+}
+
+/* ── Begruessung vor dem Start ─────────────────────────────── */
+
+/* Vollbild darf ein Browser nur auf eine echte Nutzeraktion hin
+   einschalten. Wer die Beamer-Ansicht mit ?praesentieren=1 oeffnet,
+   bekommt deshalb ein grosses Feld: einmal irgendwo klicken oder
+   eine Taste druecken, und es geht los. */
+.ap-bm-willkommen {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+    background: var(--ap-grund);
+    cursor: pointer;
+}
+.ap-bm-willkommen[data-offen] { display: flex; }
+.ap-bm-willkommen h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin: 0; }
+.ap-bm-willkommen p  { font-size: clamp(1.1rem, 2vw, 1.6rem); color: var(--ap-leise); margin: 0; }
+.ap-bm-willkommen kbd {
+    padding: .2rem .6rem;
+    font-family: inherit;
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-s);
+}
+
+/* ── Tastenhilfe ───────────────────────────────────────────── */
+
+/* Blendet sich bei Mausbewegung ein und nach drei Sekunden wieder
+   aus: Wer die Ansicht nur anschaut, soll sie nie sehen. */
+.ap-bm-hilfe {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    display: none;
+    gap: 1.5rem;
+    padding: .6rem 1.25rem;
+    font-size: .95rem;
+    color: var(--ap-leise);
+    background: var(--ap-tafel);
+    border: 1px solid var(--ap-kante);
+    border-radius: var(--ap-rund-rund);
+    box-shadow: var(--ap-schatten-l);
+    opacity: 0;
+    transition: opacity var(--ap-zeit) var(--ap-kurve);
+    pointer-events: none;
+    z-index: 2500;
+}
+body[data-praesentation] .ap-bm-hilfe { display: flex; }
+.ap-bm-hilfe[data-sichtbar] { opacity: 1; }
+.ap-bm-hilfe kbd {
+    padding: .1rem .45rem;
+    font-family: inherit;
+    font-weight: 700;
+    color: var(--ap-schrift-farbe);
+    background: var(--ap-tafel-tief);
+    border: 1px solid var(--ap-kante-aktiv);
+    border-radius: var(--ap-rund-s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ap-bm-balken, .ap-bm-hilfe { transition: none; }
+}
+
+/* ── Anpfiff auf dem Beamer ────────────────────────────────── */
+/* Alles, was eine Zahl ist, bekommt die schmale Anzeigeschrift.
+   Aus zehn Metern zaehlt nur, wie breit und wie kontrastreich
+   ein Zeichen ist. */
+
+#tv-title {
+    font-family: var(--ap-schrift-anzeige) !important;
+    letter-spacing: -0.01em !important;
+}
+#tv-clock, .tv-score, .tv-live-timer, .tv-match-score,
+.tv-table .pts, .tv-table .rank, .tv-match-time {
+    font-family: var(--ap-schrift-zahl) !important;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+}
+#tv-clock { font-size: 2.4rem; }
+.tv-col-header, .tv-group-title, .tv-section-title {
+    font-family: var(--ap-schrift) !important;
+    letter-spacing: var(--ap-streifen-abstand) !important;
+}
+.tv-team-name { font-family: var(--ap-schrift-anzeige) !important; }
+
+/* Im Praesentationsmodus noch eine Stufe groesser - aber nur, wenn
+   eine einzige Partie laeuft. Bei zweien teilen sie sich den Platz,
+   und beide muessen ganz aufs Bild. */
+body[data-praesentation] .tv-live-card:only-child .tv-score {
+    font-size: clamp(5rem, 16vw, 11rem) !important;
+}
+body[data-praesentation] .tv-live-card:only-child .tv-team-name {
+    font-size: clamp(2rem, 5vw, 4rem) !important;
+}
+body[data-praesentation] .tv-live-card:not(:only-child) .tv-score {
+    font-size: clamp(2.5rem, 7vw, 5rem) !important;
+}
+body[data-praesentation] .tv-live-card:not(:only-child) .tv-team-name {
+    font-size: clamp(1.4rem, 2.6vw, 2.4rem) !important;
+}
+body[data-praesentation] #live-area { gap: var(--ap-raum-3); }
+body[data-praesentation] #tv-clock { font-size: 3.2rem; }

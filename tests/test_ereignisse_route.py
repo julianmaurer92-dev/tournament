@@ -320,11 +320,24 @@ def test_torschuetzen_csv(app, admin_client):
 
 
 def test_statistik_trennt_turniere(app, admin_client):
+    """Die Statistik eines Turniers darf keine Schuetzen des anderen zeigen.
+
+    Die Namen sind bewusst eigenwillig: Seit die Admin-Navigation einen
+    Turnier-Umschalter hat, stehen ALLE Turniernamen auf jeder Seite.
+    Ein Test, der schlicht nach "Zwei" sucht, findet dann "Zweites Cup"
+    und schlaegt fehl, obwohl die Statistik korrekt getrennt ist.
+    """
     t1, m1, a1, _ = _spiel("Erstes Cup")
     t2, m2, a2, _ = _spiel("Zweites Cup")
-    _erfassen(admin_client, t1, m1, art="tor", team_id=a1.id, player_name="Eins")
-    _erfassen(admin_client, t2, m2, art="tor", team_id=a2.id, player_name="Zwei")
+    _erfassen(admin_client, t1, m1, art="tor", team_id=a1.id,
+              player_name="Xaver Erstling")
+    _erfassen(admin_client, t2, m2, art="tor", team_id=a2.id,
+              player_name="Yvonne Zweitling")
 
     daten1 = admin_client.get(f"/admin/t/{t1.slug}/statistik")
-    assert b"Eins" in daten1.data
-    assert b"Zwei" not in daten1.data
+    assert "Xaver Erstling".encode() in daten1.data
+    assert "Yvonne Zweitling".encode() not in daten1.data
+
+    daten2 = admin_client.get(f"/admin/t/{t2.slug}/statistik")
+    assert "Yvonne Zweitling".encode() in daten2.data
+    assert "Xaver Erstling".encode() not in daten2.data

@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><title>Design-Labor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/design-lab.css') }}"></head>
+<body><div class="lab-kopf"><strong>Design-Labor</strong><nav>
+{% for s, r in richtungen.items() %}<a href="{{ url_for('design_lab.probe', richtung=s) }}">{{ r.name }}</a>{% endfor %}
+</nav></div></body></html>

@@ -1,0 +1,283 @@
+{% extends "anpfiff_huelle.html" %}
+{% from "_anpfiff.html" import symbol, knopf, abzeichen, karten, leer, tafel_auf, tafel_zu %}
+
+{% block title %}Anpfiff – Bausteine{% endblock %}
+
+{% block kopf_aktionen %}
+<div class="ap-segment" role="group" aria-label="Darstellung">
+    <button type="button" class="ap-segment-knopf" data-schema="hell"
+            aria-pressed="false">{{ symbol('sun') }} Hell</button>
+    <button type="button" class="ap-segment-knopf" data-schema="dunkel"
+            aria-pressed="false">{{ symbol('moon') }} Dunkel</button>
+</div>
+{% endblock %}
+
+{% block inhalt %}
+
+<section class="ap-tafel ap-tafel--wichtig">
+    <header class="ap-tafel-kopf">Gestaltungssprache</header>
+    <div class="ap-tafel-inhalt ap-tafel-inhalt--weit">
+        <h2 class="ap-anzeige" style="font-size:var(--ap-text-3xl);margin-bottom:var(--ap-raum-3)">
+            Anpfiff</h2>
+        <p style="max-width:52ch;margin:0 0 var(--ap-raum-4)">
+            Drei Gedanken tragen alles: <strong>Alles ist eine Tafel</strong> –
+            jede Fläche hat einen Beschriftungsstreifen oben.
+            <strong>Zahlen sind das Gesicht</strong> – Spielstand, Uhr und Punkte
+            bekommen die größte Schrift, alles andere ist Beschriftung.
+            <strong>Zwei Betriebsarten, ein System</strong> – hell heißt bedienen
+            (Sonne, Handschuhe, eine Hand), dunkel heißt zeigen (Zelt, Beamer).
+        </p>
+        <hr class="ap-kreidelinie">
+        <p class="ap-klein ap-leise" style="margin:0">
+            Diese Seite zeigt jeden Baustein. Oben rechts lässt sich zwischen
+            hell und dunkel umschalten, unten jedes Theme ausprobieren –
+            alles ändert sich sofort mit.
+        </p>
+    </div>
+</section>
+
+<!-- ── Themes ───────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Themes
+        <span class="ap-rechts ap-klein" style="text-transform:none;letter-spacing:0">
+            {{ themes | length }} Stück, jedes hell und dunkel</span>
+    </header>
+    <div class="ap-tafel-inhalt">
+        <div class="ap-raster" id="sg-themes">
+            {% for t in themes %}
+            <button type="button" class="ap-tafel sg-theme" data-theme="{{ t.schluessel }}"
+                    style="text-align:left;cursor:pointer;padding:0;font-family:inherit">
+                {# JSON in einfache Anfuehrungszeichen: Die Werte enthalten
+                   doppelte, die das Attribut sonst vorzeitig beenden. #}
+                <span class="sg-vorschau" data-hell='{{ t.vorschau.hell | tojson }}'
+                      data-dunkel='{{ t.vorschau.dunkel | tojson }}'>
+                    <span class="sg-v-streifen"></span>
+                    <span class="sg-v-zahl">2<span class="sg-v-punkt">:</span>1</span>
+                    <span class="sg-v-zeile"></span>
+                    <span class="sg-v-zeile sg-v-zeile--kurz"></span>
+                </span>
+                <span class="ap-tafel-inhalt ap-tafel-inhalt--eng" style="display:block">
+                    <strong>{{ t.name }}</strong><br>
+                    <span class="ap-klein ap-leise">{{ t.beschreibung }}</span>
+                </span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ── Schrift ──────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Schrift</header>
+    <div class="ap-tafel-inhalt ap-stapel">
+        <div>
+            <div class="ap-klein ap-still">Anzeige · Bricolage Grotesque</div>
+            <div class="ap-anzeige" style="font-size:var(--ap-text-3xl)">
+                E-Jugend Winkelturnier</div>
+        </div>
+        <div>
+            <div class="ap-klein ap-still">Text · Inter</div>
+            <p style="margin:0;max-width:52ch">Die Gruppenphase endet um 13:30 Uhr.
+                Danach werden die Halbfinals ausgelost. Für Mannschaften mit
+                Platz&nbsp;3 und&nbsp;4 geht es um die Plätze.</p>
+        </div>
+        <div>
+            <div class="ap-klein ap-still">Zahl · Barlow Condensed</div>
+            <div style="font-family:var(--ap-schrift-zahl);font-size:4rem;
+                        font-weight:800;line-height:1;color:var(--ap-tor)">
+                12:34 · 0123456789</div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Knöpfe ───────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Knöpfe</header>
+    <div class="ap-tafel-inhalt ap-stapel">
+        <div class="ap-reihe ap-reihe--umbruch">
+            {{ knopf('Hauptaktion', art='haupt', symbolname='player-play') }}
+            {{ knopf('Zweite Wahl') }}
+            {{ knopf('Still', art='still') }}
+            {{ knopf('Löschen', art='gefahr', symbolname='trash') }}
+            {{ knopf('Gesperrt', attribute='disabled') }}
+        </div>
+        <div class="ap-reihe ap-reihe--umbruch">
+            {{ knopf('Groß', art='haupt', klasse='ap-knopf--gross') }}
+            {{ knopf('Normal') }}
+            {{ knopf('Klein', klasse='ap-knopf--klein') }}
+            {{ knopf('', symbolname='settings', klasse='ap-knopf--symbol') }}
+        </div>
+        <div class="ap-segment" role="group" aria-label="Beispiel">
+            <button type="button" class="ap-segment-knopf" aria-pressed="true">Spiele</button>
+            <button type="button" class="ap-segment-knopf" aria-pressed="false">Tabelle</button>
+            <button type="button" class="ap-segment-knopf" aria-pressed="false">Teams</button>
+        </div>
+    </div>
+</section>
+
+<!-- ── Zustände ─────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Zustände</header>
+    <div class="ap-tafel-inhalt ap-stapel">
+        <div class="ap-reihe ap-reihe--umbruch">
+            {{ abzeichen('Läuft', 'live', puls=true) }}
+            {{ abzeichen('Beendet', 'fertig') }}
+            {{ abzeichen('Geplant') }}
+            {{ abzeichen('Achtung', 'warnung') }}
+        </div>
+        <div class="ap-reihe">
+            <span class="ap-klein ap-still">Karten:</span>
+            {{ karten(2, 1, 1) }}
+            <span class="ap-klein ap-leise">zwei gelbe, eine gelb-rote, eine rote</span>
+        </div>
+        <div class="ap-reihe">
+            <span class="ap-skelett" style="width:9rem;height:1.2rem"></span>
+            <span class="ap-skelett" style="width:5rem;height:1.2rem"></span>
+            <span class="ap-klein ap-still">Lade-Skelett</span>
+        </div>
+    </div>
+</section>
+
+<!-- ── Formular ─────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Formular</header>
+    <div class="ap-tafel-inhalt ap-stapel">
+        <div class="ap-feld">
+            <label class="ap-label" for="sg-name">Mannschaftsname</label>
+            <input class="ap-eingabe" id="sg-name" value="SV Hohenberg">
+        </div>
+        <div class="ap-feld">
+            <label class="ap-label" for="sg-gruppe">Gruppe</label>
+            <select class="ap-auswahl" id="sg-gruppe">
+                <option>Gruppe A</option><option>Gruppe B</option>
+            </select>
+        </div>
+        <label class="ap-schalter">
+            <input type="checkbox" checked>
+            <span class="ap-schalter-bahn"></span>
+            <span>Startgebühr bezahlt</span>
+        </label>
+        <p class="ap-hinweis">Änderungen werden sofort gespeichert.</p>
+    </div>
+    <footer class="ap-tafel-fuss">
+        {{ knopf('Speichern', art='haupt') }}
+        {{ knopf('Abbrechen', art='still') }}
+    </footer>
+</section>
+
+<!-- ── Tabelle ──────────────────────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Tabelle</header>
+    <div class="ap-tafel-inhalt ap-tafel-inhalt--ohne">
+        <table class="ap-tabelle">
+            <thead><tr>
+                <th class="ap-sp-platz">#</th><th>Mannschaft</th>
+                <th style="text-align:right">Sp</th><th style="text-align:right">Tore</th>
+                <th style="text-align:right">Pkt</th>
+            </tr></thead>
+            <tbody>
+                {% for platz, name, sp, tore, pkt in [
+                    (1, 'TSV Mettenberg', 3, '7:2', 6),
+                    (2, 'TSV Oberbach', 3, '5:4', 6),
+                    (3, 'SpVgg Au', 3, '5:4', 6),
+                    (4, 'FC Rosenheim', 3, '0:7', 0)] %}
+                <tr class="{% if platz == 1 %}ist-erster{% endif %}">
+                    <td class="ap-sp-platz">{{ platz }}</td>
+                    <td class="ap-sp-name">{{ name }}</td>
+                    <td class="ap-sp-zahl">{{ sp }}</td>
+                    <td class="ap-sp-zahl">{{ tore }}</td>
+                    <td class="ap-sp-zahl ap-sp-punkte">{{ pkt }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ── Meldungen und Schubladen ─────────────────────────── -->
+<section class="ap-tafel">
+    <header class="ap-tafel-kopf">Meldung, Schublade, leerer Zustand</header>
+    <div class="ap-tafel-inhalt ap-stapel">
+        <div class="ap-reihe ap-reihe--umbruch">
+            <button type="button" class="ap-knopf"
+                    onclick="ap.meldung('Tor für SV Hohenberg eingetragen.', {rueckgaengig: function(){ap.meldung('Zurückgenommen.')}})">
+                Meldung mit Rückgängig</button>
+            <button type="button" class="ap-knopf"
+                    onclick="ap.meldung('Keine Verbindung. Die Änderung wurde nicht gespeichert.', {fehler: true})">
+                Fehlermeldung</button>
+            <button type="button" class="ap-knopf"
+                    onclick="ap.schublade('Wer hat getroffen?', '<div class=&quot;ap-stapel&quot;><button class=&quot;ap-knopf ap-knopf--breit ap-knopf--gross&quot;>Jonas Berger</button><button class=&quot;ap-knopf ap-knopf--breit ap-knopf--gross&quot;>Luca Mayr</button><button class=&quot;ap-knopf ap-knopf--breit ap-knopf--gross&quot;>Finn Wagner</button></div>')">
+                Schublade von unten</button>
+        </div>
+        <hr class="ap-kreidelinie">
+        {{ leer('calendar-event', 'Noch keine Spiele',
+                'Lege zuerst Gruppen und Mannschaften an. Danach erzeugt CupPlan den Spielplan mit einem Klick.',
+                'Zur Administration', '#') }}
+    </div>
+</section>
+
+{% endblock %}
+
+{% block head %}
+<style>
+/* Nur für diese Seite: die Theme-Vorschau */
+.sg-theme { overflow: hidden; }
+.sg-theme.ist-gewaehlt { border-color: var(--ap-akzent); box-shadow: 0 0 0 2px var(--ap-akzent); }
+.sg-vorschau {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 12px; min-height: 8rem;
+    background: var(--v-grund, #111);
+}
+.sg-v-streifen { height: 8px; width: 60%; border-radius: 99px; background: var(--v-akzent, #0f0); }
+.sg-v-zahl {
+    font-family: var(--ap-schrift-zahl); font-size: 2.4rem; font-weight: 800;
+    line-height: 1; color: var(--v-akzent, #0f0); text-align: center;
+}
+.sg-v-punkt { opacity: .4; margin: 0 .2em; }
+.sg-v-zeile { height: 10px; border-radius: 3px; background: var(--v-tafel, #222); }
+.sg-v-zeile--kurz { width: 65%; }
+</style>
+{% endblock %}
+
+{% block skripte %}
+<script>
+(function () {
+    const wurzel = document.documentElement;
+    const karten = Array.from(document.querySelectorAll('.sg-theme'));
+    const schemaKnoepfe = Array.from(document.querySelectorAll('[data-schema]'));
+
+    function anzeigen() {
+        const theme = wurzel.dataset.theme, schema = wurzel.dataset.schema;
+        karten.forEach(function (k) {
+            k.classList.toggle('ist-gewaehlt', k.dataset.theme === theme);
+            const v = k.querySelector('.sg-vorschau');
+            const farben = JSON.parse(v.dataset[schema] || '[]');
+            if (farben.length === 3) {
+                v.style.setProperty('--v-grund', farben[0]);
+                v.style.setProperty('--v-tafel', farben[1]);
+                v.style.setProperty('--v-akzent', farben[2]);
+            }
+        });
+        schemaKnoepfe.forEach(function (k) {
+            k.setAttribute('aria-pressed', k.dataset.schema === schema ? 'true' : 'false');
+        });
+    }
+
+    karten.forEach(function (k) {
+        k.addEventListener('click', function () {
+            wurzel.dataset.theme = k.dataset.theme;
+            anzeigen();
+            ap.meldung('Theme „' + k.querySelector('strong').textContent + '" – nur zur Ansicht.');
+        });
+    });
+    schemaKnoepfe.forEach(function (k) {
+        k.addEventListener('click', function () {
+            wurzel.dataset.schema = k.dataset.schema;
+            wurzel.dataset.bsTheme = k.dataset.schema === 'hell' ? 'light' : 'dark';
+            anzeigen();
+        });
+    });
+    anzeigen();
+})();
+</script>
+{% endblock %}

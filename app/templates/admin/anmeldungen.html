@@ -2,11 +2,6 @@
 
 {% block title %}Anmeldungen – {{ tournament.name }}{% endblock %}
 
-{% block navbar_items %}
-<a href="{{ url_for('admin.dashboard', slug=tournament.slug) }}" class="btn btn-outline btn-sm">&#8592; Dashboard</a>
-<a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm">Abmelden</a>
-{% endblock %}
-
 {% block page_content %}
 
 {# ── Kopfzeile mit Zahlen ───────────────────────────────── #}

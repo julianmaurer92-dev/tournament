@@ -1,0 +1,698 @@
+/* ============================================================
+   ANPFIFF – die Gestaltungssprache von CupPlan
+   ============================================================
+
+   Drei Gedanken tragen alles:
+
+   1. ALLES IST EINE TAFEL.
+      Jede Fläche hat einen Beschriftungsstreifen oben und einen
+      Inhalt darunter. Vorbild ist das einzige Objekt, das am
+      Sportplatz wirklich jeder ohne Nachdenken liest – die
+      Anzeigetafel.
+
+   2. ZAHLEN SIND DAS GESICHT.
+      Spielstand, Uhr, Punkte, Tordifferenz: Das sind die Daten,
+      wegen derer jemand auf den Bildschirm schaut. Sie bekommen
+      die größte Schrift, eine schmale Anzeigeschrift und
+      Tabellenziffern. Alles andere ist Beschriftung.
+
+   3. ZWEI BETRIEBSARTEN, EIN SYSTEM.
+      Hell heißt BEDIENEN: draußen, in der Sonne, mit Handschuhen,
+      mit einer Hand. Große Ziele, warme helle Flächen, kräftige
+      Konturen.
+      Dunkel heißt ZEIGEN: im Zelt, auf dem Beamer, abends. Tiefes
+      Schwarzblau, leuchtender Akzent, maximale Fernwirkung.
+      Dieselben Bausteine, andere Werte.
+
+   Als Signatur zieht sich die KREIDELINIE durch: dünne, leicht
+   unruhige Linien und die Geometrie des Spielfelds. Nur als
+   Zierde, nie als Träger von Information.
+
+   ------------------------------------------------------------
+   Aufbau dieser Datei
+     1. Maße, Schrift, Bewegung  (themenunabhängig)
+     2. Farbrollen               (was eine Farbe bedeutet)
+     3. Themes                   (welche Werte die Rollen haben)
+     4. Vereinsfarbe, Druck, Rücksicht auf Bewegung
+   ============================================================ */
+
+/* ════════════════════════════════════════════════════════════
+   1 · MASSE, SCHRIFT, BEWEGUNG
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Raum ──────────────────────────────────────────────
+       Vielfache von 4 px. Die Schritte sind bewusst grob:
+       Wer am Spielfeldrand mit Handschuhen tippt, profitiert
+       nicht von 2-Pixel-Feinheiten. */
+    --ap-raum-1: 0.25rem;   /*  4 px */
+    --ap-raum-2: 0.5rem;    /*  8 px */
+    --ap-raum-3: 0.75rem;   /* 12 px */
+    --ap-raum-4: 1rem;      /* 16 px */
+    --ap-raum-5: 1.5rem;    /* 24 px */
+    --ap-raum-6: 2rem;      /* 32 px */
+    --ap-raum-7: 3rem;      /* 48 px */
+    --ap-raum-8: 4rem;      /* 64 px */
+
+    /* ── Berührziele ───────────────────────────────────────
+       44 px ist das Minimum, das die Barrierefreiheits-Richtlinie
+       nennt. Hauptaktionen bekommen deutlich mehr: Ein Tor wird
+       im Jubel getippt, nicht in Ruhe. */
+    --ap-ziel: 48px;
+    --ap-ziel-gross: 64px;
+    --ap-ziel-riesig: 84px;
+
+    /* ── Rundungen ─────────────────────────────────────────
+       Tafeln sind leicht gerundet, Knöpfe deutlich – das macht
+       sie als "anfassbar" erkennbar. */
+    --ap-rund-s: 6px;
+    --ap-rund-m: 10px;
+    --ap-rund-l: 16px;
+    --ap-rund-xl: 24px;
+    --ap-rund-voll: 999px;
+
+    /* ── Schrift ───────────────────────────────────────────
+       Drei Schriften, drei klare Aufgaben:
+         Anzeige  – Überschriften, Markenauftritt
+         Text     – alles zum Lesen
+         Zahl     – Spielstand, Uhr, Tabellen */
+    --ap-schrift-anzeige: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+    --ap-schrift: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --ap-schrift-zahl: "Barlow Condensed", "Inter", system-ui, sans-serif;
+
+    --ap-text-xs: 0.75rem;
+    --ap-text-s:  0.875rem;
+    --ap-text-m:  1rem;
+    --ap-text-l:  1.125rem;
+    --ap-text-xl: 1.375rem;
+    --ap-text-2xl: 1.75rem;
+    --ap-text-3xl: 2.25rem;
+
+    /* Die Streifenbeschriftung über jeder Tafel */
+    --ap-streifen-groesse: 0.72rem;
+    --ap-streifen-abstand: 0.14em;
+
+    --ap-fett-normal: 400;
+    --ap-fett-mittel: 500;
+    --ap-fett: 700;
+    --ap-fett-schwer: 800;
+
+    /* ── Bewegung ──────────────────────────────────────────
+       Kurz und unaufdringlich. Die App läuft stundenlang im
+       Blickfeld; alles, was wackelt, nervt am dritten Spiel. */
+    --ap-zeit-kurz: 120ms;
+    --ap-zeit: 200ms;
+    --ap-zeit-lang: 320ms;
+    --ap-kurve: cubic-bezier(.2, .7, .3, 1);
+
+    /* ── Kreidelinie ───────────────────────────────────────
+       Die Signatur: eine dünne, helle Linie, die wie mit Kreide
+       gezogen wirkt. Wird als Rahmen, Trenner und Zierde benutzt. */
+    --ap-kreide-staerke: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   2 · FARBROLLEN
+   ------------------------------------------------------------
+   Eine Variable sagt, WOZU ein Wert da ist, nicht welche Farbe
+   er hat. "--ap-tafel" statt "--grau-800". Dadurch braucht ein
+   neues Theme nur rund 18 Werte und wirkt sofort überall.
+
+      --ap-grund          der Hintergrund der Seite
+      --ap-tafel          die Fläche einer Tafel
+      --ap-tafel-kopf     der Beschriftungsstreifen oben
+      --ap-tafel-tief     eingelassene Flächen (Eingaben, Rillen)
+      --ap-kante          dekorativer Rand einer Tafel (darf leise sein)
+      --ap-kante-aktiv    Rand von Bedienelementen (muss 3:1 haben)
+      --ap-kreide         feine Trennlinien, Zierde
+      --ap-schrift-farbe  Fließtext
+      --ap-leise          Nebentext
+      --ap-still          Beschriftungen, Einheiten
+      --ap-akzent         die Farbe des Themes (Hauptaktion)
+      --ap-akzent-stark   gedrückter Zustand
+      --ap-akzent-leise   Hintergrund in Akzentfarbe
+      --ap-auf-akzent     Schrift auf der Akzentfläche
+      --ap-live           läuft gerade (immer dieselbe Bedeutung)
+      --ap-tor            Spielstand, Punkte, Erfolg
+      --ap-warnung        Achtung
+      --ap-gefahr         Löschen, Fehler
+      --ap-gelb/--ap-rot  Karten (themenunabhängig!)
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    /* Karten sind keine Gestaltungsfrage. Eine gelbe Karte ist
+       gelb, in jedem Theme, sonst versteht sie niemand. */
+    --ap-gelb: #f5c518;
+    --ap-rot: #d92b2b;
+
+    --ap-schatten-s: 0 1px 2px rgb(0 0 0 / .12);
+    --ap-schatten-m: 0 4px 12px rgb(0 0 0 / .14);
+    --ap-schatten-l: 0 14px 40px rgb(0 0 0 / .22);
+    /* Die "Kante" unter Knöpfen: macht sie körperlich, ohne Schlagschatten */
+    --ap-kante-unten: 0 3px 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   3 · THEMES
+   ------------------------------------------------------------
+   Acht Themes, jedes hell und dunkel, plus Beamer und Druck.
+
+     rasen        Platzgrün – die Vorgabe
+     flutlicht    Blauweiß mit Signalgelb, kühl und wach
+     trikot       Vereinsrot, kräftig
+     auswaerts    Tiefes Blau, ruhig und seriös
+     bernstein    Warmes Orange, gut bei Sonne
+     kreide       Fast farblos, hält sich ganz zurück
+     vereinsheim  Holz und Creme, gemütlich
+     nachtspiel   Beinahe schwarz mit Neongrün
+     anzeigetafel Nur dunkel – maximaler Kontrast für den Beamer
+
+   Jede Variante ist gegen WCAG AA nachgerechnet
+   (scripts/kontrast_anpfiff.py).
+   ════════════════════════════════════════════════════════════ */
+
+/* ── RASEN ─────────────────────────────────────────────────
+   Die Vorgabe. Hell: warmes Papier mit Platzgrün. Dunkel:
+   Nachtgrün, wie ein Platz unter Flutlicht von oben. */
+
+:root,
+[data-theme="rasen"][data-schema="hell"] {
+    --ap-grund: #f4f2ea;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #ebe7db;
+    --ap-tafel-tief: #f0ede3;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #d8d1c0;
+    --ap-kreide: #e4dfd1;
+    --ap-schrift-farbe: #1d2420;
+    --ap-leise: #5a6560;
+    --ap-still: #6e7a74;
+    --ap-akzent: #11703f;
+    --ap-akzent-stark: #0b5630;
+    --ap-akzent-leise: #e2f1e8;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #11703f;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="rasen"][data-schema="dunkel"] {
+    --ap-grund: #0a1410;
+    --ap-tafel: #12211a;
+    --ap-tafel-kopf: #1a2e24;
+    --ap-tafel-tief: #0d1a14;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #274434;
+    --ap-kreide: #1f3629;
+    --ap-schrift-farbe: #e8f2ec;
+    --ap-leise: #9ab3a6;
+    --ap-still: #7a9488;
+    --ap-akzent: #43d98a;
+    --ap-akzent-stark: #2fc275;
+    --ap-akzent-leise: #16301f;
+    --ap-auf-akzent: #06180f;
+    --ap-live: #ff5a5a;
+    --ap-tor: #43d98a;
+    --ap-warnung: #f0b429;
+    --ap-gefahr: #ff6b6b;
+}
+
+/* ── FLUTLICHT ─────────────────────────────────────────────
+   Kühles Blauweiß mit Signalgelb. Wach, sportlich, ein bisschen
+   wie eine Anzeigetafel am Abend. */
+
+[data-theme="flutlicht"][data-schema="hell"] {
+    --ap-grund: #eef2f7;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #e2e9f2;
+    --ap-tafel-tief: #eaeff6;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #cbd6e4;
+    --ap-kreide: #dde5ef;
+    --ap-schrift-farbe: #131a24;
+    --ap-leise: #4e5b6d;
+    --ap-still: #7a8699;
+    --ap-akzent: #0b5fbe;
+    --ap-akzent-stark: #084a96;
+    --ap-akzent-leise: #dde9fa;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #0b5fbe;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="flutlicht"][data-schema="dunkel"] {
+    --ap-grund: #070c14;
+    --ap-tafel: #101a28;
+    --ap-tafel-kopf: #182637;
+    --ap-tafel-tief: #0b1320;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #26354a;
+    --ap-kreide: #1c2b3d;
+    --ap-schrift-farbe: #e9f1fb;
+    --ap-leise: #9db0c7;
+    --ap-still: #7c8fa6;
+    --ap-akzent: #d6f94a;
+    --ap-akzent-stark: #c2e532;
+    --ap-akzent-leise: #232d12;
+    --ap-auf-akzent: #0d1407;
+    --ap-live: #ff4d6d;
+    --ap-tor: #d6f94a;
+    --ap-warnung: #f5b921;
+    --ap-gefahr: #ff6b81;
+}
+
+/* ── TRIKOT ────────────────────────────────────────────────
+   Vereinsrot. Für Klubs in Rot-Weiß – und für alle, die es
+   gern kräftig mögen. */
+
+[data-theme="trikot"][data-schema="hell"] {
+    --ap-grund: #f7f1f0;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #f0e3e1;
+    --ap-tafel-tief: #f4eae8;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #e0c9c6;
+    --ap-kreide: #ead9d7;
+    --ap-schrift-farbe: #231a19;
+    --ap-leise: #5f4f4d;
+    --ap-still: #8d7b78;
+    --ap-akzent: #ab1f28;
+    --ap-akzent-stark: #88161e;
+    --ap-akzent-leise: #fae3e3;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #ab1f28;
+    --ap-tor: #0f6b42;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #ab1f28;
+}
+
+[data-theme="trikot"][data-schema="dunkel"] {
+    --ap-grund: #140a0a;
+    --ap-tafel: #211312;
+    --ap-tafel-kopf: #2e1b1a;
+    --ap-tafel-tief: #180d0d;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #452624;
+    --ap-kreide: #33201f;
+    --ap-schrift-farbe: #f6eae9;
+    --ap-leise: #c0a39f;
+    --ap-still: #a1837f;
+    --ap-akzent: #ff6b6b;
+    --ap-akzent-stark: #ef4d4d;
+    --ap-akzent-leise: #35191a;
+    --ap-auf-akzent: #1a0707;
+    --ap-live: #ff6b6b;
+    --ap-tor: #4fd48c;
+    --ap-warnung: #f5b921;
+    --ap-gefahr: #ff8585;
+}
+
+/* ── AUSWAERTS ─────────────────────────────────────────────
+   Tiefes Blau, ruhig und seriös. Für Turniere, bei denen es um
+   etwas geht. */
+
+[data-theme="auswaerts"][data-schema="hell"] {
+    --ap-grund: #eef0f6;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #e3e6f0;
+    --ap-tafel-tief: #eaedf5;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #c9cfe0;
+    --ap-kreide: #dce0ed;
+    --ap-schrift-farbe: #15182a;
+    --ap-leise: #4b5270;
+    --ap-still: #797f9c;
+    --ap-akzent: #2f3b8f;
+    --ap-akzent-stark: #242d70;
+    --ap-akzent-leise: #e1e4f8;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #2f3b8f;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="auswaerts"][data-schema="dunkel"] {
+    --ap-grund: #080a16;
+    --ap-tafel: #121631;
+    --ap-tafel-kopf: #1b2044;
+    --ap-tafel-tief: #0c0f22;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #2b3160;
+    --ap-kreide: #1f2448;
+    --ap-schrift-farbe: #e9ebfb;
+    --ap-leise: #a2a8d0;
+    --ap-still: #848ab4;
+    --ap-akzent: #8ea2ff;
+    --ap-akzent-stark: #7088f5;
+    --ap-akzent-leise: #1d2246;
+    --ap-auf-akzent: #080a1c;
+    --ap-live: #ff5a7a;
+    --ap-tor: #8ea2ff;
+    --ap-warnung: #f5b921;
+    --ap-gefahr: #ff7a93;
+}
+
+/* ── BERNSTEIN ─────────────────────────────────────────────
+   Warmes Orange auf Sandfarben. Steht gut in der Sonne – warme
+   Töne blenden weniger als reines Weiß. */
+
+[data-theme="bernstein"][data-schema="hell"] {
+    --ap-grund: #f8f1e4;
+    --ap-tafel: #fffdf8;
+    --ap-tafel-kopf: #f1e5cf;
+    --ap-tafel-tief: #f5ecda;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #ddcba6;
+    --ap-kreide: #ecdfc5;
+    --ap-schrift-farbe: #2a2113;
+    --ap-leise: #635335;
+    --ap-still: #8d7b57;
+    --ap-akzent: #9a5410;
+    --ap-akzent-stark: #7b420a;
+    --ap-akzent-leise: #fae6cd;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #0f6b42;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="bernstein"][data-schema="dunkel"] {
+    --ap-grund: #140e06;
+    --ap-tafel: #221809;
+    --ap-tafel-kopf: #30220d;
+    --ap-tafel-tief: #180f05;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #4a3414;
+    --ap-kreide: #342410;
+    --ap-schrift-farbe: #f8eedd;
+    --ap-leise: #c5ad86;
+    --ap-still: #a48f6c;
+    --ap-akzent: #ffa733;
+    --ap-akzent-stark: #ec8f14;
+    --ap-akzent-leise: #352307;
+    --ap-auf-akzent: #1a0f02;
+    --ap-live: #ff6b5a;
+    --ap-tor: #4fd48c;
+    --ap-warnung: #ffc247;
+    --ap-gefahr: #ff7f6b;
+}
+
+/* ── KREIDE ────────────────────────────────────────────────
+   Fast farblos. Für alle, die wollen, dass die Mannschaftsfarben
+   und Wappen sprechen und die App selbst still bleibt. */
+
+[data-theme="kreide"][data-schema="hell"] {
+    --ap-grund: #f2f2f1;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #e8e8e6;
+    --ap-tafel-tief: #eeeeec;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #d2d2cf;
+    --ap-kreide: #e2e2df;
+    --ap-schrift-farbe: #1b1b1a;
+    --ap-leise: #55554f;
+    --ap-still: #83837c;
+    --ap-akzent: #2e2e2b;
+    --ap-akzent-stark: #141412;
+    --ap-akzent-leise: #e6e6e3;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #0f6b42;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="kreide"][data-schema="dunkel"] {
+    --ap-grund: #0f0f0e;
+    --ap-tafel: #1a1a18;
+    --ap-tafel-kopf: #242421;
+    --ap-tafel-tief: #131312;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #383834;
+    --ap-kreide: #2a2a26;
+    --ap-schrift-farbe: #ededea;
+    --ap-leise: #a8a8a1;
+    --ap-still: #8a8a83;
+    --ap-akzent: #ededea;
+    --ap-akzent-stark: #cfcfca;
+    --ap-akzent-leise: #2a2a26;
+    --ap-auf-akzent: #0f0f0e;
+    --ap-live: #ff6b6b;
+    --ap-tor: #4fd48c;
+    --ap-warnung: #f5b921;
+    --ap-gefahr: #ff7f7f;
+}
+
+/* ── VEREINSHEIM ───────────────────────────────────────────
+   Holz und Creme. Gemütlich, ein bisschen altmodisch – wie die
+   Tafel über dem Tresen. */
+
+[data-theme="vereinsheim"][data-schema="hell"] {
+    --ap-grund: #f4eee6;
+    --ap-tafel: #fffaf4;
+    --ap-tafel-kopf: #eadfd0;
+    --ap-tafel-tief: #f1e9de;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #d6c3ad;
+    --ap-kreide: #e6dacb;
+    --ap-schrift-farbe: #2b2219;
+    --ap-leise: #61513f;
+    --ap-still: #8d7a64;
+    --ap-akzent: #7a4a21;
+    --ap-akzent-stark: #5e3817;
+    --ap-akzent-leise: #f0e2d2;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #b53224;
+    --ap-tor: #2f6b36;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #a8291c;
+}
+
+[data-theme="vereinsheim"][data-schema="dunkel"] {
+    --ap-grund: #15100b;
+    --ap-tafel: #221a12;
+    --ap-tafel-kopf: #2f251a;
+    --ap-tafel-tief: #1a130d;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #483726;
+    --ap-kreide: #33281b;
+    --ap-schrift-farbe: #f5ece0;
+    --ap-leise: #c4ab8f;
+    --ap-still: #a48d73;
+    --ap-akzent: #e3a765;
+    --ap-akzent-stark: #cc8d4a;
+    --ap-akzent-leise: #332516;
+    --ap-auf-akzent: #1a1007;
+    --ap-live: #ff7a5a;
+    --ap-tor: #5fcf7e;
+    --ap-warnung: #f3bd56;
+    --ap-gefahr: #ff8a73;
+}
+
+/* ── NACHTSPIEL ────────────────────────────────────────────
+   Beinahe schwarz mit Neongrün. Das Theme für den späten Abend
+   und für alle, die Kontrast mögen. */
+
+[data-theme="nachtspiel"][data-schema="hell"] {
+    --ap-grund: #f0f3ee;
+    --ap-tafel: #ffffff;
+    --ap-tafel-kopf: #e4eadf;
+    --ap-tafel-tief: #ebeee8;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #c9d3c3;
+    --ap-kreide: #dde4d8;
+    --ap-schrift-farbe: #141813;
+    --ap-leise: #4d5649;
+    --ap-still: #7b8576;
+    --ap-akzent: #2d6b1f;
+    --ap-akzent-stark: #1f5214;
+    --ap-akzent-leise: #e0f0da;
+    --ap-auf-akzent: #ffffff;
+    --ap-live: #c62828;
+    --ap-tor: #2d6b1f;
+    --ap-warnung: #8a5a00;
+    --ap-gefahr: #b32424;
+}
+
+[data-theme="nachtspiel"][data-schema="dunkel"] {
+    --ap-grund: #000000;
+    --ap-tafel: #0d0f0d;
+    --ap-tafel-kopf: #161a16;
+    --ap-tafel-tief: #080908;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #2a302a;
+    --ap-kreide: #1d221d;
+    --ap-schrift-farbe: #f0f5f0;
+    --ap-leise: #a3b0a3;
+    --ap-still: #869286;
+    --ap-akzent: #5dff9b;
+    --ap-akzent-stark: #3fe882;
+    --ap-akzent-leise: #0f2417;
+    --ap-auf-akzent: #00140a;
+    --ap-live: #ff3b57;
+    --ap-tor: #5dff9b;
+    --ap-warnung: #ffd23f;
+    --ap-gefahr: #ff5a70;
+}
+
+/* ── ANZEIGETAFEL ──────────────────────────────────────────
+   Nur dunkel – es gibt keine helle Variante, denn dieses Theme
+   hat genau eine Aufgabe: aus zehn Metern lesbar sein. Reines
+   Schwarz, weiße Schrift, ein einziger leuchtender Akzent, keine
+   Zwischentöne, die aus der Entfernung verschwimmen. */
+
+[data-theme="anzeigetafel"][data-schema="hell"],
+[data-theme="anzeigetafel"][data-schema="dunkel"] {
+    --ap-grund: #000000;
+    --ap-tafel: #0a0a0a;
+    --ap-tafel-kopf: #181818;
+    --ap-tafel-tief: #000000;
+    --ap-kante-aktiv: var(--ap-still);
+    --ap-kante: #3c3c3c;
+    --ap-kreide: #2a2a2a;
+    --ap-schrift-farbe: #ffffff;
+    --ap-leise: #cfcfcf;
+    --ap-still: #a8a8a8;
+    --ap-akzent: #ffe600;
+    --ap-akzent-stark: #e6cf00;
+    --ap-akzent-leise: #262200;
+    --ap-auf-akzent: #000000;
+    --ap-live: #ff2d4a;
+    --ap-tor: #ffe600;
+    --ap-warnung: #ffb300;
+    --ap-gefahr: #ff5a70;
+    /* Auf dem Beamer ist alles eine Nummer größer */
+    --ap-text-m: 1.125rem;
+    --ap-text-l: 1.375rem;
+    --ap-text-xl: 1.75rem;
+    --ap-text-2xl: 2.25rem;
+    --ap-text-3xl: 3rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   5 · ALTE VARIABLENNAMEN
+   ------------------------------------------------------------
+   Einzelne Stylesheets und Vorlagen aus dem vorherigen Stand
+   greifen noch auf die alten Rollennamen zu (--flaeche, --rand,
+   --text-leise …). Hier zeigen sie auf die Anpfiff-Rollen.
+
+   Ohne diese Zuordnung faellt nicht etwa die Farbe aus – es
+   faellt die ganze Angabe aus, und Flaechen werden durchsichtig
+   oder Text unsichtbar. Das ist eine Brücke, kein Dauerzustand.
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    --flaeche: var(--ap-tafel);
+    --flaeche-tief: var(--ap-grund);
+    --flaeche-erhoben: var(--ap-tafel);
+    --flaeche-gedrueckt: var(--ap-tafel-tief);
+    --rand: var(--ap-kante);
+    --rand-stark: var(--ap-kante-aktiv);
+    --rand-interaktiv: var(--ap-kante-aktiv);
+    --text: var(--ap-schrift-farbe);
+    --text-leise: var(--ap-leise);
+    --text-still: var(--ap-still);
+    --text-auf-akzent: var(--ap-auf-akzent);
+    --akzent: var(--ap-akzent);
+    --akzent-leise: var(--ap-akzent-leise);
+    --akzent-rand: var(--ap-akzent);
+    --akzent-hover: var(--ap-akzent-stark);
+    --live: var(--ap-live);
+    --warnung: var(--ap-warnung);
+    --gefahr: var(--ap-gefahr);
+    --erfolg: var(--ap-tor);
+    --info: var(--ap-akzent);
+    --schatten-s: var(--ap-schatten-s);
+    --schatten-m: var(--ap-schatten-m);
+    --schatten-l: var(--ap-schatten-l);
+    --fokus: 0 0 0 3px var(--ap-akzent-leise), 0 0 0 1px var(--ap-akzent);
+    --schrift: var(--ap-schrift);
+    --raum-1: var(--ap-raum-1); --raum-2: var(--ap-raum-2);
+    --raum-3: var(--ap-raum-3); --raum-4: var(--ap-raum-4);
+    --raum-5: var(--ap-raum-5); --raum-6: var(--ap-raum-6);
+    --raum-7: var(--ap-raum-7); --raum-8: var(--ap-raum-8);
+    --radius-s: var(--ap-rund-s); --radius-m: var(--ap-rund-m);
+    --radius-l: var(--ap-rund-l); --radius-rund: var(--ap-rund-voll);
+    --text-xs: var(--ap-text-xs); --text-s: var(--ap-text-s);
+    --text-m: var(--ap-text-m); --text-l: var(--ap-text-l);
+    --text-xl: var(--ap-text-xl); --text-2xl: var(--ap-text-2xl);
+    --gewicht-normal: var(--ap-fett-normal); --gewicht-mittel: var(--ap-fett-mittel);
+    --gewicht-fett: var(--ap-fett); --gewicht-schwer: var(--ap-fett-schwer);
+    --zeit-schnell: var(--ap-zeit-kurz); --zeit-normal: var(--ap-zeit);
+    --zeit-langsam: var(--ap-zeit-lang);
+    --kurve: var(--ap-kurve);
+    --ziel-min: var(--ap-ziel);
+    --primary: var(--ap-akzent);
+    --border: var(--ap-kante);
+    --muted: var(--ap-leise);
+    --bg: var(--ap-grund);
+    --bg2: var(--ap-tafel);
+    --card: var(--ap-tafel);
+    /* Namen aus der allerersten Fassung. Sie stehen in einzelnen
+       Vorlagen noch mit Ersatzwert (var(--bg-secondary, #111827))
+       drin – ohne Zuordnung schlägt der Ersatzwert durch, und
+       plötzlich ist eine Karte dunkelblau in einem grünen Theme. */
+    --bg-secondary: var(--ap-tafel);
+    --panel-bg: var(--ap-tafel);
+    --input-bg: var(--ap-tafel-tief);
+    --hover: var(--ap-tafel-tief);
+    --color-primary: var(--ap-akzent);
+    --text-muted: var(--ap-leise);
+}
+
+/* ════════════════════════════════════════════════════════════
+   4 · VEREINSFARBE, DRUCK, RÜCKSICHT
+   ════════════════════════════════════════════════════════════ */
+
+/* Die Vereinsfarbe überschreibt den Theme-Akzent. Die konkreten
+   Werte rechnet der Server aus (app/farben.py) – inklusive der
+   Frage, ob darauf schwarze oder weiße Schrift lesbarer ist und
+   ob die Farbe überhaupt genug Kontrast bringt. */
+[data-vereinsfarbe="an"] {
+    --ap-akzent: var(--ap-vereinsfarbe, var(--ap-akzent));
+    --ap-akzent-stark: var(--ap-vereinsfarbe-stark, var(--ap-akzent-stark));
+    --ap-akzent-leise: var(--ap-vereinsfarbe-leise, var(--ap-akzent-leise));
+    --ap-auf-akzent: var(--ap-vereinsfarbe-schrift, var(--ap-auf-akzent));
+}
+
+/* Gedruckt wird immer hell und sparsam – unabhängig davon, was
+   am Bildschirm eingestellt ist. Niemand druckt ein schwarzes
+   Blatt, und die Kabinenschilder sollen den Toner nicht fressen. */
+@media print {
+    :root, [data-theme][data-schema] {
+        --ap-grund: #ffffff;
+        --ap-tafel: #ffffff;
+        --ap-tafel-kopf: #f2f2f2;
+        --ap-tafel-tief: #ffffff;
+        --ap-kante: #666666;
+        --ap-kreide: #bbbbbb;
+        --ap-schrift-farbe: #000000;
+        --ap-leise: #333333;
+        --ap-still: #555555;
+        --ap-akzent: #000000;
+        --ap-akzent-stark: #000000;
+        --ap-akzent-leise: #f0f0f0;
+        --ap-auf-akzent: #ffffff;
+        --ap-live: #000000;
+        --ap-tor: #000000;
+        --ap-schatten-s: none;
+        --ap-schatten-m: none;
+        --ap-schatten-l: none;
+        --ap-kante-unten: 0 0 0;
+    }
+}
+
+/* Wer Bewegung abgestellt hat, bekommt keine. Ausnahmslos. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

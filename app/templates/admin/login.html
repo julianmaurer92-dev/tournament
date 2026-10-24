@@ -1,3 +1,4 @@
+{% from '_bausteine.html' import icon %}
 <!DOCTYPE html>
 <html lang="de" data-bs-theme="dark">
 <head>
@@ -189,7 +190,7 @@
     <div class="login-box">
 
         <div class="login-logo">
-            <div class="login-logo-icon">&#9917;</div>
+            <div class="login-logo-icon">{{ icon('ball-football') }}</div>
             <h1>Turnier-Admin</h1>
             <p>Melde dich an, um fortzufahren</p>
         </div>
@@ -199,7 +200,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                 <div class="flash flash-{{ 'error' if category == 'error' else 'success' }}">
-                    {{ '⚠' if category == 'error' else '✓' }} {{ message }}
+                    {% if category == 'error' %}{{ icon('alert-triangle') }}{% else %}{{ icon('check') }}{% endif %} {{ message }}
                 </div>
                 {% endfor %}
             {% endif %}
@@ -232,7 +233,7 @@
         </div>
 
         <div class="login-back">
-            <a href="{{ url_for('main.landing') }}">&larr; Zurueck zur Uebersicht</a>
+            <a href="{{ url_for('main.landing') }}">&larr; Zurück zur Übersicht</a>
         </div>
     </div>
 </div>

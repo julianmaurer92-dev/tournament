@@ -1,0 +1,89 @@
+{# ============================================================
+   ANPFIFF – Bausteine als Makros
+   ------------------------------------------------------------
+   Einbinden mit:
+       {% from "_anpfiff.html" import tafel_auf, tafel_zu, knopf,
+          symbol, abzeichen, karten, leer, wappen, teamname %}
+   ============================================================ #}
+
+{# Symbol aus dem Sprite. viewBox ist Pflicht: Ohne sie hat das
+   <svg> keine Eigengröße und wird in einem Flex-Eltern auf null
+   Breite zusammengedrückt. #}
+{% macro symbol(name, klasse='', titel=None) -%}
+<svg class="ap-symbol {{ klasse }}" viewBox="0 0 24 24"
+     aria-hidden="{{ 'false' if titel else 'true' }}"
+     {% if titel %}role="img"{% endif %}>
+    {%- if titel %}<title>{{ titel }}</title>{% endif -%}
+    <use href="{{ url_for('static', filename='vendor/tabler-sprite.svg') }}#i-{{ name }}"></use>
+</svg>
+{%- endmacro %}
+
+{# Eine Tafel wird in zwei Teilen geöffnet, damit beliebiger
+   Inhalt dazwischen passt. #}
+{% macro tafel_auf(streifen=None, klasse='', inhalt_klasse='', id=None) -%}
+<section class="ap-tafel {{ klasse }}" {% if id %}id="{{ id }}"{% endif %}>
+    {%- if streifen %}
+    <header class="ap-tafel-kopf">{{ streifen }}{{ caller() if caller is defined }}</header>
+    {%- endif %}
+    <div class="ap-tafel-inhalt {{ inhalt_klasse }}">
+{%- endmacro %}
+
+{% macro tafel_zu() -%}
+    </div>
+</section>
+{%- endmacro %}
+
+{% macro knopf(text, ziel=None, art='', symbolname=None, klasse='', typ='button', attribute='') -%}
+{% set klassen = 'ap-knopf ' ~ (('ap-knopf--' ~ art) if art else '') ~ ' ' ~ klasse %}
+{%- if ziel -%}
+<a href="{{ ziel }}" class="{{ klassen }}" {{ attribute | safe }}>
+    {%- if symbolname %}{{ symbol(symbolname) }}{% endif %}{{ text }}</a>
+{%- else -%}
+<button type="{{ typ }}" class="{{ klassen }}" {{ attribute | safe }}>
+    {%- if symbolname %}{{ symbol(symbolname) }}{% endif %}{{ text }}</button>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro abzeichen(text, art='', puls=false) -%}
+<span class="ap-abzeichen {{ ('ap-abzeichen--' ~ art) if art else '' }}">
+    {%- if puls %}<span class="ap-puls"></span>{% endif -%}
+    {{ text }}
+</span>
+{%- endmacro %}
+
+{# Gelbe und rote Karten. Vorher standen hier Emoji-Quadrate –
+   die sind je nach Gerät unterschiedlich groß und haben runde
+   Ecken wie ein Bonbon. Eine Spielkarte ist ein Rechteck. #}
+{% macro karten(gelb=0, gelb_rot=0, rot=0) -%}
+{%- if gelb or gelb_rot or rot -%}
+<span class="ap-karten">
+    {%- for _ in range(gelb) %}<span class="ap-karte ap-karte--gelb" title="Gelbe Karte"></span>{% endfor -%}
+    {%- for _ in range(gelb_rot) %}<span class="ap-karte ap-karte--gelbrot" title="Gelb-Rote Karte"></span>{% endfor -%}
+    {%- for _ in range(rot) %}<span class="ap-karte ap-karte--rot" title="Rote Karte"></span>{% endfor -%}
+</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro wappen(team, klasse='') -%}
+{%- if team and team.logo_url -%}
+<img class="ap-wappen {{ klasse }}" src="{{ team.logo_url }}" alt="" loading="lazy">
+{%- endif -%}
+{%- endmacro %}
+
+{# Mannschaftsnamen werden nie getrennt. #}
+{% macro teamname(team, mit_wappen=true) -%}
+<span class="ap-teamname">{% if mit_wappen %}{{ wappen(team) }}{% endif %}{{
+    team.name if team else 'offen' }}</span>
+{%- endmacro %}
+
+{# Ein leerer Bereich nennt immer den nächsten Schritt. #}
+{% macro leer(symbolname, titel, text, knopf_text=None, knopf_ziel=None) -%}
+<div class="ap-leer">
+    {{ symbol(symbolname, 'ap-symbol--xl') }}
+    <div class="ap-leer-titel">{{ titel }}</div>
+    <p class="ap-leer-text">{{ text }}</p>
+    {% if knopf_text and knopf_ziel %}
+    <a class="ap-knopf ap-knopf--haupt" href="{{ knopf_ziel }}">{{ knopf_text }}</a>
+    {% endif %}
+</div>
+{%- endmacro %}
