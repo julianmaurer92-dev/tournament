@@ -38,7 +38,7 @@ kosten — auf einem Handy am Spielfeldrand mehr als am Schreibtisch.
 | 13 | Quittung drucken | 4 | 2 | *wird ergänzt* |
 | 14 | Spielplan drucken | 3 | 2 | *wird ergänzt* |
 | 15 | Zuschauer: Tabelle meiner Gruppe finden | 3 | 1 | *wird ergänzt* |
-| 16 | Zuschauer: nächstes Spiel meines Teams finden | 4 | 0–1 | *wird ergänzt* |
+| 16 | Zuschauer: nächstes Spiel meines Teams finden | 4 | 0–1 | **0** |
 
 ---
 
@@ -200,3 +200,19 @@ Nebenbei behoben: Die Einstellungs-Route akzeptierte nur sechs der zehn
 angebotenen Themes. „Navy", „Forest", „Amber" und „Violet" ließen sich
 auswählen, aber **nicht speichern** — der Server antwortete mit einem
 Fehler, den die Oberfläche verschluckte.
+
+### 16. Zuschauer: nächstes Spiel meines Teams — 0 (vorher 4)
+
+Einmal auf **„Meine Mannschaft wählen"** tippen und das Team aus der Liste
+aussuchen (2 Tipps, einmalig). Danach steht bei jedem Öffnen der
+Handy-Ansicht ganz oben:
+
+> ★ SC Weiler
+> **NÄCHSTES SPIEL** · gegen TuS Lindau · 10:00 Uhr · Feld 1 · Gruppe A
+
+Läuft gerade ein Spiel der Mannschaft, steht es darüber — mit Spielstand.
+Ist das Turnier für sie vorbei, sagt die Karte das auch, statt leer zu
+bleiben.
+
+Die Wahl liegt nur im Browser (localStorage), je Turnier getrennt. Kein
+Konto, keine Daten auf dem Server.

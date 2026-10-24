@@ -404,3 +404,137 @@
     overflow-wrap: break-word;
     word-break: normal;
 }
+
+/* ============================================================
+   „Mein Team" – Zuschauer merken sich ihre Mannschaft
+   ============================================================ */
+
+.mt-waehlen {
+    display: flex;
+    align-items: center;
+    gap: var(--raum-3);
+    width: 100%;
+    min-height: 60px;
+    padding: var(--raum-3) var(--raum-4);
+    margin-bottom: var(--raum-3);
+    text-align: left;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--flaeche);
+    border: 1px dashed var(--rand-interaktiv);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+}
+.mt-waehlen:hover { border-color: var(--akzent); background: var(--akzent-leise); }
+.mt-waehlen-stern { font-size: 1.4rem; color: var(--akzent); flex: none; }
+.mt-waehlen strong { display: block; font-size: var(--text-m); }
+.mt-waehlen small  { display: block; font-size: var(--text-xs); color: var(--text-leise); }
+
+.mt-karte {
+    margin-bottom: var(--raum-3);
+    background: var(--flaeche);
+    border: 1px solid var(--akzent-rand);
+    border-left: 4px solid var(--akzent);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+}
+.mt-kopf {
+    display: flex;
+    align-items: center;
+    gap: var(--raum-2);
+    padding: var(--raum-2) var(--raum-3);
+    background: var(--akzent-leise);
+}
+.mt-name {
+    flex: 1;
+    font-size: var(--text-s);
+    font-weight: var(--gewicht-fett);
+    color: var(--akzent);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mt-wechseln {
+    flex: none;
+    min-height: 32px;
+    padding: 0 var(--raum-2);
+    font-family: inherit;
+    font-size: var(--text-xs);
+    color: var(--text-leise);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.mt-spiel { padding: var(--raum-3); border-top: 1px solid var(--rand); }
+.mt-spiel:first-of-type { border-top: 0; }
+.mt-titel {
+    font-size: var(--text-xs);
+    font-weight: var(--gewicht-fett);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-leise);
+    margin-bottom: 2px;
+}
+.mt-spiel.ist-live .mt-titel { color: var(--live); }
+.mt-gegner {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--raum-3);
+    font-size: var(--text-l);
+    hyphens: manual;
+    word-break: normal;
+}
+.mt-stand {
+    font-size: var(--text-xl);
+    font-weight: var(--gewicht-schwer);
+    font-variant-numeric: tabular-nums;
+    color: var(--live);
+    flex: none;
+}
+.mt-ort { font-size: var(--text-s); color: var(--text-leise); margin-top: 2px; }
+
+/* Auswahl der Mannschaft */
+.mt-auswahl {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-sheet);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgba(0,0,0,.55);
+}
+.mt-auswahl-karte {
+    background: var(--flaeche-erhoben);
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    padding: var(--raum-4);
+    padding-bottom: calc(var(--raum-5) + env(safe-area-inset-bottom, 0px));
+    max-height: 82vh;
+    overflow-y: auto;
+}
+.mt-auswahl-titel {
+    font-size: var(--text-l);
+    font-weight: var(--gewicht-fett);
+    margin-bottom: var(--raum-4);
+}
+.mt-auswahl-liste { display: flex; flex-direction: column; gap: var(--raum-2); }
+.mt-auswahl-knopf {
+    min-height: 52px;
+    padding: 0 var(--raum-4);
+    text-align: left;
+    font-family: inherit;
+    font-size: var(--text-m);
+    font-weight: var(--gewicht-mittel);
+    color: var(--text);
+    background: var(--flaeche);
+    border: 1px solid var(--rand-interaktiv);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+}
+.mt-auswahl-knopf:hover { border-color: var(--akzent); background: var(--akzent-leise); }
+.mt-auswahl-knopf.ist-gewaehlt { border-color: var(--akzent); color: var(--akzent); font-weight: var(--gewicht-fett); }
+.mt-auswahl-knopf--weg { border-style: dashed; color: var(--text-leise); }

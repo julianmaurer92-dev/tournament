@@ -1,14 +1,39 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="{{ site_settings.theme or 'dark' }}">
+<html lang="de"
+      data-theme="{{ cp_theme }}"
+      data-schema="{{ cp_schema }}"
+      {% if cp_vereinsfarbe %}data-vereinsfarbe="an"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>{{ site_settings.tournament_name }}</title>
+    <meta name="color-scheme" content="{{ 'light' if cp_schema == 'hell' else 'dark' }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/inter.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bausteine.css') }}">
+    {% if cp_vereinsfarbe %}
+    <style id="vereinsfarbe">:root { {{ cp_vereinsfarbe }} }</style>
+    {% endif %}
     <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cp-meinteam.js') }}"></script>
     <style>
+        /* Die Handy-Ansicht hatte eigene Variablennamen. Sie zeigen jetzt
+           auf die Design-Tokens, damit Theme und Vereinsfarbe auch hier
+           gelten – ohne die rund 400 Zeilen darunter anzufassen. */
         :root {
-            --primary: {{ site_settings.color_primary }};
+            --primary: var(--akzent);
+            --title:   var(--akzent);
+            --bg:      var(--flaeche-tief);
+            --card:    var(--flaeche);
+            --card2:   var(--flaeche-erhoben);
+            --bg2:     var(--flaeche);
+            --border:  var(--rand);
+            --muted:   var(--text-leise);
+            --line:    var(--rand);
+            --fg:      var(--text);
+            --fg2:     var(--text-leise);
+            --fg3:     var(--text-still);
+        }};
             --title:   {{ site_settings.color_title }};
             --bg:      #050a10;
             --bg2:     #0b1420;
@@ -28,7 +53,16 @@
             display: flex; align-items: center; justify-content: space-between;
             position: sticky; top: 0; z-index: 100;
         }
-        #ph-title { font-size: 1.15rem; font-weight: 800; color: var(--title); }
+        /* Lange Turniernamen brauchten bis zu drei Zeilen und drueckten
+           die Knoepfe daneben zusammen. Zwei Zeilen reichen; der Rest
+           wird gekuerzt, der volle Name steht im title-Attribut. */
+        #ph-title {
+            font-size: 1.05rem; font-weight: 800; color: var(--title);
+            line-height: 1.2;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden;
+            hyphens: manual; word-break: normal;
+        }
         .ph-view-links { display: flex; gap: 0.4rem; }
         .ph-view-link { font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); text-decoration: none; }
         .ph-view-link:hover, .ph-view-link.active { color: var(--primary); border-color: var(--primary); }
@@ -145,7 +179,7 @@
         <img id="ph-logo" src="{{ site_settings.org_logo_url }}" alt="Logo"
              style="height:32px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0;border-radius:4px">
         {% endif %}
-        <div id="ph-title">&#9917; {{ site_settings.tournament_name }}</div>
+        <div id="ph-title" title="{{ site_settings.tournament_name }}">{{ site_settings.tournament_name }}</div>
     </div>
     <div style="display:flex;align-items:center;gap:0.4rem">
         <a href="{{ url_for('main.tournament_mobile_landing') }}" class="ph-view-link" title="Zurück zur Übersicht">&#8592; Übersicht</a>
@@ -155,6 +189,9 @@
 </header>
 
 <div id="ph-announcement"></div>
+
+<!-- „Mein Team": einmal waehlen, danach steht das naechste Spiel oben -->
+<div id="ph-meinteam"></div>
 
 <div id="ph-tabs">
     <div class="ph-tab active" onclick="switchTab('live')" id="tab-live">&#9679; Live</div>
@@ -238,7 +275,10 @@ function startTimer() {
 }
 
 // ── Apply state ──
+let letzterZustand = null;
+
 function applyState(s) {
+    letzterZustand = s;
     if (!s) return;
     const settings = s.settings || {};
     const legacyHide = settings.hide_results === '1' && settings.hide_table !== '1' && settings.hide_scores !== '1';
@@ -246,7 +286,9 @@ function applyState(s) {
     const hideScores = settings.hide_scores === '1' || legacyHide;
 
     if (settings.tournament_name) {
-        document.getElementById('ph-title').textContent = '⚽ ' + settings.tournament_name;
+        const titelEl = document.getElementById('ph-title');
+            titelEl.textContent = settings.tournament_name;
+            titelEl.title = settings.tournament_name;
         document.title = settings.tournament_name;
     }
     if (settings.org_logo_url !== undefined) {
@@ -294,6 +336,7 @@ function applyState(s) {
     renderTable(s.standings_by_group, s.groups, hideTable);
     renderMatches(s.past_matches || [], s.upcoming_matches || [], s.final_matches || [],
                   hideScores, (s.settings && s.settings.num_fields) || 1);
+    renderMeinTeam(s, hideScores);
     renderTeams(s.standings_by_group, s.groups);
 
     // Update tab live indicator
@@ -410,6 +453,109 @@ function phZeitBadge(m, numFields) {
     if (numFields > 1 && m.field) teile.push('Feld ' + m.field);
     if (!teile.length) return '';
     return `<span class="ph-match-badge">${teile.join(' · ')}</span>`;
+}
+
+// ── „Mein Team" ──────────────────────────────────────────────
+// Einmal waehlen, danach steht das naechste Spiel ganz oben.
+// Gespeichert nur im Browser, je Turnier.
+
+function renderMeinTeam(s, hideResults) {
+    const el = document.getElementById('ph-meinteam');
+    if (!el || !window.cp || !cp.meinTeam) return;
+
+    const gewaehlt = cp.meinTeam.lesen(TOURNAMENT_SLUG);
+    if (!gewaehlt) {
+        el.innerHTML = `
+            <button type="button" class="mt-waehlen" onclick="meinTeamWaehlen()">
+                <span class="mt-waehlen-stern">★</span>
+                <span>
+                    <strong>Meine Mannschaft wählen</strong>
+                    <small>Danach siehst du hier immer das nächste Spiel</small>
+                </span>
+            </button>`;
+        return;
+    }
+
+    const spiele = cp.meinTeam.spieleFinden(s, gewaehlt.id);
+    const numFields = parseInt((s.settings && s.settings.num_fields) || 1, 10);
+
+    function zeile(m, titel, istLive) {
+        const gegner = (m.team1 && m.team1.id === gewaehlt.id) ? m.team2 : m.team1;
+        const zeit = cp.meinTeam.zeit(m);
+        const ort = [];
+        if (zeit) ort.push(zeit + ' Uhr');
+        if (numFields > 1 && m.field) ort.push('Feld ' + m.field);
+        if (m.group_name) ort.push(m.group_name);
+        else if (m.final_label) ort.push(m.final_label);
+        const stand = (istLive && !hideResults)
+            ? `<span class="mt-stand">${m.score_team1}:${m.score_team2}</span>` : '';
+        return `
+            <div class="mt-spiel ${istLive ? 'ist-live' : ''}">
+                <div class="mt-titel">${titel}</div>
+                <div class="mt-gegner">
+                    <span>gegen <strong>${esc(gegner ? gegner.name : 'noch offen')}</strong></span>
+                    ${stand}
+                </div>
+                ${ort.length ? `<div class="mt-ort">${esc(ort.join(' · '))}</div>` : ''}
+            </div>`;
+    }
+
+    let inhalt = '';
+    if (spiele.live) inhalt += zeile(spiele.live, '● Läuft gerade', true);
+    if (spiele.naechstes) inhalt += zeile(spiele.naechstes, 'Nächstes Spiel', false);
+    if (!inhalt) {
+        inhalt = `<div class="mt-spiel"><div class="mt-titel">Keine weiteren Spiele</div>
+                  <div class="mt-ort">Für ${esc(gewaehlt.name)} ist das Turnier gelaufen.</div></div>`;
+    }
+
+    el.innerHTML = `
+        <section class="mt-karte">
+            <div class="mt-kopf">
+                <span class="mt-name">★ ${esc(gewaehlt.name)}</span>
+                <button type="button" class="mt-wechseln" onclick="meinTeamWaehlen()">ändern</button>
+            </div>
+            ${inhalt}
+        </section>`;
+}
+
+function meinTeamWaehlen() {
+    if (!letzterZustand) return;
+    const teams = cp.meinTeam.teamsAus(letzterZustand);
+    const gewaehlt = cp.meinTeam.lesen(TOURNAMENT_SLUG);
+
+    const hintergrund = document.createElement('div');
+    hintergrund.className = 'mt-auswahl';
+    hintergrund.innerHTML = `
+        <div class="mt-auswahl-karte">
+            <div class="cp-sheet-griff"></div>
+            <div class="mt-auswahl-titel">Welche Mannschaft interessiert dich?</div>
+            <div class="mt-auswahl-liste">
+                ${teams.map(t => `
+                    <button type="button" data-team="${t.id}"
+                        class="mt-auswahl-knopf ${gewaehlt && gewaehlt.id === t.id ? 'ist-gewaehlt' : ''}">
+                        ${esc(t.name)}
+                    </button>`).join('')}
+                ${gewaehlt ? '<button type="button" data-team="" class="mt-auswahl-knopf mt-auswahl-knopf--weg">Keine Mannschaft merken</button>' : ''}
+            </div>
+        </div>`;
+    document.body.appendChild(hintergrund);
+
+    function schliessen() { hintergrund.remove(); document.removeEventListener('keydown', aufEsc); }
+    function aufEsc(e) { if (e.key === 'Escape') schliessen(); }
+    document.addEventListener('keydown', aufEsc);
+    hintergrund.addEventListener('click', e => { if (e.target === hintergrund) schliessen(); });
+
+    hintergrund.querySelectorAll('.mt-auswahl-knopf').forEach(knopf => {
+        knopf.addEventListener('click', () => {
+            const id = parseInt(knopf.dataset.team, 10);
+            const team = teams.find(t => t.id === id);
+            cp.meinTeam.setzen(TOURNAMENT_SLUG, team ? { id: team.id, name: team.name } : null);
+            schliessen();
+            if (letzterZustand) applyState(letzterZustand);
+        });
+    });
+    const erstes = hintergrund.querySelector('.mt-auswahl-knopf');
+    if (erstes) erstes.focus();
 }
 
 function renderMatches(past, upcoming, finals, hideResults, numFields) {
